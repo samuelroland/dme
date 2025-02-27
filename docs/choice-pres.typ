@@ -40,11 +40,24 @@
 ]
 
 #slide(title: "Challenges")[
-- Time of Markdown files research
-- Time of indexing Markdown content
-- Speed of full text search
-- Speed of HTML & Code preview generation
-- Speed of PDF generation
+
+#tablex(
+  columns:2,
+  stroke: none,
+  inset: 0pt,
+  align: horizon,
+  row-gutter: 0em,
+  column-gutter: 2em,
+)[
+== Speed
+- Markdown files research
+- Markdown content indexing 
+- Full text search
+- HTML & Code preview generation
+- PDF generation
+][
+#image("imgs/feris-car.png", height: 19em)
+]
 
 ]
 #blank-slide[
@@ -53,31 +66,64 @@
   = Applied to concurrent programming
   ])
 ]
-#slide(title: "Classic approach")[
-== Memory safety in C++
 
-```rust
+#slide(title: "Memory safety in concurrency")[
+== C++ vs Rust
+#text(size: 16pt)[
+#tablex(
+  columns: 2,
+  stroke: none,
+  inset: 0pt,
+  row-gutter: 0em,
+  column-gutter: 2em,
+)[
+```cpp
 void task(int *counter) {
     while (*counter < 10000000)
         (*counter)++;
 }
 
-const int NB_THREADS = 30;
-
 int main(void) {
     int counter = 0;
-    PcoThread *threads[NB_THREADS];
+    PcoThread *threads[30];
     for (int i = 0; i < NB_THREADS; i++)
         threads[i] = new PcoThread(task, &counter);
-
-    for (int i = 0; i < NB_THREADS; i++)
-        threads[i]->join();
-
+    // [...] joining threads
     cout << "counter " << counter << endl;
 }
 ```
+][
+```rust
+fn task(counter: &mut u32) {
+    while *counter < 100000 { *counter += 1; }
+}
 
+fn main() {
+    let mut counter: u32 = 0;
+    let mut handles = Vec::new();
+    for _ in 1..30 {
+        handles.push(
+            thread::spawn(|| task(&mut counter))
+        );
+    }
+    // [...] joining threads
+    println!("counter {counter}");
+}
+```
+]]]
+
+#slide(title: "Memory safety in concurrency")[
+== Results
+#text(size: 16pt)[
+#tablex(
+  columns:2,
+  stroke: none,
+  inset: 0pt,
+  row-gutter: 0em,
+  column-gutter: 2em,
+)[
 ```sh
+> # BUILD OK
 > ./build/exo
 counter 10000000
 ```
@@ -89,75 +135,28 @@ Results
  2 times counter 10000001
  2 times counter 10000002
 ```
+][
+```rust error[E0373]:```#text(weight: "bold")[ closure may outlive the current function, but it borrows `counter`, which is owned by the current function]```rust handles.push(thread::spawn(|| task(&mut counter)));
+-- `counter` is borrowed here, may outlive borrowed value `counter`
+```
+```rust error[E0499]:```#text(weight: "bold")[ cannot borrow `counter` as mutable more than once at a time]```rust handles.push(thread::spawn(|| task(&mut counter)));
+    `counter` was mutably borrowed here in the previous iteration of the loop
+```
+
+```rust error[E0502]:```#text(weight: "bold")[ cannot borrow `counter` as immutable because it is also borrowed as mutable]```rust handles.push(thread::spawn(|| task(&mut counter)));
+                              mutable borrow occurs here
+println!("Counter {counter}");
+                  ^^^^^^^^^ immutable borrow occurs here
+```
+
 ]
-
-#slide(title: "Another approach")[
-== Memory safety in Rust
-```rust
-fn task(counter: &mut u32) {
-    while *counter < 100000 {
-        *counter += 1;
-    }
-}
-
-const NB_THREADS: u32 = 30;
-
-fn main() {
-    let mut counter: u32 = 0;
-    let mut handles = Vec::new();
-    for _ in 1..NB_THREADS {
-        handles.push(thread::spawn(|| task(&mut counter)));
-    }
-    for handle in handles {
-        handle.join();
-    }
-    println!("counter {counter}");
-}
-```
-
-```rust
-error[E0373]: closure may outlive the current function, but it borrows `counter`, which is owned by the current function
-  --> src/main.rs:14:36
-   |
-14 |         handles.push(thread::spawn(|| task(&mut counter)));
-   |                                    ^^           ------- `counter` is borrowed here
-   |                                    |
-   |                                    may outlive borrowed value `counter`
-   |   
-```
-
-
-```rust
-error[E0499]: cannot borrow `counter` as mutable more than once at a time
-  --> src/main.rs:14:36
-   |
-14 |         handles.push(thread::spawn(|| task(&mut counter)));
-   |                      --------------^^--------------------
-   |                      |             |            |
-   |                      |             |            borrows occur due to use of `counter` in closure
-   |                      |             `counter` was mutably borrowed here in the previous iteration of the loop
-   |                      argument requires that `counter` is borrowed for `'static`
-```
-
-```rust
-error[E0502]: cannot borrow `counter` as immutable because it is also borrowed as mutable
-  --> src/main.rs:19:23
-   |
-14 |         handles.push(thread::spawn(|| task(&mut counter)));
-   |                      ------------------------------------
-   |                      |             |            |
-   |                      |             mutable borrow occurs here
-...
-19 |     println!("Counter {counter}");
-   |                       ^^^^^^^^^ immutable borrow occurs here
-```
-
+]
 ]
 
 #slide(title: "Why Rust ?")[
 == Memory safety
 - Concurrent access checked at compile time
-- Strong typing system, smart types like ```Mutex```
+- Strong typing system, smart types like `Mutex`
 - No garbage collector and no manual memory management
 
 ]
