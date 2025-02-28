@@ -13,30 +13,30 @@
   ratio: "16-9",
   theme: "yelly",
 )
-
-#text(font: "Cantarell", [
-
+#set text(font: "Cantarell")
 
 #blank-slide[
   #align(center, [
-  #yelly[#text(weight: "bold", size: 2.2em, fill: gradient.linear(rgb("#fc1100"),rgb("#ffb000")))[Delightful Markdown Experience ?]]
+  #image("logo/logo.svg", height: 5em)
+  #yelly[#text(weight: "bold", size: 2.2em, fill: black)[A delightful Markdown experience ?]]
   = That's possible !
   ])
 ]
 
 
-#slide(title: "Meta experience")[
+#slide(title: "Markdown experience outside editing")[
 == Current experience
- - Preview not always pleasant
- - Code highlighting too much basic
- - PDF export hard and broken
- - Single file preview
+- Preview not always pleasant
+- Code highlighting too much basic
+- PDF export very hard and broken
+- Single file preview
 
 == Dream experience
 - Jumping easily through any Markdown file on disk
 - Full text search on Markdown content
 - Fast preview load and refresh, even for very big documents
 - Full code highlighting with Tree-Sitter
+- Easy export in PDF
 ]
 
 #slide(title: "Challenges")[
@@ -86,8 +86,8 @@ void task(int *counter) {
 int main(void) {
     int counter = 0;
     PcoThread *threads[30];
-    for (int i = 0; i < NB_THREADS; i++)
-        threads[i] = new PcoThread(task, &counter);
+    for (int i = 0; i < 30; i++)
+       threads[i] = new PcoThread(task, &counter);
     // [...] joining threads
     cout << "counter " << counter << endl;
 }
@@ -95,11 +95,11 @@ int main(void) {
 ][
 ```rust
 fn task(counter: &mut u32) {
-    while *counter < 100000 { *counter += 1; }
+    while *counter < 10000000 { *counter += 1; }
 }
 
 fn main() {
-    let mut counter: u32 = 0;
+    let mut counter = 0;
     let mut handles = Vec::new();
     for _ in 1..30 {
         handles.push(
@@ -124,26 +124,28 @@ fn main() {
 )[
 ```sh
 > # BUILD OK
-> ./build/exo
+> # running once
 counter 10000000
 ```
 
 ```sh
 > # running 10 times
 Results
- 6 times counter 10000000
- 2 times counter 10000001
- 2 times counter 10000002
+ 6 times: counter 10000000
+ 2 times: counter 10000001
+ 2 times: counter 10000002
 ```
 ][
-```rust error[E0373]:```#text(weight: "bold")[ closure may outlive the current function, but it borrows `counter`, which is owned by the current function]```rust handles.push(thread::spawn(|| task(&mut counter)));
--- `counter` is borrowed here, may outlive borrowed value `counter`
+```rust error:```#text(weight: "bold")[ closure may outlive the current function, but it borrows `counter`, which is owned by the current function]```rust handles.push(thread::spawn(|| task(&mut counter)));
+        `counter` is borrowed here
+         may outlive borrowed value `counter`
 ```
-```rust error[E0499]:```#text(weight: "bold")[ cannot borrow `counter` as mutable more than once at a time]```rust handles.push(thread::spawn(|| task(&mut counter)));
-    `counter` was mutably borrowed here in the previous iteration of the loop
+```rust error:```#text(weight: "bold")[ cannot borrow `counter` as mutable more than once at a time]```rust handles.push(thread::spawn(|| task(&mut counter)));
+            `counter` was mutably borrowed here in the previous
+            iteration of the loop
 ```
 
-```rust error[E0502]:```#text(weight: "bold")[ cannot borrow `counter` as immutable because it is also borrowed as mutable]```rust handles.push(thread::spawn(|| task(&mut counter)));
+```rust error:```#text(weight: "bold")[ cannot borrow `counter` as immutable because it is also borrowed as mutable]```rust handles.push(thread::spawn(|| task(&mut counter)));
                               mutable borrow occurs here
 println!("Counter {counter}");
                   ^^^^^^^^^ immutable borrow occurs here
@@ -161,5 +163,4 @@ println!("Counter {counter}");
 
 ]
 
-])
 
