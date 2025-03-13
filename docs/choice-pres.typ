@@ -6,7 +6,7 @@
 //     Comment prévoyez-vous de l'utiliser (courte description du projet qui mettra en avant les particularités du paradigme et/ou langage).
 
 #import "@preview/typslides:1.2.3": * // https://github.com/manjavacas/typslides
-#import "@preview/tablex:0.0.8": tablex
+#import "@preview/tablex:0.0.9": tablex
 
 // Project configuration
 #show: typslides.with(
@@ -56,7 +56,7 @@
 - HTML & Code preview generation
 - PDF generation
 ][
-#image("imgs/feris-car.png", height: 19em)
+    #image("imgs/feris-car.png", height: 19em)
 ]
 
 ]
@@ -156,11 +156,10 @@ println!("Counter {counter}");
 ]
 
 #slide(title: "Why Rust ?")[
-== Memory safety
+== Memory safety and speed
 - Concurrent access checked at compile time
 - Strong typing system, smart types like `Mutex`
 - No garbage collector and no manual memory management
-
 ]
 
 
