@@ -26,3 +26,21 @@
 - Unsafe Rust
     - What are the additionnal rules of what is authorized and why this is necessary sometimes
 
+
+## Videos
+The Rust Borrow Checker - A Deep Dive - Nell Shamrell-Harrington, Microsoft
+https://www.youtube.com/watch?v=HG1fppexRMA
+The Rust Borrow Checker: a Deep Dive - Nell Shamrell-Harrington
+
+33min
+The Rust Borrow Checker: a Deep Dive - Nell Shamrell-Harrington
+https://www.youtube.com/watch?v=JfEWmQAACN8
+
+Rust for TypeScript devs : Borrow Checker - The Primeagen
+https://www.youtube.com/watch?v=ZNFdkTIzdXM
+
+Understand Rust's Borrow Checker in 5 Minutes
+https://www.youtube.com/watch?v=Nuba5LNy5cY
+
+How to fight Rust's borrow checker... and win. - Let's Get Rusty
+https://www.youtube.com/watch?v=Pg07HQJ0tvI
