@@ -5,6 +5,7 @@
 - What's are the high level steps of the compiler,
     - where is the borrow checker
     - what are the different substeps in the borrowchecker
+    - https://rustc-dev-guide.rust-lang.org/borrow_check.html
 - Automatic and dynamic allocations models
     - `Box` for heap allocation, when this is useful
     - Trait `Drop`, `Clone`, `Copy`, `Sync`, `Send`
@@ -31,6 +32,13 @@
 The Rust Borrow Checker - A Deep Dive - Nell Shamrell-Harrington, Microsoft
 https://www.youtube.com/watch?v=HG1fppexRMA
 The Rust Borrow Checker: a Deep Dive - Nell Shamrell-Harrington
+https://www.youtube.com/watch?v=JfEWmQAACN8
+Really starts at `2:56`
+
+TIL
+- This is not linear but the simplification is that there are 5 steps of compilation: lexical analysis, parsing, semantic analysis, optimization, code generation. The borrow checker is the semantic analysis.
+- The borrow checker is working the MIR the Mid level Intermediate Representation
+- The most recommended guide is Rust Compiler Development Guide, at https://rustc-dev-guide.rust-lang.org/
 
 33min
 The Rust Borrow Checker: a Deep Dive - Nell Shamrell-Harrington
@@ -44,3 +52,28 @@ https://www.youtube.com/watch?v=Nuba5LNy5cY
 
 How to fight Rust's borrow checker... and win. - Let's Get Rusty
 https://www.youtube.com/watch?v=Pg07HQJ0tvI
+
+How the Rust Compiler Works, a Deep Dive - RareSkills conf
+https://www.youtube.com/watch?v=Ju7v6vgfEt8
+
+AsRef/Borrow Traits, and the ?Sized Marker - Rust [Video Request]
+https://www.youtube.com/watch?v=4YAmpHMl1Z0
+
+04 Ownership & Borrowing | Rust Tutorials
+https://www.youtube.com/watch?v=q2UnbA2dkc8
+
+RustEdu Workshop 2022 - RustViz: Interactively Visualizing Ownership and Borrowing
+https://www.youtube.com/watch?v=zCF8QVkc6IY
+
+## Useful
+Decrusting the serde crate
+https://www.youtube.com/watch?v=BI_bHCGRgMY
+
+## Channels
+Ryan Levick
+https://www.youtube.com/channel/UCpeX4D-ArTrsqvhLapAHprQ
+
+https://www.youtube.com/watch?v=NQBVUjdkLAA
+
+Jon Gjengset - Crust of Rust
+https://www.youtube.com/c/JonGjengset
