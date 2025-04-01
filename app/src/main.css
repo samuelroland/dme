@@ -1,0 +1,23 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+
+/*Remove Tailwind typography's backticks around inline code snippets */
+:not(pre) code::before, :not(pre) code::after {
+	content: none !important;
+}
+
+p code {
+	@apply bg-[#646cff]/20 px-1 py-0.5 rounded-md
+}
+
+/*Remove Tailwind typography's double quotes around quotes block */
+blockquote p::before, blockquote p::after {
+	content: none !important;
+}
+
+
+/*Style used in documentations. */
+.table td, .table th {
+	@apply border text-center px-3 py-2
+}
