@@ -23,4 +23,8 @@ tauri-plugin-opener = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 comrak = "0.37.0"
-
+inkjet = { version = "0.11.1", default-features = false, features = [
+    "html",
+    "language-bash",
+    "language-c",
+] }
