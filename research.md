@@ -83,6 +83,28 @@ https://www.youtube.com/watch?v=NQBVUjdkLAA
 Jon Gjengset - Crust of Rust
 https://www.youtube.com/c/JonGjengset
 
+## Borrow Checker
+
+Important 
+```rust
+let x = "My String";
+let x = y; //Moved
+
+```
+
+Why move ? Because how memory works !
+
+
+Explain drop obligation or why there is no need for manual memory management nor garbrage collector
+MIR TO "drop elaboration" 
+
+WHY on MIR INSTEAD OF HIR https://github.com/rust-lang/rust/issues/47366
+
+## Multiple compilation error
+
+Tranform node with compilation error in a ExprKind:Err to continue as much as possible
+
+
 ## Rustc dev guide
 ### The MIR (Mid-level IR)
 https://rustc-dev-guide.rust-lang.org/mir/index.html
