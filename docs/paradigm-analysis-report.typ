@@ -1,6 +1,40 @@
-= Conccurent programing, lifetime and ownership
+= Concurrent programing, lifetime and ownership
 
-== Introduction to Conccurent programing 
+== Introduction app + needs
+
+== What if C++ or Java
+
+== Memory allocation basics
+
+== the basics of memory management
+
+== The best of both world
+
+== How it is possible ?
+the borrow checker
+
+==== move + clone + ref + ref mut
+
+==== lifetime
+escabau
+bougie fin du durée de vie, bougie consummée -> nettoyage du socle, réutilisation du socle pour une bougie.
+move de socle move responsabilité de nettoyer
+
+==== memory management
+comment on fait pour ne pas avoir de garbarge collector
+
+==== how it is magic
+
+==== le cout du borrow checker
+cout de dev
+courbe apprentissage
+impossible à prouver que c'est safe même si c'est safe, unsafe Rust
+
+==== gestion état partagé et communication inter threads
+
+== cahier des charges de DME
+
+== Introduction to concurrent programming
 
 Fist of all, we need to understand what is conccurent programing and what are the main challenge of it.
 Conccurent programing is about splitting tasks and working on them in parrallel,
