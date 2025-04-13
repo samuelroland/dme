@@ -1,3 +1,5 @@
+#set text(font: "Cantarell")
+
 = Ownership and lifetimes
 
 == Needs
@@ -10,7 +12,7 @@ In addition, we want to avoid crashing the app as the whole UI will quit, creati
 Finally, as the app is going to be open for hours, like a PDF previewer or a web browser, we cannot tolerate memory leaks as it would slowly but surely eat all the available RAM...
 
 == Why not just C++ or Java ?
-> You want performance for a desktop app, that's would be easy to build a C++ desktop app with Qt no ?
+#quote([You want performance for a desktop app, that's would be easy to build a C++ desktop app with Qt no ?])
 
 *C++ would be a good option is terms of performance and object oriented paradigms* to manage and index the Markdown files. But there is a big issue regarding to concurrency. As we learned in the PCO course (Programmation Concurrente), we can spend hours reading small chunks of code managing mutexes and semaphors to make sure it is *correct* in terms of safety. We spent a lot of time checking and reviewing our own code and still failing to get everything right, sometimes with complicated deadlock hard to detect at first sight. 
 
@@ -18,15 +20,40 @@ The problem here is that the G++ cannot verify we are doing things correctly, as
 
 For critical section where speed is really key, when using low level functions from C, we regularly take the risk of forgetting to free heap allocated memory, leading to memory leaks.
 
-*Java would be good in terms of safety*, as all memory bugs almost disappear as we don't manage memory ourself and we cannot access raw pointers. As the JVM can generate exceptions, they can be catched to avoid a global crash, we can avoid most memory issues. This magic is coming from the garbage collector, regularly checking if our program has lost access so heap allocated data, to clean it itself. This is an overhead that we cannot take if we want maximum speed and avoid using extra RAMs.
+#quote([You want to avoid memory safety issues ? Stop managing memory yourself and use Java !])
 
-Using Java also comes at a cost of executing our program in a virtual machine, instead of running our code natively directly on the CPU. But the concurrency issues do not go away, that's totally possible to use a ```java ArrayDeque``` which is not thread-safe, instead of a concurrent safe equivalent, the compiler will ignore it.
+*Java would be good in terms of safety*, as all memory bugs almost disappear as we don't manage memory ourself and we cannot access raw pointers. As the JVM can generate exceptions, they can be catched to avoid a global crash, we can avoid most memory issues. This magic is coming from the garbage collector, regularly checking if our program has lost access so heap allocated data, to clean it itself. This is an annoying overhead that will not prevent us from reach maximum speed and avoid using extra RAMs.
+
+Using Java also comes at a cost of executing our program in a virtual machine, instead of running our code directly on the CPU. Finally, the concurrency issues do not go away, that's totally possible to use a `ArrayList` which is not thread-safe, instead of a safe equivalent (like `CopyOnWriteArrayList`).
 
 == Memory allocation basics
+
+Give this simplified piece of C code, we find numerous allocation.
+```c
+#define SIZE 5
+
+void print(int *toshow) {
+    printf("%d", *toshow);
+}
+
+int main(void) {
+    int a = 23;
+    char *msg = "salut";
+    char *ptr = malloc(sizeof(int) * SIZE);
+    print(&a);
+    return 0;
+}
+```
+
+TODO explain quickly and explain why memory management is hard.
+#image("schemas/empty.png")
+
+#image("schemas/filled.png")
 
 == the basics of memory management
 
 == The best of both world
+Rust is the first language bringing the combination of speed and memory safety at the same time. It doesn't use a garbage collector
 
 == How it is possible ?
 the borrow checker
@@ -39,7 +66,7 @@ bougie fin du durée de vie, bougie consummée -> nettoyage du socle, réutilisa
 move de socle move responsabilité de nettoyer
 
 ==== memory management
-comment on fait pour ne pas avoir de garbarge collector
+comment on fait pour ne pas avoir de garbage collector
 
 ==== how it is magic
 
@@ -118,9 +145,9 @@ Now, we know how borrow works. Remember that the owner is responsible for the me
 Now 
 == Memory management
 //TODO move this    
-I have a dream. A programming language where I don't have to manage memory. Most programmers out there knows that there is an easy solution. The garbarge collector.
-Sadly, garbarge collector presents quiet a lot of issues. First of all, garbarge collecting is a complex action. You need to know when there is no more piece of code that is using a block of memory. 
-Because of this complexity, garbarge collecting is a heavy process, unsuitable for light appliction or appliction running in an environnement with low memory availabe.
+I have a dream. A programming language where I don't have to manage memory. Most programmers out there knows that there is an easy solution. The garbage collector.
+Sadly, garbage collector presents quiet a lot of issues. First of all, garbarge collecting is a complex action. You need to know when there is no more piece of code that is using a block of memory. 
+Because of this complexity, garbage collecting is a heavy process, unsuitable for light appliction or appliction running in an environnement with low memory availabe.
 
 Now then, as I said, I don't want to manually manage memory. It is prone to error, memory leak and responsible for a lot of break or insecure code. I want to avoid this risk.
 
