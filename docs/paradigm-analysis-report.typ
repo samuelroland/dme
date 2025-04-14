@@ -1,6 +1,20 @@
 #set text(font: "Cantarell")
 
-= Ownership and lifetimes
+#set page(
+  numbering: "1",
+  footer: align(
+    center, 
+    context(counter(page).display())
+  )
+)
+
+#align(center)[
+#text(size: 20pt)[= Ownership and lifetimes]
+How Rust's unique feature will help us develop a safe and fast desktop app
+#image("logo/logo.svg", height: 4em)
+]
+
+#outline() // TOC
 
 == Needs
 Before discussing this paradigm, let's briefly recall what DME (Delightful Markdown Experience) desktop app needs. We need to build several features that would greatly increase the experience if they are very optimized to be the fastest. To achieve maximum speed, we need to multi-threading to the maximum, making all IOs tasks in separated threads to avoid waiting on hardware when we could move forward with computation.
@@ -52,10 +66,19 @@ TODO explain quickly and explain why memory management is hard.
 
 == the basics of memory management
 
-== The best of both world
-Rust is the first language bringing the combination of speed and memory safety at the same time. It doesn't use a garbage collector
+== Why memory safety is a big deal ?
+In a #link("https://msrc.microsoft.com/blog/2019/07/a-proactive-approach-to-more-secure-code/")[Microsoft presentation from 2019], we find that #quote("~70% of the vulnerabilities addressed through a security update each year continue to be memory safety issues"). The Chromium projects #link("https://www.chromium.org/Home/chromium-security/memory-safety/")[also reports] that #quote("Around 70% of our high severity security bugs are memory unsafety problems (that is, mistakes with C/C++ pointers). Half of those are use-after-free bugs.")
 
-== How it is possible ?
+Memory related bugs generates 
+
+== The best of both world
+Rust is a strongly typed and compiled language, it has a strong selling point of being the first language bringing the combination of speed and memory safety at the same time. It was designed for systems programming (browsers, kernels, ...) but now has reached almost all programming areas, even web frontend via webassembly.
+
+== How it is possible to get both ?
+It doesn't use a garbage collector and doesn't ask the programmer to manually manage the memory. But how it is even possible ? How the program knows when to free heap allocated memory ?
+
+The rust compiler `rustc` implement a new paradigm, including the notion of ownership and lifetimes, checked by a part of the compiler called the *borrow-checker*. Instead of associating only a type and a variable to a resource, like most modern languages, it also tracks who has the ownership of this resource and how long the resource must exist. When the variable is the owner of a resource, the resource will be deallocated when the 
+
 the borrow checker
 
 ==== move + clone + ref + ref mut
