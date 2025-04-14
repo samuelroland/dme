@@ -186,5 +186,40 @@ Now then, as I said, I don't want to manually manage memory. It is prone to erro
 Luckily for me, there is a solution. But to explains how it works, we first need to introduce a few concept.
 Lifetime and ownership.
 
-= DME, Delightful Markdown Experience
-//TODO Cahier des charges
+
+== Specifications for DME
+Here the specifications of features we'll develop along the following weeks, using concurrency at a maximum, where there are work that can be parallezized to improve speed
+
+=== Functional goals
+*Preview*
++ We can preview any Markdown file with DME, by double-clicking on any `.md` file or running `dme test.md` in a GUI desktop app. Images and tables are supported.
++ The preview of code is done via Tree-Sitter: the syntaxes for C, C++, Java, Rust, Bash are built into DME (other languages are not supported for the start)
++ When the loaded file is changed on disk, the preview must refresh itself
+
+*PDF export*
++ It's possible to export a PDF file with the same look as the preview via `dme export test.md`, including highlighted code with Tree-Sitter
++ It's possible to export several files at the same time just by giving more files like this `dme export test.md resume.md sample.md`
+
+*Research*
++ It's possible to filter the list of Markdown with simple regexes in a configuration file in TOML, to avoid indexing hundreds of files unnecessary (i.e. when we cloned docs repository)
++ There is a way to quickly search among all Markdown files present on the disk, the search is matching the path fuzzily or matching terms inside headings
++ Finding a heading matching some keywords and choosing it will open the file as the current preview and jump to the matched heading
++ The research results are reloaded on every keypress, unlike a search engine
++ All documents under the user home directory can be found, except those present in folder starting with a dot (ignored `~/.config` i.e.)
+
+=== Non-functional goals
+All time measures must be made on Samuel's machine with a 12 cores processor and 16GB of RAM, with at least 5GB of unused RAM.
+
+*Preview*
++ The preview of a ~10 pages document, with 50 pieces of code in different languages, must load under *300ms*
++ The refresh duration between when the file is saved and when the preview is updated, must be under *500ms*
+
+*PDF export*
++ The PDF export of multiple files should be handled in parallel
++ The PDF export of a 10 pages document must take under 5s at maximum
++ The PDF export of 5 documents should not take more than 10s
+
+*Research*
++ Building the full index of all headings of MDN content (Mozilla Developers Network documentation) should take less than *20s* (#link("https://github.com/mdn/content")[MDN GitHub repository], containing ~13000 `.md` files with ~95000 headings)
++ Searching for "MAT2 resume" by copy-paste must take less than 500ms to find the `~/HEIG/year1/MAT2/resume.md`
+
