@@ -1,6 +1,8 @@
 #set text(font: "Cantarell")
+#show link: underline
 
 #set page(
+  margin: 30pt,
   numbering: "1",
   footer: align(
     center, 
@@ -10,11 +12,14 @@
 
 #align(center)[
 #text(size: 20pt)[= Ownership and lifetimes]
-How Rust's unique feature will help us develop a safe and fast desktop app
+How Rust's unique feature will help us develop a stable, fast and multi-threaded desktop app
 #image("logo/logo.svg", height: 4em)
+PLM - Paradigm analysis report 
 ]
 
-#outline() // TOC
+#outline(
+ title: "Table of Contents",
+)
 
 == Needs
 Before discussing this paradigm, let's briefly recall what DME (Delightful Markdown Experience) desktop app needs. We need to build several features that would greatly increase the experience if they are very optimized to be the fastest. To achieve maximum speed, we need to multi-threading to the maximum, making all IOs tasks in separated threads to avoid waiting on hardware when we could move forward with computation.
@@ -24,6 +29,8 @@ Searching for Markdown files on the disk, reading their content, indexing the fu
 In addition, we want to avoid crashing the app as the whole UI will quit, creating a bad experience for the user, this could happen in case a strange Markdown file containing binary data was opened and the parser wasn't robust enough to support this unusual situation. It's not a like a CLI where if you get an error, you are used to run it again with other arguments, people are going to start it via the start menu and when it crashes, no logs will be immediately visible.
 
 Finally, as the app is going to be open for hours, like a PDF previewer or a web browser, we cannot tolerate memory leaks as it would slowly but surely eat all the available RAM...
+
+#pagebreak()
 
 == Why not just C++ or Java ?
 #quote([You want performance for a desktop app, that's would be easy to build a C++ desktop app with Qt no ?])
@@ -67,17 +74,17 @@ TODO explain quickly and explain why memory management is hard.
 == the basics of memory management
 
 == Why memory safety is a big deal ?
-In a #link("https://msrc.microsoft.com/blog/2019/07/a-proactive-approach-to-more-secure-code/")[Microsoft presentation from 2019], we find that #quote("~70% of the vulnerabilities addressed through a security update each year continue to be memory safety issues"). The Chromium projects #link("https://www.chromium.org/Home/chromium-security/memory-safety/")[also reports] that #quote("Around 70% of our high severity security bugs are memory unsafety problems (that is, mistakes with C/C++ pointers). Half of those are use-after-free bugs.")
+In a #link("https://msrc.microsoft.com/blog/2019/07/a-proactive-approach-to-more-secure-code/")[Microsoft presentation from 2019], we find that #quote("~70% of the vulnerabilities addressed through a security update each year continue to be memory safety issues"). The Chromium projects #link("https://www.chromium.org/Home/chromium-security/memory-safety/")[also reports] that #quote("Around 70% of our high severity security bugs are memory unsafety problems (that is, mistakes with C/C++ pointers). Half of those are use-after-free bugs.").
 
-Memory related bugs generates 
+To only cite a few, memory issues are use-after-free, buffer overflow, memory leaks, data race, ... They can causes big security issues as seen above, and cause app crashes, segmentation faults or data corruption.
 
 == The best of both world
-Rust is a strongly typed and compiled language, it has a strong selling point of being the first language bringing the combination of speed and memory safety at the same time. It was designed for systems programming (browsers, kernels, ...) but now has reached almost all programming areas, even web frontend via webassembly.
+Rust is a strongly typed and compiled language, its strongest selling point is being the first language bringing the combination of speed and memory safety at the same time. It was designed for systems programming (browsers, kernels, ...) but now has reached almost all programming areas, even web frontend via webassembly.
 
 == How it is possible to get both ?
 It doesn't use a garbage collector and doesn't ask the programmer to manually manage the memory. But how it is even possible ? How the program knows when to free heap allocated memory ?
 
-The rust compiler `rustc` implement a new paradigm, including the notion of ownership and lifetimes, checked by a part of the compiler called the *borrow-checker*. Instead of associating only a type and a variable to a resource, like most modern languages, it also tracks who has the ownership of this resource and how long the resource must exist. When the variable is the owner of a resource, the resource will be deallocated when the 
+The rust compiler `rustc` implement a new paradigm, including the notion of ownership and lifetimes, checked by a part of the compiler called the *borrow-checker*. Instead of associating only a type and a variable to a resource, like most modern languages, it also tracks who has the ownership of this resource and how long the resource must exist. When the variable is the owner of a resource, the resource will be deallocated when the variable go out of scope.
 
 the borrow checker
 
@@ -93,10 +100,11 @@ comment on fait pour ne pas avoir de garbage collector
 
 ==== how it is magic
 
-==== le cout du borrow checker
-cout de dev
-courbe apprentissage
-impossible à prouver que c'est safe même si c'est safe, unsafe Rust
+==== The cost of the borrow-checker
+The numerous benefits we get with the borrow-checker also come at a cost:
+// actually no particular cost about time, this seems to be the LLVM and linking taking most of the time, not the borrow-checker...
+- There is learning curve steeper than other languages, this is commonly referred as "fighting the borrow-checker", if you never worked with memory management before it will take time to get into it and start thinking about lifetimes and memory accesses yourself
+- Some approaches like building graph data structures can be safe but the borrow-checker is conservative and we sometimes cannot prove it. This `unsafe` keyword is an escape hatch that allow certain. We can use `unsafe` blocks ourself or use wrapper types of the standard library that maintain `unsafe` sections for us. This is necessary when dealing with hardware or using a C library, we have no other way to access a raw pointer ourself, if we want to write at a precise memory address. There is obviously the possibility to do human errors in this unsafe code and create memory issues, but the surface area to check is far smaller that the entire codebase like in C.
 
 ==== gestion état partagé et communication inter threads
 
