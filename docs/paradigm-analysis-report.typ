@@ -145,13 +145,11 @@ As a programmer you know when your variable is not needed any longer, like how y
 The goal to define the lifetime is to know when the candle is burnt out or the variable is unused. That way, the program can use the memory again. 
 Instead of cleaning ourself, we let the program do it, but we indicate to him when he can cleanup if it is unclear for him
 
-That way, instead of having a garbage collector, the program in itself free the memory it do not need anymore. 
-
-//TODO imrpove this, très brouillons
-
-
 
 ==== how it is magic
+
+If we have the lifetime, and the owner of each variable, it is now possible to remove manual memory management and avoid using a garbage collector.
+The reason behind this is simple. The program can allocate memory dynamically
 
 ==== The cost of the borrow-checker
 The numerous benefits we get with the borrow-checker also come at a cost:
