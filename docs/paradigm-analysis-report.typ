@@ -89,14 +89,67 @@ The rust compiler `rustc` implement a new paradigm, including the notion of owne
 the borrow checker
 
 ==== move + clone + ref + ref mut
+== The concept of ownership
+
+Now, we know what is an shared ressource. While the usage of a mutex it can be a bit heavy.
+In the end you could simple borrow the scissor then give it back when your finished.
+
+Ownership is a programing concept introduced //TODO details
+Each variable has an owner. This owner is responsible for the variable its lifetime and the memory management.
+This would mean we can have a variable, scissor that we can share.
+
+There is mupltple way to share a variable in Rust. The simple way is to move it.
+
+```Rust
+let owner_1  = "scissor";
+let owner_2 = owner;
+```
+A simple assigment is enough to generate a move. Moving means changing the owner. The scissor are now under the responsibity of owner_2. Because it was moved, owner_1 cannot use it again.
+Memory wise, owner_1 was responsible for the block of memory containtg the scissor.
+Instead of moving it, we can instead lent it. In that case:
+
+```Rust
+let owner_1  = "scissor";
+let owner_2 = &owner;
+```
+
+Here owner_2 asked for a reference, which imply a borrow instead of a move.
+Memory-wise it would mean that the owner_2 has an access to the memory block containg "scissor"
+
+This borrow can be mutable or not, meanig owner_2 is allowed to modify it or not.
+```Rust
+let mut owner_1  = "scissor";
+let owner_2 = &owner;
+//Is allowed because we said it's a mutable borrow
+owner_2.append("s")
+```
+
+```Rust
+let mut owner_1  = "scissor";
+let owner_2 = mut & owner;
+//Raise a compilation error because it is not a mutable borrow
+owner_2.append("s")
+```
+
+Now, we know how borrow works. Remember that the owner is responsible for the memory, meaning also dropping (freeing) it.
 
 ==== lifetime
-escabau
-bougie fin du durée de vie, bougie consummée -> nettoyage du socle, réutilisation du socle pour une bougie.
-move de socle move responsabilité de nettoyer
 
-==== memory management
-comment on fait pour ne pas avoir de garbage collector
+To decorate our Chrismas tree, we decided to use candles. While a it is a really nice decoration, a candle end up burning out completly after a while.
+It reached it end of its lifetime. Afterwards, we would need to clean base, and afrterwards reuse it. Program do the same, they allocated memory to a variable, like our base for our candle,
+then when this variable reached it end of its lifetime, the memory is freed so that the program can use it for something else, like reusing our base.
+
+Most program use the scope to dertermine when a variable reached its end of its lifetime. Sometimes, a simple scope is not enough, so we need to extend the default lifetime of the variable.
+As a programmer you know when your variable is not needed any longer, like how you know how long the candle will last. Because it's you who bought it, and your are its owner.
+
+The goal to define the lifetime is to know when the candle is burnt out or the variable is unused. That way, the program can use the memory again. 
+Instead of cleaning ourself, we let the program do it, but we indicate to him when he can cleanup if it is unclear for him
+
+That way, instead of having a garbage collector, the program in itself free the memory it do not need anymore. 
+
+//TODO imrpove this, très brouillons
+
+
 
 ==== how it is magic
 
@@ -129,52 +182,7 @@ Conccurent program always tried to address those issue. Mupltiple people hanging
 
 A simple way to resolve this issue is using what we call a mutex. Mutex is like a lock on something, allowing only one person at a time working on it.
 
-== The concept of ownership
 
-Now, we know what is an shared ressource. While the usage of a mutex it can be a bit heavy.
-In the end you could simple borrow the scissor then give it back when your finished.
-
-Ownership is a programing concept introduced //TODO details
-Each variable has an owner. This owner is responsible for the variable its lifetime and the memory management.
-This would mean we can have a variable, scissor that we can share. 
-
-There is mupltple way to share a variable in Rust. The simple way is to move it. 
-
-```Rust
-let owner_1  = "scissor";
-let owner_2 = owner;
-```
-A simple assigment is enough to generate a move. Moving means changing the owner. The scissor are now under the responsibity of owner_2. Because it was moved, owner_1 cannot use it again. 
-Memory wise, owner_1 was responsible for the block of memory containtg the scissor.
-Instead of moving it, we can instead lent it. In that case:
-
-```Rust
-let owner_1  = "scissor";
-let owner_2 = &owner;
-```
-
-Here owner_2 asked for a reference, which imply a borrow instead of a move. 
-Memory-wise it would mean that the owner_2 has an access to the memory block containg "scissor"
-
-This borrow can be mutable or not, meanig owner_2 is allowed to modify it or not.
-```Rust
-let mut owner_1  = "scissor";
-let owner_2 = &owner;
-//Is allowed because we said it's a mutable borrow
-owner_2.append("s")
-```
-
-```Rust
-let mut owner_1  = "scissor";
-let owner_2 = mut & owner;
-//Raise a compilation error because it is not a mutable borrow
-owner_2.append("s")
-```
-
-Now, we know how borrow works. Remember that the owner is responsible for the memory, meaning also dropping (freeing) it.
-== The concept of lifetime
-
-Now 
 == Memory management
 //TODO move this    
 I have a dream. A programming language where I don't have to manage memory. Most programmers out there knows that there is an easy solution. The garbage collector.
