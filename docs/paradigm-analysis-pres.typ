@@ -40,7 +40,7 @@
 + 3 main features
     - Research
     - Preview
-    - PDF Export
+    - PDF export
 + Maximum of parallelisation
 + Stability and low memory footprint
 
@@ -58,6 +58,7 @@ figure(
 
 ][
 #text(size: 15pt)[
+Tree-Sitter generated HTML example
 ```html
 <pre>
     <code class="language-c">
@@ -101,7 +102,7 @@ void print(int *toshow) {
 int main(void) {
   int a = 23;
   char *msg = "salut";
-  char *ptr = malloc(sizeof(int)*SIZE);
+  char *ptr = malloc(sizeof(int)*SIZE);          
   print(&a);
   free(ptr);
 }
@@ -123,24 +124,31 @@ void print(int *toshow) {
 int main(void) {
   int a = 23;
   char *msg = "salut";
-  char *ptr = malloc(sizeof(int)*SIZE);
+  char *ptr = malloc(sizeof(int)*SIZE);          
   print(&a);
   free(ptr);
 }
 ```
 ])
+
+// -> mentionner garbage collector + manual
 ]
 
-#slide(title: "Why memory safety is big deal")[
+#slide(title: "Why memory safety is a big deal ?")[
+
+#image("imgs/microsoft-cve-memory-portion-per-year.png", width: 36em)
+
+#quote("~70% of the vulnerabilities addressed through a security update each year continue to be memory safety issues"). From #link("https://github.com/microsoft/MSRC-Security-Research/blob/master/presentations/2019_02_BlueHatIL/2019_01%20-%20BlueHatIL%20-%20Trends%2C%20challenge%2C%20and%20shifts%20in%20software%20vulnerability%20mitigation.pdf")[Microsoft presentation from 2019].
 
 ]
-graphique de 70% de microsot CVe
--> mentionner garbage collector + manual
 
-#slide(title: "What's the solution")[
+#slide(title: "What's the solution ?")[
 
+== Rust new paradigms
+- Advanced static analysis at compilation time
+- In addition to a type and variable, each ressource has an *owner* and a *lifetime*
+- Advanced smart pointers, traits and concurrency mecanisms
 ]
-Rust new paradigms
 
 2 concepts
 
@@ -150,7 +158,11 @@ Rust new paradigms
 
 ]
 
-#slide(title: "Recap des 3 sujets")[
-
+#slide(title: "Recap of the magic")[
+  Borrow checker enforced rules
+  - Only one mutable reference at a time
+  - Or several immutables references
+  - References must always be valid
+  - TODO
 ]
 
