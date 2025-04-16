@@ -1,5 +1,9 @@
 #set text(font: "Cantarell")
 #show link: underline
+#let figure = figure.with(
+  kind: "image",
+  supplement: none,
+) // disable prefix in captions
 
 #set page(
   margin: 30pt,
@@ -9,6 +13,7 @@
     context(counter(page).display())
   )
 )
+
 
 #align(center)[
 #text(size: 20pt)[= Ownership and lifetimes]
@@ -173,11 +178,17 @@ comment se passe une allocation dynamique, linteraction entre owner et lifetime.
 
 
 === The cost of the borrow-checker
+
+
 The numerous benefits we get with the borrow-checker also come at a cost:
 // actually no particular cost about time, this seems to be the LLVM and linking taking most of the time, not the borrow-checker...
-- There is learning curve steeper than other languages, this is commonly referred as "fighting the borrow-checker", if you never worked with memory management before it will take time to get into it and start thinking about lifetimes and memory accesses yourself.
-- Some approaches like building graph data structures inherently have cross references, as the borrow-checker is conservative and we cannot prove that accesses will be safe. This `unsafe` keyword is an escape hatch that allow certain. We can use `unsafe` blocks ourself or use wrapper types of the standard library that maintain `unsafe` sections for us. This is necessary when dealing with hardware or using a C library, we have no other way to access a raw pointer ourself, if we want to write at a precise memory address. There is obviously the possibility to do human errors in this unsafe code and create memory issues, but the surface area to check is far smaller that the entire codebase like in C.
-- Rust is not the fastest language for prototype, as it forces us to write safe code, before creating creating a binary. This issue can be partially mitigated with the "Rust easy mode", where you can then use `.clone()` instead of using references, where you call `.unwrap()` on all `Result` or `Option` to "should not be any errors, and just crash if it's not the case".
+- There is *learning curve steeper than other languages*, this is commonly referred as "fighting the borrow-checker", if you never worked with memory management before it will take time to get into it and start thinking about lifetimes and memory accesses yourself.
+#figure(
+  image("imgs/borrow-checker-meme.png", width: 48%),
+  caption: [Meme from #link("https://www.reddit.com/r/rustjerk/comments/i4v5qa/borrow_checker/")[Reddit]],
+)
+- Some approaches like building graph data structures inherently have cross references, as *the borrow-checker is conservative* it prefers to reject correct programs instead of accepting wrong code, if one the rule is not respected it will not compile. #linebreak() There is an escape hatch with the `unsafe` keyword is that access some unsafe operations that need careful consideration, but it doesn't disable the other rest of the compiler checks. We can use `unsafe` blocks ourself or use wrapper types of the standard library that maintain `unsafe` sections for us. As the hardware is inherently unsafe, if when we want to write at a precise memory address, we need to manage some memory ourself. There is obviously the possibility to do errors in this unsafe code and create memory issues, but the surface area to check is far smaller that the entire codebase in a C codebase.
+- *Rust is not the fastest way to build prototypes*, as it forces us to write safe code, before creating creating a binary. This issue can be partially mitigated with the "Rust easy mode", where you can clone everything with `.clone()` instead of using references, where you call `.unwrap()` on all `Result` or `Option` just to make it work: "it should not be any errors, and just crash if it's not the case".
 
 === gestion état partagé et communication inter threads
 
