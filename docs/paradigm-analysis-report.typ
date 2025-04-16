@@ -39,10 +39,9 @@ Finally, as the app is going to be open for hours, like a PDF previewer or a web
 
 == Concurrent programming basics
 
-Fist of all, we need to understand what is conccurent programing and what are the main challenge of it.
-Conccurent programing is about splitting tasks and working on them in parrallel,
+Basic applications do not use the full power of modern processors when they only have one thread of execution. Having multiple CPU cores at disposition enable big performance gain by enabling parallel execution of calculation tasks or doing tasks repartition to separate UIs and background processing. When we start doing concurrent programming, managing several threads of execution come with major challenges.
 
-To understand this, we will compare it to a person responsible to create decoration for a Christmas tree.
+To understand them, let's image a person responsible to create decorations for a Christmas tree.
 
 A classic program would be, a person working first on cutting the paper for the décoration, then fold it and hang on the tree. Rince and repeat.
 In conccurent programing, we would split the work. For example split it in four, so asking people 3 other people to help you. 
@@ -71,6 +70,7 @@ int main(void) {
     char *msg = "salut";
     char *ptr = malloc(sizeof(int) * SIZE);
     print(&a);
+    free(ptr);
     return 0;
 }
 ```
@@ -178,7 +178,6 @@ comment se passe une allocation dynamique, linteraction entre owner et lifetime.
 
 
 === The cost of the borrow-checker
-
 
 The numerous benefits we get with the borrow-checker also come at a cost:
 // actually no particular cost about time, this seems to be the LLVM and linking taking most of the time, not the borrow-checker...

@@ -78,13 +78,44 @@ figure(
 ]
 ]
 
-screenshot du POC
-
 #slide(title: "Basics of concurrency")[
-
+#grid(
+  columns: (2fr, 3fr),
+text()[
+      - 
+    ],
+text()[asdf ],
+)
 ]
-#slide(title: "Basics of memory")[
 
+#slide(title: "Basics of memory management")[
+
+
+#grid(
+  columns: (2fr, 3fr),
+text(size: 15pt)[
+```c
+#define SIZE 5
+
+void print(int *toshow) {
+  printf("%d", *toshow);
+}
+
+int main(void) {
+  int a = 23;
+  char *msg = "salut";
+  char *ptr = malloc(sizeof(int)*SIZE);
+  print(&a);
+  free(ptr);
+  return 0;
+}
+```
+],
+image("schemas/empty.png")
+  )
+
+
+#image("schemas/filled.png")
 ]
 #slide(title: "Why memory safety is big deal")[
 
