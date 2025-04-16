@@ -90,33 +90,47 @@ text()[asdf ],
 
 #slide(title: "Basics of memory management")[
 
-
-#grid(
-  columns: (2fr, 3fr),
-text(size: 15pt)[
+#image("schemas/empty.png")
+#place(
+    bottom + right,
+text(size: 17pt)[
 ```c
-#define SIZE 5
-
 void print(int *toshow) {
   printf("%d", *toshow);
 }
-
 int main(void) {
   int a = 23;
   char *msg = "salut";
   char *ptr = malloc(sizeof(int)*SIZE);
   print(&a);
   free(ptr);
-  return 0;
 }
 ```
-],
-image("schemas/empty.png")
-  )
+])
+]
 
+
+#slide(title: "Basics of memory management")[
 
 #image("schemas/filled.png")
+#place(
+    bottom + right,
+text(size: 17pt)[
+```c
+void print(int *toshow) {
+  printf("%d", *toshow);
+}
+int main(void) {
+  int a = 23;
+  char *msg = "salut";
+  char *ptr = malloc(sizeof(int)*SIZE);
+  print(&a);
+  free(ptr);
+}
+```
+])
 ]
+
 #slide(title: "Why memory safety is big deal")[
 
 ]
