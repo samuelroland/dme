@@ -1,9 +1,28 @@
-= Concurrent programming, ownership and lifetime
+= Ownership and lifetime
++ logo + slogan
 
-== Introduction
-The aim of this document is to explain the the concept of ownership and lifetime and how they can be helpful in the context of concurrent programming.
+How Rust's unique feature will help us develop a stable, fast and multi-threaded desktop app
 
-It is expected that the reader knows what is conccurent programming.
+== The project
+3 features + maximum parallélisation + stabilité + pas trop mémoire consommé
+screenshot du POC
 
-== Lifetime, our lifeline
-Lifetime issssssss 
+== Basics of concurrency
+== Basics of memory
+== Why memory safety is big deal
+graphique de 70% de microsot CVe
+-> mentionner garbage collector + manual
+
+== What's the solution
+Rust new paradigms
+
+2 concepts
+
++ section why...
+
+== concurrency tricks
+
+== Recap des 3 sujets
+
+
+
