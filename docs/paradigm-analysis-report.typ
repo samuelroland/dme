@@ -227,5 +227,6 @@ All time measures must be made on Samuel's machine with a 12 cores processor and
 
 *Research*
 + Building the full index of all headings of MDN content (Mozilla Developers Network documentation) should take less than *20s* (#link("https://github.com/mdn/content")[MDN GitHub repository], containing ~13000 `.md` files with ~95000 headings)
-+ Searching for "MAT2 resume" by copy-paste must take less than 500ms to find the `~/HEIG/year1/MAT2/resume.md`
++ Searching for "Array constructor with a single parameter" (found on #link("https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/Array#array_constructor_with_a_single_parameter")[this page]) by copy-paste must take less than 500ms to find the page on `Array() constructor`, showing the section `Array constructor with a single parameter`.
++ The partial search of "Array constructor single" should also list in the result the same section mentionned in the previous point
 
