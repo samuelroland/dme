@@ -12,7 +12,7 @@
 
 #align(center)[
 #text(size: 20pt)[= Ownership and lifetimes]
-How Rust's unique feature will help us develop a stable, fast and multi-threaded desktop app
+How Rust's unique features will help us develop a stable, fast and multi-threaded desktop app
 #image("logo/logo.svg", height: 4em)
 PLM - Paradigm analysis report 
 ]
