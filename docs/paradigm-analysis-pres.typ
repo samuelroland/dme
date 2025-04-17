@@ -214,7 +214,7 @@ fn longest<'a>(x: &'a str, y: &'a str) -> &'a str {
 ]
 
 #slide(title: "Memory management")[
-- No manual management
+- No manual management of memory
 - No garbage collector
 - Use lifetime and ownership to ensure no memory leak
 
