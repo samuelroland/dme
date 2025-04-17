@@ -44,8 +44,8 @@ Basic applications do not use the full power of modern processors when they only
 To understand them, let's imagine a person responsible to create decorations for a Christmas tree.
 
 A classic program would be, a person working first on cutting the paper for the décoration, then fold it and hang on the tree. Rince and repeat.
-In concurrent programing, we would split the work with your family. Asking people 3 other people to help you with the 3/4 of the work. You work on your decoration, then hang on the tree. Simple, no ? Sadly, you only have one scissor, and only one of you can hang decoration on tree at a time.
-In this metaphor, the scissor would be a shared ressource, and hanging decoration on the tree is a critical section. How you gonna manage this scissor without cutting the fingers of your mum when everyone want to use it ? We need protection mecanism to make sure the scissor is used safely and the usage is interupted by someone else as it could do damages on the tree or the fingers...
+In concurrent programing, we would split the work with your family. Asking people 3 other people to help you with the 3/4 of the work. You work on your decoration, then hang on the tree and everyone else do the same thing. Simple, no ? Sadly, you only have one scissor, and only one of you can hang decoration on tree at a time.
+In this metaphor, the scissor would be a shared ressource, and hanging decoration on the tree is a critical section. How you gonna manage this scissor without cutting the fingers of your mum when everyone want to use it ? We need protection mechanisms to make sure the scissor is used safely and the usage is interupted by someone else as it could do damages on the tree or the fingers...
 
 The root issue is that we don't control the order of execution, as the OS scheduler is the master in this situation. Standard solutions to control access to shared memory are mutex and semaphors but they can also be misused.
 
@@ -55,7 +55,8 @@ We generally represent the virtual memory of a process, with this kind of diagra
 
 #image("schemas/empty.png")
 
-Give this simplified piece of C code, we find numerous allocations in several places.
+#pagebreak()
+Given this piece of C code, we find numerous allocations in several memory locations.
 ```c
 #define SIZE 5
 
@@ -81,6 +82,8 @@ We have 3 pointers:
 
 #image("schemas/filled.png")
 
+In C, we manage dynamic memory ourself, hence the `malloc` and `free`. We can access and manage raw pointers ourself, and that's the core of memory unsafety because this is error-prone. If we want to avoid manual memory management, the question then is #quote("but how do you know when and how to release memory ?? Is it really possible to determine that at compile time ?").
+
 == Why not just C++ or Java ?
 #quote([You want performance for a desktop app, that's would be easy to build a C++ desktop app with Qt no ?])
 
@@ -102,65 +105,76 @@ In a #link("https://github.com/microsoft/MSRC-Security-Research/blob/master/pres
 To only cite a few, memory issues are use-after-free, buffer overflow, memory leaks, data race, ... They can causes big security issues as seen above, and cause app crashes, segmentation faults or data corruption.
 
 == Performance + Memory safety: the best of both world
-Rust is a strongly typed and compiled language, its strongest selling point is being the first language bringing the combination of speed and memory safety at the same time. It was designed for systems programming (browsers, kernels, ...) but now has reached almost all programming areas, even web frontend via webassembly.
+Rust is a strongly typed and compiled language, its strongest selling point is being the first language bringing the combination of speed and memory safety at the same time. It was designed for systems programming (browsers, kernels, ...) but now has reached almost all programming areas: mobile, embedded programming, desktop apps, GUIs, games, low level libraries, even web frontend via WebAssembly !
 
 == Why it is possible to get both ?
 It doesn't use a garbage collector and doesn't ask the programmer to manually manage the memory. But how it is even possible ? How the program knows when to free heap allocated memory ?
 
-The rust compiler `rustc` implement a new paradigm, including the notion of ownership and lifetimes, checked by a part of the compiler called the *borrow-checker*. Instead of associating only a type and a variable to a resource, like most modern languages, it also tracks who has the ownership of this resource and how long the resource must exist. When the variable is the owner of a resource, the resource will be deallocated when the variable go out of scope.
+The Rust compiler `rustc` implement a new paradigm, including the notion of ownership and lifetimes, checked by a part of the compiler called the *borrow-checker*. Instead of associating only a type and a variable to a resource, like most modern languages, it also tracks who has the ownership of this resource and how long the resource must exist. When the variable is the owner of a resource, the resource will be deallocated when the variable go out of scope.
 
-the borrow checker
+#pagebreak()
+
+*What are the steps of the Rust compiler ?*
+
+#image("schemas/compiler-steps.png")
+
+We can see the first standard steps (source code, tokens, AST) we have seen in PLP course, but we have several *Intermediate Representation* (IR), a *HIR* (High-level IR), *THIR* (Typed High-level IR), the *MIR* (Mid-level IR) and finally the target the Rust compiler the *LLVM IR*. LLVM is another big project serving as the backend for many compilers (including GHC), enabling to target many plateforms and architectures, to finally get machine code in a binary file. The borrow-checker is reasoning on the MIR, we'll see an example below.
 
 === The concept of ownership
 
-Now, we know what is an shared ressource. While the usage of a mutex it can be a bit heavy.
-In the end you could simple borrow the scissor then give it back when your finished.
+The first main concept of *ownership* is that in addition to a type and variable, each resource has an *owner*. This owner is responsible for the variable during its lifetime and the memory management. But the owner is not the only one that need to access, use or modify the associated resource. It has to share with certain conditions with other variables.
 
-Ownership is a programing concept introduced //TODO details
-Each variable has an owner. This owner is responsible for the variable its lifetime and the memory management.
+// In the end you could simple borrow the scissor then give it back when your finished.
+
 This would mean we can have a variable, scissor that we can share.
 
-There is mupltple way to share a variable in Rust. The simple way is to move it.
+There are multiple ways to share a variable in Rust. The simple way is to move it. A simple assigment is enough to generate a move. Moving means changing the owner. The scissor are now under the responsibity of `sam`. Because it was moved, `patrick` cannot use it anymore.
 
 ```rust
 let patrick  = "scissor";
 let sam = patrick;
 ```
-A simple assigment is enough to generate a move. Moving means changing the owner. The scissor are now under the responsibity of owner_2. Because it was moved, owner_1 cannot use it again.
-Memory wise, owner_1 was responsible for the block of memory containtg the scissor.
-Instead of moving it, we can instead lent it. In that case:
+
+Memory wise, `patrick` was responsible for the block of memory containing the scissor. Instead of moving it, we can instead lend it. In that case we use the `&` to take a reference of `patrick`:
 
 ```rust
 let patrick  = "scissor";
 let sam = &patrick;
 ```
 
-Here owner_2 asked for a reference, which imply a borrow instead of a move.
-Memory-wise it would mean that the owner_2 has an access to the memory block containg "scissor"
+Here `sam` asked for a reference, which imply a borrow instead of a move. The owner is accepting a temporary access from `sam` in read-only.
+Memory-wise it would mean that the `sam` has an pointer to the memory block containg "scissor", this is just a pointer but as pointer in C++ they are always valid (can be dereferenced at any time without any issue) and therefore cannot be null.
 
-This borrow can be mutable or not, meanig owner_2 is allowed to modify it or not.
+But what if the borrower want to change the value ?
+
+This borrow can also be mutable, meaning `sam` is allowed to modify it. This piece of code will fail to compile with an error on line 3 #quote("cannot borrow `*sam` as mutable, as it is behind a `&` reference"), indicating that `push_str` (method to append chars at the end) cannot borrow the resource as mutable as this is a immutable reference !
 ```rust
-let mut patrick = String::from("scissor");
+let patrick = String::from("scissor");
 let sam = &patrick;
-// cannot borrow `*sam` as mutable, as it is behind a `&` reference
 sam.push_str("s")
 ```
 
+By adding the keyword `mut` after the `&` reference symbol, we describe taking a mutable reference. This also means we need to have a mutable object at the start, adding a `mut` in first line `let mut patrick` becomes also necessary.
 ```rust
 let mut patrick = String::from("scissor");
 let sam = &mut patrick;
 sam.push_str("s")
 ```
 
-Now, we know how borrow works. Remember that the owner is responsible for the memory, meaning also dropping (freeing) it.
+Now, we know how the ownership, moves and borrows work. Remember that the owner is responsible for the memory, meaning also dropping (freeing) it. In this case, the String struct implement the `Drop` trait with a `drop` method freeing the dynamic memory containing the variable-length vector of chars.
+
+In brief, the rules enforced by the borrow-checker are
++ Only one owner per resource
++ Only one mutable reference at a time
++ Or several immutable references, but not both
++ References must always be valid
 
 === The concept of lifetime
 
 To decorate our Chrismas tree, we decided to use candles. While a it is a really nice decoration, a candle end up burning out completly after a while.
-It reached it end of its lifetime. Afterwards, we would need to clean base, and afterwards reuse it. Program do the same, they allocated memory to a variable, like our base for our candle,
-then when this variable reached it end of its lifetime, the memory is freed so that the program can use it for something else, like reusing our base.
+It reached it end of its lifetime. Afterwards, we would need to clean base, and afterwards reuse it. Program do the same, they allocated memory to a variable, like our base for our candle, then when this variable reached it end of its lifetime, the memory is freed so that the program can use it for something else, like reusing our base.
 
-Most program use the scope to dertermine when a variable reached its end of its lifetime. Sometimes, a simple scope is not enough, so we need to extend the default lifetime of the variable.
+Most program use the scope to determine when a variable reached its end of its lifetime. Sometimes, a simple scope is not enough, so we need to extend the default lifetime of the variable.
 As a programmer you know when your variable is not needed any longer, like how you know how long the candle will last. Because it's you who bought it, and your are its owner.
 
 The goal to define the lifetime is to know when the candle is burnt out or the variable is unused. That way, the program can use the memory again. 
@@ -168,11 +182,11 @@ Instead of cleaning ourself, we let the program do it, but we indicate to him wh
 
 === Why we don't need a garbage collector nor manual memory management ?
 
-Compilator first define the owner of each variable. That way, the owner will be able to drop the variable when it reached the end of its lifetime, essentially freeing the memory allocated to for the variable. The owner can change via `move` but at the end we will only have one.
+Compiler first define the owner of each variable. That way, the owner will be able to drop the variable when it reached the end of its lifetime, essentially freeing the memory allocated to for the variable. The owner can change via `move` but at the end we will only have one.
 
-Behind the scene, when we allocate memory on the heap, the compilator will also determine when this memory will freed, adding in the source code the drop instruction when the associated pointer lifetime ends. While it is not directly visible, displaying the code generated by the compilator allow us to see hidden instructions.
+Behind the scene, when we allocate memory on the heap, the compiler will also determine when this memory will freed, adding in the source code the drop instruction when the associated pointer lifetime ends. While it is not directly visible, displaying the code generated by the compiler allow us to see hidden instructions.
 
-This piece of code just stores the value `2` on the heap (Box is essentially a forced dynamic allocation), and then move the ownership of this pointer to another variable `_a`, making usage of `m` afterwards unauthorized.
+This piece of code just stores the value `2` on the heap (the smart pointer `Box` is essentially a forced dynamic allocation), and then move the ownership of this pointer to another variable `_a`, making usage of `m` afterwards unauthorized.
 ```rust
 fn main() {
     let m = Box::new(2);
@@ -180,7 +194,7 @@ fn main() {
 }
 ```
 
-If we look at the generate code in intermediate step (MIR or Mid-level Intermediate Representation), by running `rustc -Z unpretty="mir" src/main.rs` with the nightly compiler, we get this:
+If we look at the code display of the internal representation MIR (Mid-level Intermediate Representation), by running `rustc -Z unpretty="mir" src/main.rs` with the nightly compiler, we get this:
 ```rust
 fn main() -> () {
     let mut _0: ();
@@ -209,28 +223,33 @@ fn main() -> () {
 ```
 We see the `m` variable used as `_1` and `_a` variable used as `_2`. We can see in `bb1` makes the `move` explicit, then there is an added instruction drop, calling the destructor on `_2` (`_a`) as it's the new owner and there is thus only one drop!
 
-=== The cost of the borrow-checker
-
-The numerous benefits we get with the borrow-checker also come at a cost:
-// actually no particular cost about time, this seems to be the LLVM and linking taking most of the time, not the borrow-checker...
-- There is *learning curve steeper than other languages*, this is commonly referred as "fighting the borrow-checker", if you never worked with memory management before it will take time to get into it and start thinking about lifetimes and memory accesses yourself.
-#figure(
-  image("imgs/borrow-checker-meme.png", width: 48%),
-  caption: [Meme from #link("https://www.reddit.com/r/rustjerk/comments/i4v5qa/borrow_checker/")[Reddit]],
-)
-- Some approaches like building graph data structures inherently have cross references, as *the borrow-checker is conservative* it prefers to reject correct programs instead of accepting wrong code, if one the rule is not respected it will not compile. #linebreak() There is an escape hatch with the `unsafe` keyword is that access some unsafe operations that need careful consideration, but it doesn't disable the other rest of the compiler checks. We can use `unsafe` blocks ourself or use wrapper types of the standard library that maintain `unsafe` sections for us. As the hardware is inherently unsafe, if when we want to write at a precise memory address, we need to manage some memory ourself. There is obviously the possibility to do errors in this unsafe code and create memory issues, but the surface area to check is far smaller that the entire codebase in a C codebase.
-- *Rust is not the fastest way to build prototypes*, as it forces us to write safe code, before creating creating a binary. This issue can be partially mitigated with the "Rust easy mode", where you can clone everything with `.clone()` instead of using references, where you call `.unwrap()` on all `Result` or `Option` just to make it work: "it should not be any errors, and just crash if it's not the case".
-
-=== Fearless concurrency
+#pagebreak()
+== Fearless concurrency
+Ownership and lifetimes are actually linked to how concurrency has been designed in Rust, even concurrency mechanism this is not necessarily handled by the borrow-checker.
 
 compilateur va utiliser les lifetimes pour savoir quand ya plus de ref le mutex et pour savoir quand libérer la mémoire.
 
 auto unlock au drop du mutex
 
-== Specifications for DME
-Here the specifications of features we'll develop along the following weeks. We will work with [Tree-Sitter](https://tree-sitter.github.io/tree-sitter/) and [Tauri](https://tauri.app/).
+=== The cost of the borrow-checker
 
-=== Functional goals
+The numerous benefits we get with the borrow-checker, including the zero cost at runtime, also come at a cost elsewhere:
+// actually no particular cost about time, this seems to be the LLVM and linking taking most of the time, not the borrow-checker...
++ There is *learning curve steeper than other languages*, this is commonly referred as "fighting the borrow-checker", if you never worked with memory management before it will take time to get into it and start thinking about lifetimes and memory accesses yourself. Some developers might have never thought about these important details before and might be confused in the beginning.
+  #figure(
+      image("imgs/borrow-checker-meme.png", width: 48%),
+      caption: [Meme from #link("https://www.reddit.com/r/rustjerk/comments/i4v5qa/borrow_checker/")[Reddit]],
+  )
++ Some approaches like building graph data structures inherently have cross references, as we cannot have mutable references and immutable references at the same time, it means we could never change the graph content. As *the borrow-checker is conservative* it prefers to reject correct programs instead of accepting wrong code, if one the rule is not respected it will not compile. #linebreak() *There is an escape hatch* with the `unsafe` keyword is that access some unsafe operations that need careful consideration, but it doesn't disable the other rest of the compiler checks. We can use `unsafe` blocks ourself or use wrapper types of the standard library that maintain `unsafe` sections for us. As the hardware is inherently unsafe, if when we want to write at a precise memory address, we need to manage some memory ourself. There is obviously the possibility to do errors in this unsafe code and create memory issues, but the surface area to check is far smaller that the entire codebase in a C codebase.
++ *Rust is not the fastest way to build prototypes*, as it forces us to write safe code, before creating creating a binary. This issue can be partially mitigated with the "Rust easy mode", where you can clone everything with `.clone()` instead of using references, where you call `.unwrap()` on all `Result` or `Option` just to make it work: "it should not be any errors, and just crash if it's not the case".
+
+
+#pagebreak()
+
+= Specifications for DME
+Here the specifications of features we'll develop along the following weeks. We will work with #link("https://tree-sitter.github.io/tree-sitter/")[Tree-Sitter] and #link("https://tauri.app/")[Tauri].
+
+== Functional goals
 *Preview*
 + We can preview any Markdown file with DME, by double-clicking on any `.md` file or running `dme test.md` in a GUI desktop app. Images and tables are supported.
 + The preview of code is done via Tree-Sitter: the syntaxes for C, C++, Java, Rust, Bash are built into DME (other languages are not supported for the start)
@@ -247,7 +266,7 @@ Here the specifications of features we'll develop along the following weeks. We 
 + The research results are reloaded on every keypress, unlike a search engine
 + All documents under the user home directory can be found, except those present in folder starting with a dot (ignored `~/.config` i.e.)
 
-=== Non-functional goals
+== Non-functional goals
 All time measures must be made on Samuel's machine with a 12 cores processor and 16GB of RAM, with at least 5GB of unused RAM.
 
 *Preview*
@@ -264,10 +283,10 @@ All time measures must be made on Samuel's machine with a 12 cores processor and
 + Searching for "Array constructor with a single parameter" (found on #link("https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/Array#array_constructor_with_a_single_parameter")[this page]) by copy-paste must take less than 500ms to find the page on `Array() constructor`, showing the section `Array constructor with a single parameter`.
 + The partial search of "Array constructor single" should also list in the result the same section mentionned in the previous point
 
-=== Applying the paradigm on DME
+== Applying the paradigm on DME
 Keeping in the safe Rust subset (not using any `unsafe`), we'll be "forced" to follow of the ownership and lifetimes principles enforced by the borrow-checker. We will implement the 3 bigs features concurrently, to maximize the speed of each part.
 
-== Sources
+= Sources
 Our work is mainly based on our experience, reading several articles, documentations and watching videos. Here is what were the most useful to us in our research
 - The Rust book - https://doc.rust-lang.org/book/ - mostly chapters 4 + 10.3 + 14 + 15
 - The friendly and contextual error messages, once we learned the basic vocabulary, they really help to understand why the borrow-checker is not happy
