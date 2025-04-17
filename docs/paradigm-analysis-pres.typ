@@ -154,6 +154,29 @@ int main(void) {
 
 + section why...
 
+#slide(title: "Lifetimes")[
+//usful example ?
+```c
+// library.h
+void save_file(float* buffer, char* filename);
+
+// main.c
+float* buffer = malloc(SIZE * sizeof(float));
+char* filename = "test.txt";
+save_file(buffer, filename);
+free(buffer); // changed ? need to be freed ???
+```
+
+```rust
+fn save_file(buffer: &[f32], filename: &str) {}
+
+fn main() {
+    let buffer = [10.2, 3.2, 5.2];
+    let filename = "test.txt";
+    save_file(&buffer, filename);
+}
+```
+]
 #slide(title: "Concurrency - thread-safe data structures")[
 
 #grid(
