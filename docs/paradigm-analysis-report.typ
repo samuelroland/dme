@@ -105,7 +105,7 @@ In a #link("https://github.com/microsoft/MSRC-Security-Research/blob/master/pres
 To only cite a few, memory issues are use-after-free, buffer overflow, memory leaks, data race, ... They can causes big security issues as seen above, and cause app crashes, segmentation faults or data corruption.
 
 == Performance + Memory safety: the best of both world
-Rust is a strongly typed and compiled language, its strongest selling point is being the first language bringing the combination of speed and memory safety at the same time. It was designed for systems programming (browsers, kernels, ...) but now has reached almost all programming areas: mobile, embedded programming, desktop apps, GUIs, games, low level libraries, even web frontend via WebAssembly !
+Rust is a strongly typed and compiled language, its strongest selling point is being the first language bringing the combination of speed and memory safety at the same time. It was designed for systems programming (browsers, kernels, ...) but now has reached almost all programming areas: mobile, embedded programming, desktop apps, GUIs, games, low level libraries, even web frontend via WebAssembly ! It's advanced static analysis at compilation time also removes some of the memory checks are runtime (such as pointer nullness checks).
 
 == Why it is possible to get both ?
 It doesn't use a garbage collector and doesn't ask the programmer to manually manage the memory. But how it is even possible ? How the program knows when to free heap allocated memory ?
@@ -226,6 +226,57 @@ We see the `m` variable used as `_1` and `_a` variable used as `_2`. We can see 
 #pagebreak()
 == Fearless concurrency
 Ownership and lifetimes are actually linked to how concurrency has been designed in Rust, even concurrency mechanism this is not necessarily handled by the borrow-checker.
+
+The concurrency is also linked to smart pointers, we'll only touch a few here to show how far the safety has been pushed in the design of the standard library as well. What you need to know in short:
+- There are 2 ways to communicate between threads:
+  + *with channels* like Go of various types such as `mpsc` (multiple producer, single consumer) allowing several threads to send something on a channel, but with *only one thread allowing to receive the messages*.
+  + *with shared memory* wrapped in `Mutex` or with special atomic types. Only types marked with the trait (interface in Rust) `Send` can be moved between from one to another thread. The `Sync` trait is used to mark types that can be synchronized with threads. Any non thread-safe type doesn't have the `Send` trait. These 2 traits are just marker, they don't ask to implement any method (that's similar to the `Cloneable` interface in Java).
+
+In C++ in the PCO course, it was so easy to forget a mutex around a shared state as the compiler cannot warn us. Given an object of this `MegaCounter` class, 
+```cpp
+class MegaCounter {
+protected:
+    int some_counter;
+
+public:
+    void save(int counter) {
+        some_counter = counter;
+    }
+    int get() {
+        return some_counter;
+    }
+};
+```
+
+```rust
+struct MegaCounter {
+    some_counter: Mutex<i32>,
+}
+impl MegaCounter {
+    fn new() -> Self { MegaCounter { some_counter: Mutex::new(0) } }
+
+    fn increment(&self, add: i32) {
+        // guard: MutexGuard<i32>
+        let mut guard = self.some_counter.lock().unwrap();
+        // mutable dereference to i32 via DerefMut trait
+        *guard += add;
+        // drop(guard);
+    }
+
+    fn get(&self) -> i32 {
+      *self.some_counter.lock().unwrap()
+    }
+}
+fn main() {
+    let counter = Arc::new(MegaCounter::new());
+    for i in 0..10 {
+        let arc = counter.clone();
+        thread::spawn(move || {
+            arc.increment(i);
+        });
+    }
+}
+```
 
 compilateur va utiliser les lifetimes pour savoir quand ya plus de ref le mutex et pour savoir quand libérer la mémoire.
 
