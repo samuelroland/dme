@@ -85,7 +85,7 @@ Tree-Sitter generated HTML example
   columns: (2fr, 3fr),
 text()[
       - Multiple processes
-      - Shared ressources
+      - Shared resources
       - Critical section
     ],
     [
@@ -152,8 +152,8 @@ int main(void) {
 == Rust new paradigms
 - Invented at Mozilla, released 1.0 in 2015, most loved programming language Stackoverflow survey from 2016
 - Advanced static analysis at compilation time
-- In addition to a type and variable, each ressource has an *owner* and a *lifetime*
-- Advanced smart pointers, traits and concurrency mecanisms
+- In addition to a type and variable, each resource has an *owner* and a *lifetime*
+- Advanced smart pointers, traits and concurrency mechanisms
 ]
 
 #slide(title: "Lifetimes and Ownership")[
@@ -177,9 +177,9 @@ free(buffer); // changed ? need to be freed ???
     [
 - Borrow
 - Rules of borrow
-  - Only one owner per ressource
+  - Only one owner per resource
   - Only one mutable reference at a time
-  - Or several immutables references
+  - Or several immutable references
   - References must always be valid
 
   ],
@@ -215,7 +215,7 @@ sam.push_str("s")
 ]
 #slide(title: "Lifetimes")[
 - Each variable has a lifetime
-- Compilator determine this to add instructions
+- Compiler determine this to add instructions
 - Possible to annotate lifetime
 
 ```rust
@@ -406,7 +406,7 @@ fn main() {
 #slide(title: "Recap of the magic")[
   Borrow checker enforced rules
   - Only one mutable reference at a time
-  - Or several immutables references
+  - Or several immutable references
   - References must always be valid
 
   Why Rust ?
