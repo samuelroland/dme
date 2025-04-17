@@ -124,35 +124,34 @@ This would mean we can have a variable, scissor that we can share.
 
 There is mupltple way to share a variable in Rust. The simple way is to move it.
 
-```Rust
-let owner_1  = "scissor";
-let owner_2 = owner;
+```rust
+let patrick  = "scissor";
+let sam = patrick;
 ```
 A simple assigment is enough to generate a move. Moving means changing the owner. The scissor are now under the responsibity of owner_2. Because it was moved, owner_1 cannot use it again.
 Memory wise, owner_1 was responsible for the block of memory containtg the scissor.
 Instead of moving it, we can instead lent it. In that case:
 
-```Rust
-let owner_1  = "scissor";
-let owner_2 = &owner;
+```rust
+let patrick  = "scissor";
+let sam = &patrick;
 ```
 
 Here owner_2 asked for a reference, which imply a borrow instead of a move.
 Memory-wise it would mean that the owner_2 has an access to the memory block containg "scissor"
 
 This borrow can be mutable or not, meanig owner_2 is allowed to modify it or not.
-```Rust
-let mut owner_1  = "scissor";
-let owner_2 = &owner;
-//Is allowed because we said it's a mutable borrow
-owner_2.append("s")
+```rust
+let mut patrick = String::from("scissor");
+let sam = &patrick;
+// cannot borrow `*sam` as mutable, as it is behind a `&` reference
+sam.push_str("s")
 ```
 
-```Rust
-let mut owner_1  = "scissor";
-let owner_2 = mut & owner;
-//Raise a compilation error because it is not a mutable borrow
-owner_2.append("s")
+```rust
+let mut patrick = String::from("scissor");
+let sam = &mut patrick;
+sam.push_str("s")
 ```
 
 Now, we know how borrow works. Remember that the owner is responsible for the memory, meaning also dropping (freeing) it.

@@ -149,7 +149,7 @@ int main(void) {
 #slide(title: "What's the solution ?")[
 
 == Rust new paradigms
-- Invented at Mozilla in 
+- Invented at Mozilla, released 1.0 in 2015, most loved programming language Stackoverflow survey from 2016
 - Advanced static analysis at compilation time
 - In addition to a type and variable, each ressource has an *owner* and a *lifetime*
 - Advanced smart pointers, traits and concurrency mecanisms
@@ -170,11 +170,46 @@ free(buffer); // changed ? need to be freed ???
 ]
 
 #slide(title: "Ownership")[
+  #grid(columns: 2,
+  row-gutter: 45pt,
+  column-gutter: 41pt,
+    [
 - Borrow
 - Rules of borrow
+  - Only one owner per ressource
   - Only one mutable reference at a time
   - Or several immutables references
   - References must always be valid
+
+  ],
+  [
+```rust
+let patrick  = "scissor";
+let sam = patrick;
+```
+    #line()
+```rust
+let patrick  = "scissor";
+let sam = &patrick;
+```
+],
+[
+```rust
+let mut patrick = String::from("scissor");
+let sam = &patrick;
+// cannot borrow `*sam` as mutable, as it is behind a `&` reference
+sam.push_str("s")
+```
+  ],
+    [
+
+```rust
+let mut patrick = String::from("scissor");
+let sam = &mut patrick;
+sam.push_str("s")
+```
+  ]
+  )
 
 ]
 #slide(title: "Lifetimes")[

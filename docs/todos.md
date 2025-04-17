@@ -47,4 +47,6 @@ checklist de règles enforced du borrowchecker
 
 add deadlock mention in limit
 
-just a pointer
+a ref is just a pointer never null and always valid
+
+passer tout à languagetool !
