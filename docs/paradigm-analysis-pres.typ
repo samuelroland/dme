@@ -159,7 +159,7 @@ int main(void) {
 #grid(
   columns: (1fr, 1fr),
     block[
-      In Java
+      In Java, OUPS...
 ```java
 public class WebServer {
     ArrayList<User> users;
@@ -197,7 +197,7 @@ impl Server {
 #grid(
   columns: (1fr, 1fr),
     block[
-      In Java
+      In C++, OUPS...
 ```cpp
 class MegaCounter {
 protected:
@@ -244,9 +244,6 @@ fn main() {
 }
 ```
 ]])
-
- #text(fill: red, size: 20pt)[Error: `Rc<Vec<String>>` cannot be shared between threads safely within `Server`,
-   required for `&Server` to implement `std::marker::Send`]
 ]
 
 
