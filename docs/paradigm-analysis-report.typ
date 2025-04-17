@@ -41,23 +41,21 @@ Finally, as the app is going to be open for hours, like a PDF previewer or a web
 
 Basic applications do not use the full power of modern processors when they only have one thread of execution. Having multiple CPU cores at disposition enable big performance gain by enabling parallel execution of calculation tasks or doing tasks repartition to separate UIs and background processing. When we start doing concurrent programming, managing several threads of execution come with major challenges.
 
-To understand them, let's image a person responsible to create decorations for a Christmas tree.
+To understand them, let's imagine a person responsible to create decorations for a Christmas tree.
 
 A classic program would be, a person working first on cutting the paper for the décoration, then fold it and hang on the tree. Rince and repeat.
-In conccurent programing, we would split the work. For example split it in four, so asking people 3 other people to help you. 
-You each work on your decoration, then hang on the tree. SImple, no ?
+In concurrent programing, we would split the work with your family. Asking people 3 other people to help you with the 3/4 of the work. You work on your decoration, then hang on the tree. Simple, no ? Sadly, you only have one scissor, and only one of you can hang decoration on tree at a time.
+In this metaphor, the scissor would be a shared ressource, and hanging decoration on the tree is a critical section. How you gonna manage this scissor without cutting the fingers of your mum when everyone want to use it ? We need protection mecanism to make sure the scissor is used safely and the usage is interupted by someone else as it could do damages on the tree or the fingers...
 
-Sadly, you only have one scissor, and only one of you can hang decoration on tree at a time.
-The scissor would be a shared ressource, and hanging decoration a tree a critical section.
-
-Conccurent program always tried to address those issue. Mupltiple people hanging decoration on the tree could be dangerous, while there is only one scissor so the other have to wait on it.
-
-A simple way to resolve this issue is using what we call a mutex. Mutex is like a lock on something, allowing only one person at a time working on it.
-
+The root issue is that we don't control the order of execution, as the OS scheduler is the master in this situation. Standard solutions to control access to shared memory are mutex and semaphors but they can also be misused.
 
 == Memory allocation basics
 
-Give this simplified piece of C code, we find numerous allocation.
+We generally represent the virtual memory of a process, with this kind of diagram. At left, the different regions dedicated to store the loaded code, the static variables and constants in BSS and Data, and finally the stack and the heap.
+
+#image("schemas/empty.png")
+
+Give this simplified piece of C code, we find numerous allocations in several places.
 ```c
 #define SIZE 5
 
@@ -75,8 +73,11 @@ int main(void) {
 }
 ```
 
-TODO explain quickly and explain why memory management is hard.
-#image("schemas/empty.png")
+If we paused the program on `free`, the memory content would look like this. `a`, `msg`, `ptr` and `toshow` are local variables stored on the task.
+We have 3 pointers:
+- `msg` towards read-only data section pointing on `salut\0`
+- `ptr` the dynamically allocated zone on the heap via `malloc`
+- `toshow` pointing to the other variable `a` on the stack as we gave its address when calling the function
 
 #image("schemas/filled.png")
 
@@ -88,7 +89,7 @@ TODO explain quickly and explain why memory management is hard.
 
 The problem here is that the G++ cannot verify we are doing things correctly, as long as types are handled correctly, it can compile and the developer might detect nefarious bugs only in production. It's so easy to forget to protect a shared state, or associate a mutex in your head with 2 variables and forget a third one you just added.
 
-For critical section where speed is really key, when using low level functions from C, we regularly take the risk of forgetting to free heap allocated memory, leading to memory leaks.
+For critical section where speed is really key, when using low level functions from C, we regularly take the risk of forgetting to freedeeeee heap allocated memory, leading to memory leaks.
 
 #quote([You want to avoid memory safety issues ? Stop managing memory yourself and use Java !])
 
@@ -240,7 +241,7 @@ auto unlock au drop du mutex
 
 
 == Specifications for DME
-Here the specifications of features we'll develop along the following weeks.
+Here the specifications of features we'll develop along the following weeks. We will work with [Tree-Sitter](https://tree-sitter.github.io/tree-sitter/) and [Tauri](https://tauri.app/).
 
 === Functional goals
 *Preview*
@@ -277,4 +278,14 @@ All time measures must be made on Samuel's machine with a 12 cores processor and
 + The partial search of "Array constructor single" should also list in the result the same section mentionned in the previous point
 
 === Applying the paradigm on DME
-Keeping in the safe Rust subset (not using any `unsafe`), we'll be "forced" to follow of the ownership and lifetimes principles enforced by the borrow-checker. We will implement the 3 bigs features conccurently, to maximize the speed of each part.
+Keeping in the safe Rust subset (not using any `unsafe`), we'll be "forced" to follow of the ownership and lifetimes principles enforced by the borrow-checker. We will implement the 3 bigs features concurrently, to maximize the speed of each part.
+
+== Sources
+Our work is mainly based on our experience, reading several articles, documentations and watching videos. Here is what were the most useful to us in our research
+- The Rust book - https://doc.rust-lang.org/book/ - mostly chapters 4 + 10.3 + 14 + 15
+- The friendly and contextual error messages, once we learned the basic vocabulary, they really help to understand why the borrow-checker is not happy
+- Rust book experiment - https://rust-book.cs.brown.edu/ - mostly chapter 4 with better explanations and visualisations of memory, ownership and lifetimes
+- #link("https://www.technologyreview.com/2023/02/14/1067869/rust-worlds-fastest-growing-programming-language/")[How Rust went from a side project to the world’s most-loved programming language]
+- #link("https://www.youtube.com/watch?v=HG1fppexRMA")[The Rust Borrow Checker - A Deep Dive - Nell Shamrell-Harrington, Microsoft] - Conference on Youtube
+- #link("https://www.youtube.com/watch?v=Ju7v6vgfEt8")[How the Rust Compiler Works, a Deep Dive - RareSkills conf]
+
