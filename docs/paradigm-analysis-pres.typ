@@ -83,9 +83,11 @@ Tree-Sitter generated HTML example
 #grid(
   columns: (2fr, 3fr),
 text()[
-      - 
+      - Multiple process
+      - Shared ressource
+      - Critical section
+
     ],
-text()[asdf ],
 )
 ]
 
@@ -150,11 +152,7 @@ int main(void) {
 - Advanced smart pointers, traits and concurrency mecanisms
 ]
 
-2 concepts
-
-+ section why...
-
-#slide(title: "Lifetimes")[
+#slide(title: "Lifetimes and Ownership")[
 //usful example ?
 ```c
 // library.h
@@ -177,6 +175,106 @@ fn main() {
 }
 ```
 ]
+
+#slide(title: "Ownership")[
+- Borrow
+- Rules of borrow
+  - Only one mutable reference at a time
+  - Or several immutables references
+  - References must always be valid
+
+]
+#slide(title: "Lifetimes")[
+- Each variable has a lifetime
+- Compilator determine this to add instructions
+- Possible to annotate lifetime
+
+```rust
+fn longest(x: &str, y: &str) -> &str {
+  if x.len() > y.len() {
+      x
+  } else {
+      y
+  }
+}
+```
+]
+
+#slide(title: "Lifetimes")[
+```rust
+fn longest<'a>(x: &'a str, y: &'a str) -> &'a str {
+  if x.len() > y.len() {
+      x
+  } else {
+      y
+  }
+}
+```
+
+]
+
+#slide(title: "Memory management")[
+- No manual management
+- No garbage collector
+- Use lifetime and ownership to ensure no memory leak
+
+]
+
+#slide(title: "Memory management")[
+Who knows how a compilator transform source code in machine language ?
+]
+
+#slide(title: "Memory management")[
+
+
+
+#grid(
+  columns: (1fr, 1fr),
+    block[
+      Code rust
+```rust
+fn main() {
+    let _m = Box::new(2);
+}
+```
+],
+
+block[
+  #text(size: 19pt)[
+  HIR
+  ```rust
+[prelude_import]
+use ::std::prelude::rust_2015::*;
+#[macro_use]
+extern crate std;
+
+fn main() { let _m = Box::new(2); }
+```
+]])]
+
+
+
+#slide(title: "Memory management")[
+MIR :
+```rust
+fn main() -> () {
+    let mut _0: ();
+    let _1: std::boxed::Box<i32>;
+    scope 1 {
+        debug _m => _1;
+    }
+    bb0: {
+        _1 = Box::<i32>::new(const 2_i32) -> [return: bb1, unwind continue];
+    }
+    bb1: {
+        drop(_1) -> [return: bb2, unwind continue];
+    }
+    bb2: { return; }
+}
+```
+
+]
+
 #slide(title: "Concurrency - thread-safe data structures")[
 
 #grid(
@@ -275,7 +373,7 @@ fn main() {
   - Only one mutable reference at a time
   - Or several immutables references
   - References must always be valid
-  - TODO
+  - Dynamic memory allocation with hidden free / drop
 
   Combining no garbage collector and no manual memory management
   - Minimal overhead at runtime
