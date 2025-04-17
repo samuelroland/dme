@@ -110,7 +110,7 @@ Rust is a strongly typed and compiled language, its strongest selling point is b
 == Why is it possible to get both ?
 It doesn't use a garbage collector and doesn't ask the programmer to manually manage the memory. But how it is even possible ? How the program knows when to free heap allocated memory ?
 
-The Rust compiler `rustc` implements a new paradigm, including the notion of ownership and lifetimes, checked by a part of the compiler called the *borrow-checker*. Instead of associating only a type and a variable to a resource, like most modern languages, it also tracks who has the ownership of this resource and how long the resource must exist. When the variable is the owner of a resource, the resource will be deallocated when the variable goes out of scope.
+The Rust compiler `rustc` implements a new paradigm, including the notion of ownership and lifetimes, checked by a part of the compiler called the *borrow-checker*. Instead of associating only a type and a variable to a resource, like most modern languages, it also tracks who has the ownership of this resource and how long the resource must exist. When the end of the lifetime of the resource is reached, the owner will free the the memory allocated to the resource.
 
 #pagebreak()
 
@@ -178,6 +178,7 @@ As a programmer you know when your variable is not needed any longer, like how y
 The goal to define the lifetime is to know when the candle is burnt out or the variable is unused. That way, the program can use the memory again. 
 Instead of cleaning ourselves, we let the program do it, but we indicate to him when he can cleanup if it is unclear for him
 
+#pagebreak()
 === Why we don't need a garbage collector nor manual memory management ?
 
 Compiler first define the owner of each variable. That way, the owner will be able to drop the variable when it reached the end of its lifetime, essentially freeing the memory allocated to for the variable. The owner can change via `move` but at the end we will only have one.
