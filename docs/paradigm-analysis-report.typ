@@ -29,9 +29,9 @@ PLM - Paradigm analysis report
 == Project needs
 Before discussing this paradigm, let's briefly recall what DME (Delightful Markdown Experience) desktop app needs. As a Markdown previewer on steroids, we need to develop a pretty optimized program to bring a great browsing experience. To achieve maximum speed, we need to implement multi-threading to the maximum, making all IOs tasks in separated threads to avoid waiting on hardware when we could move forward with computation.
 
-Searching for Markdown files on the disk, reading their content, indexing the headings, building a research index, is appropriate to sharing Markdown files across several threads to build this index as fast as possible on the first startup. In addition to building this index, we want to have a very fast rendering on the displayed Markdown document. Generating the highlighted code snippets can take a bit of time considering we'll use Tree-Sitter to have top-quality tokenization, that's another work to be distributed among several threads.
+Searching for Markdown files on the disk, reading their content, indexing the headings, and building a research index, is appropriate to sharing Markdown files across several threads to build this index as fast as possible on the first startup. In addition to building this index, we want to have a very fast rendering on the displayed Markdown document. Generating the highlighted code snippets can take a bit of time considering we'll use Tree-Sitter to have top-quality tokenization, that's another work to be distributed among several threads.
 
-In addition, we want to avoid crashing the app as the whole UI will quit, creating a bad experience for the user, this could happen in case a strange Markdown file containing binary data was opened and the parser wasn't robust enough to support this unusual situation. It's not a like a CLI where if you get an error, you are used to run it again with other arguments, people are going to start it via the start menu and when it crashes, no logs will be immediately visible.
+In addition, we want to avoid crashing the app as the whole UI will quit, creating a bad experience for the user. This could happen in case a strange Markdown file containing binary data was opened, and the parser wasn't robust enough to support this unusual situation. It's not a like a CLI where if you get an error, you are used to running it again with other arguments, people are going to start it via the start menu, and when it crashes, no logs will be immediately visible.
 
 Finally, as the app is going to be open for hours, like a PDF previewer or a web browser, we cannot tolerate memory leaks as it would slowly but surely eat all the available RAM...
 
@@ -39,12 +39,12 @@ Finally, as the app is going to be open for hours, like a PDF previewer or a web
 
 == Concurrent programming basics
 
-Basic applications do not use the full power of modern processors when they only have one thread of execution. Having multiple CPU cores at disposition enable big performance gain by enabling parallel execution of calculation tasks or doing tasks repartition to separate UIs and background processing. When we start doing concurrent programming, managing several threads of execution come with major challenges.
+Basic applications do not use the full power of modern processors when they only have one thread of execution. Having multiple CPU cores at disposition enable big performance gain by enabling parallel execution of calculation tasks or doing task distribution to separate UIs and background processing. When we start doing concurrent programming, managing several threads of execution comes with major challenges.
 
 To understand them, let's imagine a person responsible to create decorations for a Christmas tree.
 
-A classic program would be, a person working first on cutting the paper for the décoration, then fold it and hang on the tree. Rince and repeat.
-In concurrent programing, we would split the work with your family. Asking people 3 other people to help you with the 3/4 of the work. You work on your decoration, then hang on the tree and everyone else do the same thing. Simple, no ? Sadly, you only have one scissor, and only one of you can hang decoration on tree at a time.
+A classic program would be, a person working first on cutting the paper for the decoration, then fold it and hang on the tree. Rince and repeat.
+In concurrent programming, we would split the work with your family. Asking people 3 other people to help you with the 3/4 of the work. You work on your decoration, then hang on the tree and everyone else do the same thing. Simple, no ? Sadly, you only have one scissor, and only one of you can hang decoration on tree at a time.
 In this metaphor, the scissor would be a shared ressource, and hanging decoration on the tree is a critical section. How you gonna manage this scissor without cutting the fingers of your mum when everyone want to use it ? We need protection mechanisms to make sure the scissor is used safely and the usage is interupted by someone else as it could do damages on the tree or the fingers...
 
 The root issue is that we don't control the order of execution, as the OS scheduler is the master in this situation. Standard solutions to control access to shared memory are mutex and semaphors but they can also be misused.
