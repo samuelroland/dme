@@ -105,7 +105,7 @@ In a #link("https://github.com/microsoft/MSRC-Security-Research/blob/master/pres
 To only cite a few, memory issues are use-after-free, buffer overflow, memory leaks, data race, ... They can causes big security issues as seen above, and cause app crashes, segmentation faults or data corruption.
 
 == Performance + Memory safety: the best of both world
-Rust is a strongly typed and compiled language, its strongest selling point is being the first language bringing the combination of speed and memory safety at the same time. It was designed for systems programming (browsers, kernels, ...) but now has reached almost all programming areas: mobile, embedded programming, desktop apps, GUIs, games, low level libraries, even web frontend via WebAssembly ! It's advanced static analysis at compilation time also removes some of the memory checks are runtime (such as pointer nullness checks).
+Rust is a strongly typed and compiled language, its strongest selling point is being the first language bringing the combination of speed and memory safety at the same time. It was designed for systems programming in mind (browsers, kernels, ...) by a developer at Mozilla, released 1.0 in 2015, but now has reached almost all programming areas: mobile, embedded programming, desktop apps, GUIs, games, low level libraries, even web frontend via WebAssembly ! It's advanced static analysis at compilation time also removes some of the memory checks are runtime (such as pointer nullness checks).
 
 == Why it is possible to get both ?
 It doesn't use a garbage collector and doesn't ask the programmer to manually manage the memory. But how it is even possible ? How the program knows when to free heap allocated memory ?
@@ -231,6 +231,7 @@ The concurrency is also linked to smart pointers, we'll only touch a few here to
 - There are 2 ways to communicate between threads:
   + *with channels* like Go of various types such as `mpsc` (multiple producer, single consumer) allowing several threads to send something on a channel, but with *only one thread allowing to receive the messages*.
   + *with shared memory* wrapped in `Mutex` or with special atomic types. Only types marked with the trait (interface in Rust) `Send` can be moved between from one to another thread. The `Sync` trait is used to mark types that can be synchronized with threads. Any non thread-safe type doesn't have the `Send` trait. These 2 traits are just marker, they don't ask to implement any method (that's similar to the `Cloneable` interface in Java).
+- We cannot just send normal references between threads, because we don't have the static garrantees that the referenced object will live long enough for the reference to be always valid! If the owning thread finishes before another that has a reference, we could risk unallocated memory access! We need smart pointers for that such as `Arc`.
 
 In C++ in the PCO course, it was so easy to forget a mutex around a shared state as the compiler cannot warn us. Given an object of this `MegaCounter` class, 
 ```cpp
@@ -248,10 +249,14 @@ public:
 };
 ```
 
+In Rust, the data can be wrapped in a Mutex, which implement `Sync`, having a `MegaCounter` again here.
 ```rust
 struct MegaCounter {
     some_counter: Mutex<i32>,
 }
+```
+The `increment` implementation shows us that we have forced to call `lock` to get a `MutexGuard` to finally allow us to access the counter. The unlock of the mutex is done automatically in the `Drop` implementation on the `MutexGuard`, this will be ran at the end of the block.
+```rust
 impl MegaCounter {
     fn new() -> Self { MegaCounter { some_counter: Mutex::new(0) } }
 
@@ -267,6 +272,9 @@ impl MegaCounter {
       *self.some_counter.lock().unwrap()
     }
 }
+```
+If we want to send a MegaCounter across threads, we need to use `Arc` (Atomically Reference Counter), it is like a `shared_ptr<T>` in C++, but the internal counter of references is managed atomically. The non atomic variant `Rc` is not `Send` and cannot be used here.
+```rust
 fn main() {
     let counter = Arc::new(MegaCounter::new());
     for i in 0..10 {
@@ -278,9 +286,7 @@ fn main() {
 }
 ```
 
-compilateur va utiliser les lifetimes pour savoir quand ya plus de ref le mutex et pour savoir quand libérer la mémoire.
-
-auto unlock au drop du mutex
+Rust is safe in many places but cannot garantee that deadlock can happen, if we call `lock` twice without the end of the block or without an explicit `drop` call, the thread will be stucked.
 
 === The cost of the borrow-checker
 
