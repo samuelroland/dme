@@ -154,9 +154,101 @@ int main(void) {
 
 + section why...
 
-#slide(title: "concurrency tricks")[
+#slide(title: "Concurrency - thread-safe data structures")[
 
+#grid(
+  columns: (1fr, 1fr),
+    block[
+      In Java
+```java
+public class WebServer {
+    ArrayList<User> users;
+
+    @POST
+    public Response createUser() {
+        users.add(new User("John"));
+        //...
+    }
+}
+```],
+
+block[
+  #text(size: 19pt)[
+  In Rust
+```rust
+struct Server {
+    users: Rc<Vec<String>>,
+}
+impl Server {
+    fn start(&self) {
+        thread::spawn(move || {
+            println!("{:?}", self.users);
+        });
+    }
+}
+```
+]])
+
+ #text(fill: red, size: 20pt)[Error: `Rc<Vec<String>>` cannot be shared between threads safely within `Server`,
+   required for `&Server` to implement `std::marker::Send`]
 ]
+
+#slide(title: "Concurrency - Mutexes and Arc")[
+#grid(
+  columns: (1fr, 1fr),
+    block[
+      In Java
+```cpp
+class MegaCounter {
+protected:
+    int some_counter;
+
+public:
+    void save(int counter) {
+        some_counter = counter;
+    }
+    int get() {
+        return some_counter;
+    }
+};
+```],
+
+block[
+  #text(size: 12pt)[
+  In Rust
+```rust
+struct MegaCounter {
+    some_counter: Mutex<i32>,
+}
+impl MegaCounter {
+    fn new() -> Self { MegaCounter { some_counter: Mutex::new(0) } }
+
+    fn increment(&self, add: i32) {
+        // guard: MutexGuard<i32>
+        let mut guard = self.some_counter.lock().unwrap();
+        // mutable dereference to i32 via DerefMut trait
+        *guard += add;
+        // drop(guard);
+    }
+
+    fn get(&self) -> i32 { *self.some_counter.lock().unwrap() }
+}
+fn main() {
+    let counter = Arc::new(MegaCounter::new());
+    for i in 0..10 {
+        let arc = counter.clone();
+        thread::spawn(move || {
+            arc.increment(i);
+        });
+    }
+}
+```
+]])
+
+ #text(fill: red, size: 20pt)[Error: `Rc<Vec<String>>` cannot be shared between threads safely within `Server`,
+   required for `&Server` to implement `std::marker::Send`]
+]
+
 
 #slide(title: "Recap of the magic")[
   Borrow checker enforced rules
@@ -164,5 +256,10 @@ int main(void) {
   - Or several immutables references
   - References must always be valid
   - TODO
+
+  Combining no garbage collector and no manual memory management
+  - Minimal overhead at runtime
+  - Whole package of memory safety issues removed
+  - Data-races fixed, easier multi-threading
 ]
 
