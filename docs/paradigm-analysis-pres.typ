@@ -83,11 +83,13 @@ Tree-Sitter generated HTML example
 #grid(
   columns: (2fr, 3fr),
 text()[
-      - Multiple process
-      - Shared ressource
+      - Multiple processes
+      - Shared ressources
       - Critical section
-
     ],
+    [
+    #image("schemas/concurrency.png")
+  ]
 )
 ]
 
@@ -147,6 +149,7 @@ int main(void) {
 #slide(title: "What's the solution ?")[
 
 == Rust new paradigms
+- Invented at Mozilla in 
 - Advanced static analysis at compilation time
 - In addition to a type and variable, each ressource has an *owner* and a *lifetime*
 - Advanced smart pointers, traits and concurrency mecanisms
@@ -163,16 +166,6 @@ float* buffer = malloc(SIZE * sizeof(float));
 char* filename = "test.txt";
 save_file(buffer, filename);
 free(buffer); // changed ? need to be freed ???
-```
-
-```rust
-fn save_file(buffer: &[f32], filename: &str) {}
-
-fn main() {
-    let buffer = [10.2, 3.2, 5.2];
-    let filename = "test.txt";
-    save_file(&buffer, filename);
-}
 ```
 ]
 
@@ -198,6 +191,9 @@ fn longest(x: &str, y: &str) -> &str {
   }
 }
 ```
+
+#text(fill: red, size: 20pt)[Error: missing lifetime specifier,
+   this function's return type contains a borrowed value, but the signature does not say whether it is borrowed from `x` or `y`]
 ]
 
 #slide(title: "Lifetimes")[
@@ -221,7 +217,7 @@ fn longest<'a>(x: &'a str, y: &'a str) -> &'a str {
 ]
 
 #slide(title: "Memory management")[
-Who knows how a compilator transform source code in machine language ?
+  What are the steps of the Rust compiler ?
 ]
 
 #slide(title: "Memory management")[
@@ -229,47 +225,36 @@ Who knows how a compilator transform source code in machine language ?
 
 
 #grid(
-  columns: (1fr, 1fr),
-    block[
-      Code rust
+  columns: (2fr, 1fr),
+    image("schemas/compiler-steps.png"),
+    block(inset: 14pt)[
 ```rust
 fn main() {
-    let _m = Box::new(2);
+  let m = Box::new(2);
+  let _a  = m;
 }
 ```
-],
-
-block[
-  #text(size: 19pt)[
-  HIR
-  ```rust
-[prelude_import]
-use ::std::prelude::rust_2015::*;
-#[macro_use]
-extern crate std;
-
-fn main() { let _m = Box::new(2); }
-```
-]])]
+]
+)]
 
 
 
 #slide(title: "Memory management")[
-MIR :
+MIR Simplified
 ```rust
 fn main() -> () {
     let mut _0: ();
     let _1: std::boxed::Box<i32>;
     scope 1 {
-        debug _m => _1;
-    }
-    bb0: {
-        _1 = Box::<i32>::new(const 2_i32) -> [return: bb1, unwind continue];
+        debug m => _1;
+        scope 2 {
+            debug _a => _2;
+        }
     }
     bb1: {
-        drop(_1) -> [return: bb2, unwind continue];
+        _2 = move _1;
+        drop(_2) -> [return: bb2, unwind continue];
     }
-    bb2: { return; }
 }
 ```
 
@@ -314,7 +299,7 @@ impl Server {
    required for `&Server` to implement `std::marker::Send`]
 ]
 
-#slide(title: "Concurrency - Mutexes and Arc")[
+#slide(title: "Concurrency - Mutex and Arc")[
 #grid(
   columns: (1fr, 1fr),
     block[
@@ -335,8 +320,7 @@ public:
 ```],
 
 block[
-  #text(size: 12pt)[
-  In Rust
+  #text(size: 13pt)[
 ```rust
 struct MegaCounter {
     some_counter: Mutex<i32>,
@@ -352,7 +336,8 @@ impl MegaCounter {
         // drop(guard);
     }
 
-    fn get(&self) -> i32 { *self.some_counter.lock().unwrap() }
+    fn get(&self) -> i32
+    { *self.some_counter.lock().unwrap() }
 }
 fn main() {
     let counter = Arc::new(MegaCounter::new());
@@ -360,9 +345,7 @@ fn main() {
         let arc = counter.clone();
         thread::spawn(move || {
             arc.increment(i);
-        });
-    }
-}
+        }); } }
 ```
 ]])
 ]
