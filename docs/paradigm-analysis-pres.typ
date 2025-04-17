@@ -59,6 +59,7 @@ figure(
 ][
 #text(size: 15pt)[
 Tree-Sitter generated HTML example
+#image("imgs/tree-sitter-codeblock-demo.png", width: 114%)
 ```html
 <pre>
     <code class="language-c">
@@ -276,6 +277,22 @@ fn main() {
 
 #slide(title: "Memory management")[
 MIR Simplified
+
+#place(
+    top + right,
+```rust
+
+
+
+
+
+
+fn main() {
+  let m = Box::new(2);
+  let _a  = m;
+}
+```
+  )
 ```rust
 fn main() -> () {
     let mut _0: ();
@@ -391,9 +408,10 @@ fn main() {
   - Only one mutable reference at a time
   - Or several immutables references
   - References must always be valid
-  - Dynamic memory allocation with hidden free / drop
 
-  Combining no garbage collector and no manual memory management
+  Why Rust ?
+  - Combining no garbage collector and no manual memory management
+  - Dynamic memory allocation with hidden free / drop
   - Minimal overhead at runtime
   - Whole package of memory safety issues removed
   - Data-races fixed, easier multi-threading
