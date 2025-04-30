@@ -1,6 +1,21 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
+:root {
+    font-family: Cantarell, Inter, Avenir, Helvetica, Arial, sans-serif;
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 400;
+
+    color: black;
+    background-color: white;
+
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-text-size-adjust: 100%;
+}
 
 /*Remove Tailwind typography's backticks around inline code snippets */
 :not(pre) code::before, :not(pre) code::after {
@@ -16,6 +31,13 @@ blockquote p::before, blockquote p::after {
 	content: none !important;
 }
 
+.nice-gradient {
+		background: linear-gradient(to right, #0f191eff 0%, #394e98ff  100%);
+		-webkit-background-clip: text;
+		-webkit-text-fill-color: transparent;
+		width: fit-content;
+    max-width: 100%;
+}
 
 /*Style used in documentations. */
 .table td, .table th {
@@ -47,4 +69,16 @@ blockquote p::before, blockquote p::after {
 
 .function {
     color: #ed5fad;
+}
+
+.punctuation {
+    color: #ed6630;
+}
+
+a {
+    color: #394e98ff
+}
+
+a:hover {
+    color: #535bf2;
 }

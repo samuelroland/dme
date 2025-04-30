@@ -1,17 +1,37 @@
 <script setup lang="ts">
+import Home from "./Home.vue"
 import { ref, onMounted } from "vue";
-import { invoke } from "@tauri-apps/api/core";
+import { invoke, listen } from "@tauri-apps/api/core";
 
 const mdcontent = ref("");
-const name = ref("");
+const appInfo = ref({});
 
 async function getMarkdown() {
-    mdcontent.value = await invoke("load_markdown_as_html", { path: "/home/sam/HEIG/year3/HPC/HPC-labs/lab02/report/report.md" });
+    const result = await invoke("get_file_to_show");
+    console.log("got a result", result)
+    if (result != null) {
+        mdcontent.value = result
+    }
 }
-onMounted(() => { getMarkdown() })
+
+async function getAppInfo() {
+    const result = await invoke("get_app_info");
+    console.log("got app_info", result)
+    if (result != null) {
+        appInfo.value = result
+    }
+}
+
+onMounted(() => {
+    getAppInfo()
+    getMarkdown()
+})
 </script>
 
 <template>
+    <div class="flex justify-center" v-if="mdcontent.value == null">
+        <Home :appInfo="appInfo" />
+    </div>
     <article class="prose prose-base sm:prose-base md:prose-lg prose-zinc max-w-full
 	prose-h1:!mt-2
 	prose-h2:!mt-3
@@ -49,35 +69,9 @@ onMounted(() => { getMarkdown() })
 
 	prose-pre:whitespace-pre-wrap
 	selection:bg-blue-100 selection:text-black justify-center flex">
-        <div v-html="mdcontent" class="m-auto p-2 sm:m-5 md:m-10 lg:my-10 lg:mx-40 max-w-[1300px]">
+
+        <div v-if="mdcontent.value != null" v-html="mdcontent"
+            class="m-auto p-2 sm:m-5 md:m-10 lg:my-10 lg:mx-40 max-w-[1300px]">
         </div>
     </article>
 </template>
-
-<style>
-:root {
-    font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
-    font-size: 16px;
-    line-height: 24px;
-    font-weight: 400;
-
-    color: black;
-    background-color: white;
-
-    font-synthesis: none;
-    text-rendering: optimizeLegibility;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    -webkit-text-size-adjust: 100%;
-}
-
-a {
-    font-weight: 500;
-    color: #646cff;
-    text-decoration: inherit;
-}
-
-a:hover {
-    color: #535bf2;
-}
-</style>
