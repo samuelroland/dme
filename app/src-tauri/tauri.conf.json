@@ -22,13 +22,25 @@
         }
     },
     "bundle": {
+        "fileAssociations": [
+            {
+                "description": "Markdown",
+                "ext": [
+                    "md"
+                ],
+                "role": "Viewer"
+            }
+        ],
+        "linux": {
+            "rpm": {
+                "desktopTemplate": "./ship/dme.desktop"
+            }
+        },
         "active": true,
-        "targets": "all",
+        "targets": "rpm",
         "icon": [
             "icons/32x32.png",
             "icons/128x128.png",
-            "icons/128x128@2x.png",
-            "icons/icon.icns",
             "icons/icon.ico"
         ]
     }

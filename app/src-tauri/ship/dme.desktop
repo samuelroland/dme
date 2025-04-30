@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=DME
+GenericName=Delightful Markdown Experience
+Exec={{exec}}
+Icon={{icon}}
+Terminal=false
+Type=Application
+MimeType=text/markdown;text/plain
+StartupNotify=true
