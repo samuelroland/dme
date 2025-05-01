@@ -45,7 +45,7 @@ impl SyntaxHighlighterAdapter for TreeSitterHighlighter {
 
         attributes: HashMap<String, String>,
     ) -> io::Result<()> {
-        html::write_opening_tag(output, "pre", attributes);
+        let _ = html::write_opening_tag(output, "pre", attributes);
         Ok(())
     }
 

@@ -34,10 +34,16 @@
         "linux": {
             "rpm": {
                 "desktopTemplate": "./ship/dme.desktop"
+            },
+            "deb": {
+                "desktopTemplate": "./ship/dme.desktop"
             }
         },
         "active": true,
-        "targets": "rpm",
+        "targets": [
+            "rpm",
+            "deb"
+        ],
         "icon": [
             "icons/32x32.png",
             "icons/128x128.png",

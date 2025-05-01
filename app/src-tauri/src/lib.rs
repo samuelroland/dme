@@ -38,17 +38,17 @@ fn get_file_to_show() -> Option<Result<String, String>> {
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 fn load_markdown_as_html(path: &str) -> Result<String, String> {
-    // Some("salut !".to_string())
     read_to_string(path)
         .as_ref()
         .map(|c| convert_md_to_html(c))
-        .map_err(|_| "Failed to load file".to_string())
+        .map_err(|_| format!("Failed to load file {}", path).to_string())
 }
 
 fn convert_md_to_html(raw: &str) -> String {
     let highlighter = TreeSitterHighlighter {};
     let mut options = Options::default();
     options.extension.table = true;
+    options.extension.tasklist = true;
 
     let plugins = ComrakPlugins {
         render: comrak::RenderPlugins {
