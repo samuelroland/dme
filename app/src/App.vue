@@ -1,24 +1,43 @@
 <script setup lang="ts">
 import Home from "./Home.vue"
 import { ref, onMounted } from "vue";
-import { invoke, listen } from "@tauri-apps/api/core";
+import type { Ref } from "vue";
+import { invoke } from "@tauri-apps/api/core";
 
-const mdcontent = ref("");
-const appInfo = ref({});
+export type AppInfo = {
+    version: string
+}
+const mdcontent = ref(null);
+const appInfo: Ref<AppInfo> = ref({ version: "??" });
+
+//type Some<T> = T
+//type None = null
+//type Option<T> = Some<T> | None
+
+type Result<T> = {
+    Ok?: T
+    Err?: string
+}
 
 async function getMarkdown() {
-    const result = await invoke("get_file_to_show");
-    console.log("got a result", result)
-    if (result != null) {
-        mdcontent.value = result
+    const result = await invoke("get_file_to_show") as Result<string>;
+    if (result) {
+        if (result.Err) {
+            mdcontent.value = "<h2 class='text-red-300'>" + result.Err + "</h2>"
+        } else {
+            mdcontent.value = result.Ok
+            console.log("inserted file", mdcontent.value)
+        }
     }
+    console.log("got a result", result)
+    console.log("got a result", JSON.stringify(result))
 }
 
 async function getAppInfo() {
     const result = await invoke("get_app_info");
     console.log("got app_info", result)
     if (result != null) {
-        appInfo.value = result
+        appInfo.value = result as AppInfo
     }
 }
 
@@ -29,10 +48,10 @@ onMounted(() => {
 </script>
 
 <template>
-    <div class="flex justify-center" v-if="mdcontent.value == null">
+    <div class="flex justify-center" v-if="mdcontent == null">
         <Home :appInfo="appInfo" />
     </div>
-    <article class="prose prose-base sm:prose-base md:prose-lg prose-zinc max-w-full
+    <article v-if="mdcontent != null" class="prose prose-base sm:prose-base md:prose-lg prose-zinc max-w-full
 	prose-h1:!mt-2
 	prose-h2:!mt-3
 	prose-h3:!mt-3
@@ -70,8 +89,7 @@ onMounted(() => {
 	prose-pre:whitespace-pre-wrap
 	selection:bg-blue-100 selection:text-black justify-center flex">
 
-        <div v-if="mdcontent.value != null" v-html="mdcontent"
-            class="m-auto p-2 sm:m-5 md:m-10 lg:my-10 lg:mx-40 max-w-[1300px]">
+        <div v-html="mdcontent" class="m-auto p-2 sm:m-5 md:m-10 lg:my-10 lg:mx-40 max-w-[1300px]">
         </div>
     </article>
 </template>
