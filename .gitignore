@@ -4,3 +4,4 @@ docs/schemas/memory-places
 docs/schemas/empty.excalidraw
 debug.md
 tools.md
+app/src-tauri/gen/android

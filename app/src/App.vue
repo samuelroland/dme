@@ -44,6 +44,13 @@ async function getAppInfo() {
 onMounted(() => {
     getAppInfo()
     getMarkdown()
+    // TODO: remove this hacky polling based watch mode
+    document.addEventListener("keydown", (e) => {
+        if (e.key === 'r') {
+            getMarkdown()
+        }
+    })
+    setInterval(getMarkdown, 3000)
 })
 </script>
 
