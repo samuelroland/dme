@@ -1,0 +1,21 @@
+[package]
+name = "dme-core"
+version = "0.1.0"
+description = "The core library of DME, backing up the CLI and Tauri app."
+authors = ["you"]
+edition = "2021"
+
+# Recommended configuration
+# https://tauri.app/concept/size/#cargo-configuration
+[profile.dev]
+incremental = true # Compile your binary in smaller steps.
+[lib]
+name = "dme_core"
+
+[dependencies]
+comrak = "0.39.0"
+inkjet = { version = "0.11.1", default-features = false, features = [
+    "html",
+    "language-bash",
+    "language-c",
+] }
