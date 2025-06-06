@@ -311,6 +311,7 @@ name = "dme-core"
 version = "0.1.0"
 dependencies = [
  "comrak",
+ "etcetera 0.10.0",
  "once_cell",
  "regex",
  "tree-sitter",
@@ -349,6 +350,17 @@ dependencies = [
  "cfg-if",
  "home",
  "windows-sys 0.48.0",
+]
+
+[[package]]
+name = "etcetera"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "26c7b13d0780cb82722fd59f6f57f925e143427e4a75313a6c77243bf5326ae6"
+dependencies = [
+ "cfg-if",
+ "home",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -1134,7 +1146,7 @@ checksum = "ecac37fa0ad459807b15524c1cb5d07fbd1e90399809b59a7056d093cec9f229"
 dependencies = [
  "anyhow",
  "cc",
- "etcetera",
+ "etcetera 0.8.0",
  "fs4",
  "indoc",
  "libloading",
