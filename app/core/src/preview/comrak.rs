@@ -11,7 +11,7 @@ pub struct ComrakParser<'a> {
 }
 
 impl<'a> ComrakParser<'a> {
-    fn new(content: &'a str) -> Self {
+    pub fn new(content: &'a str) -> Self {
         ComrakParser { source: content }
     }
 }

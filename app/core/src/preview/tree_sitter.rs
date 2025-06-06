@@ -19,7 +19,7 @@ use std::{
 };
 use tree_sitter::Language;
 use tree_sitter_highlight::{Highlight, HighlightConfiguration, Highlighter, HtmlRenderer};
-use tree_sitter_loader::{CompileConfig, Config, Loader};
+use tree_sitter_loader::{CompileConfig, Config, Loader, PackageJSON};
 
 use crate::util::git::GitRepos;
 
@@ -46,14 +46,35 @@ static TREE_SITTER_GRAMMARS_FOLDER: Lazy<PathBuf> = Lazy::new(|| {
 /// A highlighter for a specific language, once loaded it can highlight multiple code snippets of
 /// the same programming language
 pub(crate) struct TreeSitterHighlighter<'a> {
+    /// The language identifier
     lang: &'a str,
+    repos_path: PathBuf,
+    loader: Loader,
+    /// The TSLanguage loaded from the dynamic library for a specific grammar
+    language: Language,
 }
 
 impl<'a> TreeSitterHighlighter<'a> {
-    /// Try to create a new highlighter based
+    /// Try to create a new highlighter based on a
     pub fn new(lang: &'a str) -> Result<Self, String> {
-        if Self::check_lang_grammar_installed(lang) {
-            Ok(TreeSitterHighlighter { lang })
+        let repos_path = TreeSitterGrammarsManager::get_repos_for_lang(lang)?
+            .path()
+            .clone();
+        if repos_path.exists() {
+            let mut loader = Loader::new().map_err(|e| e.to_string())?;
+            // Even if the repos exists, it might not be a valid Tree-Sitter syntax
+            let language = loader
+                .load_language_at_path(CompileConfig::new(&repos_path, None, None))
+                .map_err(|e| e.to_string())?;
+
+            let language_configs = loader.find_language_configurations_at_path(&repos_path, false);
+
+            Ok(TreeSitterHighlighter {
+                lang,
+                repos_path,
+                loader,
+                language,
+            })
         } else {
             Err("The grammar {lang} is not installed locally".to_string())
         }
@@ -64,41 +85,52 @@ impl<'a> TreeSitterHighlighter<'a> {
         self.lang
     }
 
-    fn check_lang_grammar_installed(lang: &'a str) -> bool {
-        false
+    /// Parse highlight names from queries files as we need to give a list of recognized
+    /// names, we want to accept all of them
+    /// highlight name is something like "type.builtin" "variable.local" "keyword" "constant"
+    /// The whole list of supported names for Helix themes are here
+    /// https://docs.helix-editor.com/themes.html#scopes
+    fn parse_highlighting_names() -> Vec<String> {
+        vec![]
+        // 2 sub directories, maybe should be taken from
+        // let parser_directory = grammar_directory.join("src");
+        // let highlight_queries_content =
+        //     read_to_string(grammar_directory.join(HIGHLIGHT_QUERIES_PATH)).unwrap();
+        //
+        // let mut highlight_names_in_queries: HashSet<&str> = HashSet::new();
+        // HIGHLIGHT_NAMES_PARSER_REGEX
+        //     .find_iter(&highlight_queries_content)
+        //     .for_each(|n| {
+        //         highlight_names_in_queries.insert(&n.as_str()[1..]);
+        //     });
+        // highlight_names_in_queries
+        //     .into_iter()
+        //     .collect::<Vec<String>>()
     }
 
-    fn parse_highlighing_queries() -> Vec<String> {
-        // 2 sub directories, maybe should be taken from
-        let parser_directory = grammar_directory.join("src");
-        let highlight_queries_content =
-            read_to_string(grammar_directory.join(HIGHLIGHT_QUERIES_PATH)).unwrap();
-
-        let mut highlight_names_in_queries: HashSet<&str> = HashSet::new();
-        HIGHLIGHT_NAMES_PARSER_REGEX
-            .find_iter(&highlight_queries_content)
-            .for_each(|n| {
-                highlight_names_in_queries.insert(&n.as_str()[1..]);
-            });
-        highlight_names_in_queries
-            .into_iter()
-            .collect::<Vec<String>>()
+    fn apply_highlight_on_token(highlight: Highlight, output: &mut Vec<u8>) {
+        output.extend_from_slice(
+            format!(
+                "class='{}'",
+                recognized_highlights_name
+                    .get(highlight.0)
+                    // highlight is just a usize value indexing our vector of highlight names
+                    .unwrap()
+                    .replace(".", " ")
+            )
+            .as_bytes(),
+        );
     }
 
     /// Given a code content + a Tree-sitter grammar directory for this language
     /// dynamically load this Tree-sitter parser and render HTML back
     /// It will detect all highlight names present in the queries files
     pub fn highlight(&self, code: &str) -> Html {
-        let loader = Loader::new();
-        let lang = loader
-            .unwrap()
-            .load_language_at_path(CompileConfig::new(&parser_directory, None, None))
-            .unwrap();
-        let name = lang.name().unwrap();
+        let name = self.language.name().unwrap();
 
         println!("Loaded lang {name} !!");
         let mut parser = tree_sitter::Parser::new();
-        parser.set_language(&lang).unwrap();
+        parser.set_language(&self.language).unwrap();
         println!("Parsing content of {code}");
         let tree = parser.parse(code, None).unwrap();
         println!("Got tree {tree:?} !!");
@@ -106,9 +138,10 @@ impl<'a> TreeSitterHighlighter<'a> {
         // Create a highlighter that do recognize all detected highlight names
         let mut highlighter = Highlighter::new();
         let mut highlight_config =
-            HighlightConfiguration::new(lang, name, &highlight_queries_content, "", "").unwrap();
-        let recognized_highlights_name = self::parse_highlighing_queries();
-        highlight_config.configure(recognized_highlights_name);
+            HighlightConfiguration::new(self.language, name, &highlight_queries_content, "", "")
+                .unwrap();
+        let recognized_highlights_name = Self::parse_highlighting_names();
+        highlight_config.configure(&recognized_highlights_name);
 
         // Do the final highlighting of given code
         let highlights = highlighter
@@ -116,37 +149,29 @@ impl<'a> TreeSitterHighlighter<'a> {
             .unwrap();
 
         let mut renderer = HtmlRenderer::new();
-        let callback = |highlight: Highlight, output: &mut Vec<u8>| {
-            output.extend_from_slice(
-                format!(
-                    "class='{}'",
-                    recognized_highlights_name
-                        .get(highlight.0)
-                        .unwrap()
-                        .replace(".", " ")
-                )
-                .as_bytes(),
-            );
-        };
-
         renderer
             .render(highlights, code.as_bytes(), &callback)
             .unwrap();
-        let html = String::from_utf8(renderer.html).unwrap();
-        println!("Generated html:\n{}", html);
-        Html(html)
+        Html(
+            String::from_utf8(renderer.html)
+                .unwrap_or("Rendered HTML is not a valid UTF8, could not render.".to_string()),
+        )
     }
 
     /// Normalise code block given lang to a set of known equivalence
     /// like js -> javascript, vuejs -> vue
-    fn normalize_lang(given: &'a str) -> &'a str {
+    pub fn normalize_lang(given: &'a str) -> &'a str {
         match given {
             "bash" | "sh" | "shell" => "bash",
             "js" => "javascript",
+            "rs" => "rust",
+            "rb" => "ruby",
+            "kt" => "kotlin",
             "vuejs" => "vue",
             "py" => "python",
             "md" => "markdown",
             "hs" => "haskell",
+            "ts" => "typescript",
             other => other,
         }
     }
@@ -199,7 +224,7 @@ impl<'a> TreeSitterGrammarsManager {
     /// Helper to quickly get the repository behind the lang
     fn get_repos_for_lang(lang: &str) -> Result<GitRepos, String> {
         GitRepos::from_existing_folder(
-            TREE_SITTER_GRAMMARS_FOLDER.join(format!("tree-sitter-{}", lang)),
+            &TREE_SITTER_GRAMMARS_FOLDER.join(format!("tree-sitter-{}", lang)),
         )
     }
 
