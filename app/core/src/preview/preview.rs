@@ -6,7 +6,13 @@ impl From<String> for Html {
     }
 }
 
+impl Html {
+    pub fn as_string(&self) -> &String {
+        &self.0
+    }
+}
+
 /// A component that will be able to preview a given document into HTML
-pub trait Previewable {
-    fn to_html() -> Html;
+pub trait Previewable<'a> {
+    fn to_html(&self) -> Html;
 }
