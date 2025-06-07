@@ -3,6 +3,7 @@ use std::path::PathBuf;
 #[derive(Debug, PartialEq)]
 pub struct Progress(pub u8);
 
+#[derive(Debug, PartialEq)]
 pub struct ResearchResult {
     pub(crate) path: PathBuf,
     pub(crate) title: Option<String>,

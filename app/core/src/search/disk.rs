@@ -131,6 +131,22 @@ impl Researcher for DiskResearcher {
             }
         }
 
+        drop(map);
+
+        let file_list = self.markdown_map.lock().unwrap();
+
+        for file in  file_list.iter() {
+            if file.contains(query.as_str()) {
+                results.push(ResearchResult {
+                    title: None,
+                    path: file.clone().parse().unwrap(),
+                });
+
+                if results.len() >= limit.into() {
+                    return results;
+                }
+            }
+        }
         results
     }
 }
@@ -161,7 +177,7 @@ fn test_that_progress_is_one_at_end() {
 }
 
 #[test]
-fn test_that_search_works() {
+fn test_that_search_works_inside_files() {
     let mut search = DiskResearcher::new("test".parse().unwrap());
     search.start();
     thread::sleep(std::time::Duration::from_secs(1));
@@ -173,5 +189,25 @@ fn test_that_search_works() {
 
     let resutts2 = search.search("intro".to_string(), 10);
     assert_eq!(resutts2.len(), 4);
+}
 
+#[test]
+fn test_that_search_works_on_filename() {
+    let mut search = DiskResearcher::new("test".parse().unwrap());
+    search.start();
+    thread::sleep(std::time::Duration::from_secs(1));
+    let results = search.search("depth2".to_string(), 10);
+    assert_eq!(results.len(), 2);
+
+
+    let results = search.search("depth3".to_string(), 10);
+    assert_eq!(results.len(), 1);
+}
+#[test]
+fn test_mixed_search() {
+    let mut search = DiskResearcher::new("test".parse().unwrap());
+    search.start();
+    thread::sleep(std::time::Duration::from_secs(1));
+    let results = search.search("hello".to_string(), 10);
+    assert_eq!(results.len(),2 );
 }
