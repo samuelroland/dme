@@ -68,7 +68,6 @@ impl GitRepos {
     /// Try to pull a repository, only if is remote and return
     /// true if some commits were pulled, false if it was already up-to-date
     pub fn pull(&self) -> Result<bool, String> {
-        dbg!(&self.path);
         if self.is_remote().is_ok_and(|v| v) {
             let hash_before = self.get_last_commit_hash()?;
             Self::run_git_cmd(&vec!["pull"], &self.path)?;
