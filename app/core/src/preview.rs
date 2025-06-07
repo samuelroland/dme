@@ -1,3 +1,4 @@
-mod comrak;
-mod preview;
-mod tree_sitter;
+pub mod comrak;
+pub mod preview;
+pub mod tree_sitter_grammars;
+pub mod tree_sitter_highlight;
