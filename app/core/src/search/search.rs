@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 
-pub struct Progress(u32);
+#[derive(Debug, PartialEq)]
+pub struct Progress(pub u8);
 
 pub struct ResearchResult {
     path: PathBuf,
@@ -16,8 +17,8 @@ pub trait Researcher {
     fn start(&mut self);
 
     /// Ask about the progress, from 0 to 100 percent of research
-    fn progress() -> Progress;
+    fn progress(&self) -> Progress;
 
     /// The actual research of a raw string returning some matches
-    fn search(raw: String) -> Vec<ResearchResult>;
+    fn search(&self, raw: String) -> Vec<ResearchResult>;
 }

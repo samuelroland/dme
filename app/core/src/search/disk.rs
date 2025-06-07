@@ -1,75 +1,112 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::path::{PathBuf};
 use std::sync::{Arc, Mutex};
-use std::thread;
+use std::{fs, thread};
 use walkdir::WalkDir;
+use regex::Regex;
 use crate::search::search::{Progress, ResearchResult, Researcher};
 
 struct DiskResearcher {
-    markdown_map : Arc<Mutex<HashMap<String,PathBuf>>>,
+    markdown_map : Arc<Mutex<HashSet<String>>>,
+    title_map : Arc<Mutex<HashMap<String, Vec<String>>>>,
     base_path : PathBuf,
-    nb_thread: u16,
+    nb_thread: usize,
     has_started: bool,
     threads :  Vec<thread::JoinHandle<()>>,
+    progress_counter: Arc<Mutex<usize>>,
 }
 
 impl DiskResearcher {
     fn new(path: String) -> Self {
         Self {
-            markdown_map: Arc::new(Mutex::new(HashMap::new())),
+            markdown_map: Arc::new(Mutex::new(HashSet::new())),
+            title_map: Arc::new(Mutex::new(HashMap::new())),
             base_path: PathBuf::from(path),
-            nb_thread : 4,
+            nb_thread : num_cpus::get(),
             has_started: false,
             threads : Vec::new(),
+            progress_counter: Arc::new(Mutex::new(0)),
         }
     }
 
-    fn set_nb_thread(&mut self, nb_thread: u16) {
+    fn set_nb_thread(&mut self, nb_thread: usize) {
         assert!(nb_thread > 0);
+        assert!(!self.has_started);
         self.nb_thread = nb_thread;
+    }
+
+    fn extract_markdown_titles(path: &str) -> Vec<String> {
+        let content = fs::read_to_string(path).unwrap_or_default();
+
+        let heading_regex = Regex::new(r"^#+\s+.+$").unwrap();
+
+        content
+            .lines()
+            .filter(|line| heading_regex.is_match(line))
+            .map(|line| heading_regex.replace(line, "").trim().to_string())
+            .collect()
     }
 }
 
 impl Researcher for DiskResearcher {
     fn start(&mut self) {
         let base_path = self.base_path.to_path_buf();
+        self.has_started = true;
         //Get all paths
-        let all_paths: Vec<PathBuf> = WalkDir::new(&base_path)
+        let markdown_paths = WalkDir::new(&base_path)
             .into_iter()
+            .filter_entry(|entry| {
+                entry.file_type().is_dir() || entry.file_name().to_str().unwrap().ends_with(".md")
+            })
             .filter_map(Result::ok)
-            .map(|path| path.path().to_path_buf())
+            .filter(|e| e.file_type().is_file())
+            .map(|e| e.path().to_path_buf().to_str().unwrap().to_owned())
             .collect();
-        //Calculate chunks size to divide by threads
-        let chunk_size = all_paths.len() / self.nb_thread as usize;
+        {
+            let mut map = self.markdown_map.lock().unwrap();
+            *map = markdown_paths;
+        }
+        let map_guard = self.markdown_map.lock().unwrap();
+        let all_paths: Vec<_> = map_guard.iter().cloned().collect();
+        drop(map_guard);
+
+        //Calculate chunks size to divide by threads. With the + thread we ensure chunk size > 0
+        let chunk_size =  (all_paths.len() + self.nb_thread - 1) / self.nb_thread;
         for chunk in all_paths.chunks(chunk_size) {
             let chunk = chunk.to_vec(); // copy chunk
-            let map_clone = Arc::clone(&self.markdown_map);
-            let base_clone = base_path.clone();
+            let title_map = Arc::clone(&self.title_map);
+            let counter = Arc::clone(&self.progress_counter);
 
             //Create the thread to search for markdown in chunk
             let handle = thread::spawn(move || {
                 for path in chunk {
-                    if path.extension().map_or(false, |ext| ext == "md") {
-                        let relative = path.strip_prefix(&base_clone)
-                            .unwrap_or(&path)
-                            .to_string_lossy()
-                            .to_string();
-
-                        map_clone.lock().unwrap().insert(relative, path);
+                    let titles = DiskResearcher::extract_markdown_titles(&path);
+                    let mut map = title_map.lock().unwrap();
+                    for title in titles {
+                        map.entry(title).or_default().push(path.clone())
                     }
+                    let mut count = counter.lock().unwrap();
+                    *count += 1;
                 }
             });
             self.threads.push(handle);
         }
+        //Once all thread are started, spawn one to say when finding is finished
+
     }
     /// Ask about the progress, from 0 to 100 percent of research
-    fn progress() -> Progress {
-        todo!()
+    fn progress(&self) -> Progress {
+        let total = self.markdown_map.lock().unwrap().len();
+        if total == 0 {
+            return Progress(0);
+        }
+        Progress((total as f32 / self.nb_thread as f32).ceil() as u8)
     }
 
     /// The actual research of a raw string returning some matches
-    fn search(raw: String) -> Vec<ResearchResult> {
+    fn search(&self, raw: String) -> Vec<ResearchResult> {
         todo!()
+        //Retourne titre et path
     }
 }
 
@@ -84,3 +121,27 @@ fn test_that_file_are_found() {
     println!("{:?}", search.markdown_map.lock().unwrap());
 }
 
+#[test]
+fn test_that_progress_is_zero_at_start() {
+    let mut search = DiskResearcher::new("test".parse().unwrap());
+    assert_eq!(search.progress(),Progress(0));
+}
+
+#[test]
+fn test_that_progress_is_one_at_end() {
+    let mut search = DiskResearcher::new("test".parse().unwrap());
+    search.start();
+    thread::sleep(std::time::Duration::from_secs(1));
+    assert_eq!(search.progress(),Progress(1));
+}
+
+#[test]
+fn test_that_search_works() {
+    let mut search = DiskResearcher::new("test".parse().unwrap());
+    search.start();
+    thread::sleep(std::time::Duration::from_secs(1));
+    let results = search.search("Hello world!".to_string());
+    assert_eq!(results.len(), 0);
+    let resutts2 = search.search("Introduction".to_string());
+    assert_eq!(resutts2.len(), 1);
+}
