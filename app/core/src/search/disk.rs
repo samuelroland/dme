@@ -90,8 +90,8 @@ impl Researcher for DiskResearcher {
         if all_paths.is_empty() {
             return;
         }
-        let chunk_size =  if (all_paths.len()) / self.nb_threads == 0{
-            all_paths.len()
+        let chunk_size =  if (all_paths.len()) < self.nb_threads {
+            1 //This means we have more thread than the number of files
         } else {
             (all_paths.len() + self.nb_threads - 1) / self.nb_threads
         };
@@ -228,4 +228,39 @@ fn test_mixed_search() {
     thread::sleep(std::time::Duration::from_secs(1));
     let results = search.search("hello".to_string(), 10);
     assert_eq!(results.len(),2 );
+}
+
+#[test]
+fn test_that_number_of_thread_is_not_higher_than_necessary() {
+    let mut search = DiskResearcher::new("test".to_string());
+    search.set_nb_thread(100).unwrap();
+    search.start();
+    thread::sleep(std::time::Duration::from_secs(2));
+    assert_eq!(search.threads.len(),6);
+}
+
+#[test]
+fn test_that_number_of_thread_is_not_higher_than_set() {
+    let mut search = DiskResearcher::new("test".to_string());
+    search.set_nb_thread(2).unwrap();
+    search.start();
+    thread::sleep(std::time::Duration::from_secs(2));
+    assert_eq!(search.threads.len(),2);
+}
+#[test]
+fn test_that_empty_directory_cause_no_issue() {
+    let mut search = DiskResearcher::new("test/depth2/depth3/depth4/".to_string());
+    search.start();
+    thread::sleep(std::time::Duration::from_secs(1));
+    let results = search.search("hello".to_string(), 10);
+    assert_eq!(results.len(),0 );
+}
+
+#[test]
+fn test_that_limit_works() {
+    let mut search = DiskResearcher::new("test".parse().unwrap());
+    search.start();
+    thread::sleep(std::time::Duration::from_secs(1));
+    let results = search.search("hello".to_string(), 1);
+    assert_eq!(results.len(),1);
 }
