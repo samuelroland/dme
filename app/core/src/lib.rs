@@ -1,5 +1,6 @@
 use std::fs::read_to_string;
 mod highlight;
+mod util;
 
 use comrak::adapters::SyntaxHighlighterAdapter;
 use comrak::nodes::{AstNode, NodeValue};
