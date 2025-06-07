@@ -21,3 +21,29 @@ Given a Git link like `https://github.com/tree-sitter-grammars/tree-sitter-yaml`
 - `git clone https://github.com/tree-sitter-grammars/tree-sitter-yaml` inside `~/.local/share/tree-sitter-grammars`
 - Run compilation via `Loader::compile_parser_at_path()`
 
+#### How the highlight process work ?
+1. We load the
+
+            // Note: tree-sitter.json contains an array of `grammars` which could be more than one
+            // grammar sometimes (typescript -> typescript, tsx and flow. xml -> xml and dtd)
+            // For now, we only support the first entry.
+
+
+        // Note: we making the supposition that the lang is in the folder name, for now
+We don't support local queries and injections queries for now.
+
+
+
+    /// Get a slice containing all of the highlight names used in the configuration.
+    #[must_use]
+    pub const fn names(&self) -> &[&str] {
+
+doesnt support language injection
+
+
+
+    /// Parse highlight names from queries files as we need to give a list of recognized
+    /// names, we want to accept all of them
+    /// highlight name is something like "type.builtin" "variable.local" "keyword" "constant"
+    /// The whole list of supported names for Helix themes are here
+    /// https://docs.helix-editor.com/themes.html#scopes
