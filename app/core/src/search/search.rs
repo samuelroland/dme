@@ -1,10 +1,12 @@
 use std::path::PathBuf;
 
-pub struct Progress(u32);
+#[derive(Debug, PartialEq)]
+pub struct Progress(pub u8);
 
+#[derive(Debug, PartialEq)]
 pub struct ResearchResult {
-    path: PathBuf,
-    title: Option<String>,
+    pub(crate) path: PathBuf,
+    pub(crate) title: Option<String>,
 }
 
 /// A component that will be able to do fast research on a specific ressource
@@ -13,11 +15,11 @@ pub struct ResearchResult {
 /// or in a given archive file in a specific format
 pub trait Researcher {
     /// Start the researcher, load the existing index or start building it
-    fn start();
+    fn start(&mut self);
 
     /// Ask about the progress, from 0 to 100 percent of research
-    fn progress() -> Progress;
+    fn progress(&self) -> Progress;
 
     /// The actual research of a raw string returning some matches
-    fn search(raw: String) -> Vec<ResearchResult>;
+    fn search(&self, raw: String, limit: u8) -> Vec<ResearchResult>;
 }

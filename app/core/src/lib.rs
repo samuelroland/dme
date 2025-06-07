@@ -1,5 +1,8 @@
 use std::fs::read_to_string;
 mod highlight;
+mod export;
+mod search;
+mod preview;
 mod util;
 
 use comrak::adapters::SyntaxHighlighterAdapter;
