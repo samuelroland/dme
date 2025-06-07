@@ -4,8 +4,8 @@ use std::path::PathBuf;
 pub struct Progress(pub u8);
 
 pub struct ResearchResult {
-    path: PathBuf,
-    title: Option<String>,
+    pub(crate) path: PathBuf,
+    pub(crate) title: Option<String>,
 }
 
 /// A component that will be able to do fast research on a specific ressource
@@ -20,5 +20,5 @@ pub trait Researcher {
     fn progress(&self) -> Progress;
 
     /// The actual research of a raw string returning some matches
-    fn search(&self, raw: String) -> Vec<ResearchResult>;
+    fn search(&self, raw: String, limit: u8) -> Vec<ResearchResult>;
 }

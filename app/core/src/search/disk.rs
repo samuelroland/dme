@@ -38,12 +38,18 @@ impl DiskResearcher {
     fn extract_markdown_titles(path: &str) -> Vec<String> {
         let content = fs::read_to_string(path).unwrap_or_default();
 
-        let heading_regex = Regex::new(r"^#+\s+.+$").unwrap();
+        let heading_regex = Regex::new(r"^#+\s+(.+$)").unwrap();
 
         content
             .lines()
             .filter(|line| heading_regex.is_match(line))
-            .map(|line| heading_regex.replace(line, "").trim().to_string())
+            .map(|line|
+                     heading_regex
+                         .captures(line)
+                         .and_then(|caps| caps.get(1))
+                         .map(|m|m.as_str().trim().to_string())
+                         .unwrap_or_default()
+            )
             .collect()
     }
 }
@@ -83,7 +89,7 @@ impl Researcher for DiskResearcher {
                     let titles = DiskResearcher::extract_markdown_titles(&path);
                     let mut map = title_map.lock().unwrap();
                     for title in titles {
-                        map.entry(title).or_default().push(path.clone())
+                        map.entry(title).or_default().push(path.clone().to_string())
                     }
                     let mut count = counter.lock().unwrap();
                     *count += 1;
@@ -104,9 +110,28 @@ impl Researcher for DiskResearcher {
     }
 
     /// The actual research of a raw string returning some matches
-    fn search(&self, raw: String) -> Vec<ResearchResult> {
-        todo!()
-        //Retourne titre et path
+    fn search(&self, raw: String, limit: u8) -> Vec<ResearchResult> {
+        let query = raw.to_lowercase();
+        let map = self.title_map.lock().unwrap();
+
+        let mut results = Vec::new();
+
+        for (title, paths) in map.iter() {
+            if title.to_lowercase().contains(&query) {
+                for path in paths {
+                    results.push(ResearchResult {
+                        title: Some(title.clone()),
+                        path: path.clone().parse().unwrap(),
+                    });
+
+                    if results.len() >= limit.into() {
+                        return results;
+                    }
+                }
+            }
+        }
+
+        results
     }
 }
 
@@ -140,8 +165,13 @@ fn test_that_search_works() {
     let mut search = DiskResearcher::new("test".parse().unwrap());
     search.start();
     thread::sleep(std::time::Duration::from_secs(1));
-    let results = search.search("Hello world!".to_string());
+    let results = search.search("Hello world!".to_string(), 10);
     assert_eq!(results.len(), 0);
-    let resutts2 = search.search("Introduction".to_string());
-    assert_eq!(resutts2.len(), 1);
+
+    let resutts2 = search.search("Introduction".to_string(), 10);
+    assert_eq!(resutts2.len(), 2);
+
+    let resutts2 = search.search("intro".to_string(), 10);
+    assert_eq!(resutts2.len(), 4);
+
 }
