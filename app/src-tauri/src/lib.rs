@@ -1,4 +1,4 @@
-use dme_core::{convert_md_to_html, load_markdown_as_html};
+use dme_core::load_markdown_as_html;
 use std::fs::read_to_string;
 
 use serde::Serialize;
