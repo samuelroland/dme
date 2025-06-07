@@ -22,3 +22,4 @@ inkjet = { version = "0.11.1", default-features = false, features = [
 pretty_assertions = "1.4.1"
 rand = "0.9.1"
 regex = "1.11.1"
+walkdir = "2"

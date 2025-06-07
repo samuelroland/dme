@@ -13,7 +13,7 @@ pub struct ResearchResult {
 /// or in a given archive file in a specific format
 pub trait Researcher {
     /// Start the researcher, load the existing index or start building it
-    fn start();
+    fn start(&mut self);
 
     /// Ask about the progress, from 0 to 100 percent of research
     fn progress() -> Progress;
