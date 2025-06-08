@@ -4,30 +4,21 @@
 // and the associated implementation
 // https://dotat.at/cgi/git/wwwdotat.git/blob/HEAD:/src/hilite.rs
 
-use std::{fs::read_to_string, path::PathBuf};
-
-use once_cell::sync::Lazy;
-use regex::Regex;
-use tree_sitter::Parser;
+use pretty_assertions::{assert_eq, assert_ne};
+use std::fs::read_to_string;
 use tree_sitter_highlight::{Highlight, HighlightConfiguration, Highlighter, HtmlRenderer};
 use tree_sitter_loader::{CompileConfig, Loader};
 
 use super::{preview::Html, tree_sitter_grammars::TreeSitterGrammarsManager};
-
-// TODO: refactor with dynamic path from configuration
-const HIGHLIGHT_QUERIES_PATH: &str = "queries/highlights.scm";
-
-static HIGHLIGHT_NAMES_PARSER_REGEX: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"\@[A-Za-z\.]+").unwrap());
 
 /// A highlighter for a specific language, once loaded it can highlight multiple code snippets of
 /// the same programming language
 pub struct TreeSitterHighlighter<'a> {
     /// The language identifier
     lang: &'a str,
-    repos_path: PathBuf,
+    /// The highlighting configuration containing highlight queries, injections queries and local
+    /// queries.
     highlight_config: HighlightConfiguration,
-    parser: Parser,
 }
 
 impl<'a> TreeSitterHighlighter<'a> {
@@ -72,9 +63,7 @@ impl<'a> TreeSitterHighlighter<'a> {
 
             Ok(TreeSitterHighlighter {
                 lang,
-                repos_path,
                 highlight_config,
-                parser,
             })
         } else {
             Err("The grammar {lang} is not installed locally".to_string())
@@ -97,7 +86,7 @@ impl<'a> TreeSitterHighlighter<'a> {
                 format!(
                     "class='{}'",
                     self.highlight_config
-                        .names()
+                        .names() // all highlight names used in queries files
                         .get(highlight.0)
                         // highlight is just a usize value indexing our vector of highlight names
                         .unwrap()
@@ -109,9 +98,9 @@ impl<'a> TreeSitterHighlighter<'a> {
         callback
     }
 
-    /// Given a code content + a Tree-sitter grammar directory for this language
-    /// dynamically load this Tree-sitter parser and render HTML back
-    /// It will detect all highlight names present in the queries files
+    /// Given a code content dynamically load this Tree-sitter parser return HTML
+    /// based on the highlighted tokens of your code. If the highlight fails,
+    /// it returns the code without modification.
     pub fn highlight(&self, code: &str) -> Html {
         let mut highlighter = Highlighter::new();
 

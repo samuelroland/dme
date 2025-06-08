@@ -1,26 +1,31 @@
 use std::{
-    collections::HashMap,
     fs::create_dir,
     path::{Path, PathBuf},
+    process::Command,
 };
 
 use etcetera::{AppStrategy, AppStrategyArgs};
 use once_cell::sync::Lazy;
+use pretty_assertions::{assert_eq, assert_ne};
 use tree_sitter::Language;
-use tree_sitter_loader::{CompileConfig, Loader};
+use tree_sitter_loader::{CompileConfig, Config, Loader};
 
-use crate::util::git::GitRepos;
+use crate::util::git::{self, GitRepos};
 
 /// Use the DATA HOME strategy to determine the base folder grammars and cloned and managed
 /// on Linux it will be under ~/.local/share/tree-sitter-grammars
 static TREE_SITTER_GRAMMARS_FOLDER: Lazy<PathBuf> = Lazy::new(|| {
-    let folder = etcetera::choose_app_strategy(AppStrategyArgs {
-        app_name: "tree-sitter-grammars".to_string(),
-        ..Default::default()
-    })
-    .unwrap()
-    .data_dir()
-    .to_path_buf();
+    let folder = match std::env::var("TREE_SITTER_GRAMMARS_FOLDER") {
+        Ok(folder) => PathBuf::from(folder),
+        Err(_) => etcetera::choose_app_strategy(AppStrategyArgs {
+            app_name: "tree-sitter-grammars".to_string(),
+            ..Default::default()
+        })
+        .unwrap() // only in case it couldn't determine the home the directory,
+        // in this case we don't know where to put these grammars and the only option is to panic
+        .data_dir()
+        .to_path_buf(),
+    };
     if !folder.exists() {
         let _ = create_dir(&folder);
     }
@@ -104,61 +109,3 @@ impl<'a> TreeSitterGrammarsManager {
         todo!()
     }
 }
-
-/// This is shown by the UI as proposed default links from the tree-sitter and tree-sitter-grammars Github organisations
-pub static PROPOSED_GRAMMAR_SOURCES: Lazy<HashMap<&'static str, &'static str>> = Lazy::new(|| {
-    HashMap::from([
-        (
-            "yaml",
-            "https://github.com/tree-sitter-grammars/tree-sitter-yaml",
-        ),
-        (
-            "lua",
-            "https://github.com/tree-sitter-grammars/tree-sitter-lua",
-        ),
-        (
-            "make",
-            "https://github.com/tree-sitter-grammars/tree-sitter-make",
-        ),
-        (
-            "toml",
-            "https://github.com/tree-sitter-grammars/tree-sitter-toml",
-        ),
-        (
-            "vue",
-            "https://github.com/tree-sitter-grammars/tree-sitter-vue",
-        ),
-        (
-            "csv",
-            "https://github.com/tree-sitter-grammars/tree-sitter-csv",
-        ),
-        (
-            "xml",
-            "https://github.com/tree-sitter-grammars/tree-sitter-xml",
-        ),
-        ("cpp", "https://github.com/tree-sitter/tree-sitter-cpp"),
-        ("php", "https://github.com/tree-sitter/tree-sitter-php"),
-        ("rust", "https://github.com/tree-sitter/tree-sitter-rust"),
-        ("scala", "https://github.com/tree-sitter/tree-sitter-scala"),
-        ("css", "https://github.com/tree-sitter/tree-sitter-css"),
-        ("regex", "https://github.com/tree-sitter/tree-sitter-regex"),
-        ("html", "https://github.com/tree-sitter/tree-sitter-html"),
-        ("java", "https://github.com/tree-sitter/tree-sitter-java"),
-        ("bash", "https://github.com/tree-sitter/tree-sitter-bash"),
-        (
-            "typescript",
-            "https://github.com/tree-sitter/tree-sitter-typescript",
-        ),
-        ("json", "https://github.com/tree-sitter/tree-sitter-json"),
-        ("go", "https://github.com/tree-sitter/tree-sitter-go"),
-        (
-            "haskell",
-            "https://github.com/tree-sitter/tree-sitter-haskell",
-        ),
-        ("c", "https://github.com/tree-sitter/tree-sitter-c"),
-        (
-            "javascript",
-            "https://github.com/tree-sitter/tree-sitter-javascript",
-        ),
-    ])
-});

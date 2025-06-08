@@ -1,3 +1,4 @@
+#[derive(Debug)]
 pub struct Html(pub String);
 
 impl From<String> for Html {

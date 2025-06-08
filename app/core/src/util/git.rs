@@ -96,7 +96,7 @@ impl GitRepos {
 
     /// Given a git clone link like "https://codeberg.org/samuelroland/productivity",
     /// make sure the link is valid and extract the name "productivity"
-    fn validate_and_extract_repos_name_from_https_url(url: &str) -> Result<String, String> {
+    pub fn validate_and_extract_repos_name_from_https_url(url: &str) -> Result<String, String> {
         Ok(GIT_CLONE_HTTPS_LINK_REGEX
             .captures(url)
             .ok_or_else(|| "Given URL not a valid HTTPS git clone URL".to_string())?

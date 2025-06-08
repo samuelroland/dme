@@ -1,8 +1,8 @@
 // Previewable implementation via a Comrak based Markdown parser
 use super::preview::{Html, Previewable};
-use super::tree_sitter::TreeSitterHighlighter;
+use super::tree_sitter_highlight::TreeSitterHighlighter;
 use comrak::{adapters::SyntaxHighlighterAdapter, html};
-use comrak::{markdown_to_html, markdown_to_html_with_plugins, ComrakPlugins, Options};
+use comrak::{markdown_to_html_with_plugins, ComrakPlugins, Options};
 use std::collections::HashMap;
 use std::io::{self, Write};
 
@@ -16,7 +16,7 @@ impl<'a> ComrakParser<'a> {
     }
 }
 
-impl<'a> Previewable<'a> for ComrakParser<'_> {
+impl Previewable<'_> for ComrakParser<'_> {
     fn to_html(&self) -> Html {
         let mut options = Options::default();
         options.extension.table = true; // Enable tables
