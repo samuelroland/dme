@@ -107,7 +107,10 @@ impl GitRepos {
     }
 
     /// Run a git commands with given args and exec_directory in which the command will be ran
-    fn run_git_cmd(args: &Vec<&str>, exec_directory: &PathBuf) -> Result<Output, String> {
+    pub(crate) fn run_git_cmd(
+        args: &Vec<&str>,
+        exec_directory: &PathBuf,
+    ) -> Result<Output, String> {
         let cmd = Command::new("git")
             .args(args)
             .current_dir(exec_directory)
