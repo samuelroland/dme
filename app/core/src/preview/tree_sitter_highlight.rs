@@ -7,7 +7,7 @@
 use pretty_assertions::{assert_eq, assert_ne};
 use std::fs::read_to_string;
 use tree_sitter_highlight::{Highlight, HighlightConfiguration, Highlighter, HtmlRenderer};
-use tree_sitter_loader::{CompileConfig, Loader};
+use tree_sitter_loader::{CompileConfig, LanguageConfiguration, Loader};
 
 use super::{preview::Html, tree_sitter_grammars::TreeSitterGrammarsManager};
 
@@ -18,19 +18,22 @@ pub struct TreeSitterHighlighter<'a> {
     lang: &'a str,
     /// The highlighting configuration containing highlight queries, injections queries and local
     /// queries.
-    highlight_config: HighlightConfiguration,
+    highlight_config: &'a HighlightConfiguration,
 }
 
 impl<'a> TreeSitterHighlighter<'a> {
     /// Try to create a new highlighter based on a
-    pub fn new(lang: &'a str, manager: &TreeSitterGrammarsManager) -> Result<Self, String> {
+    pub fn new(
+        loader: &'a mut Loader,
+        lang: &'a str,
+        manager: &TreeSitterGrammarsManager,
+    ) -> Result<Self, String> {
         // Note: we making the supposition that the lang is in the folder name, for now
         let repos_path = manager.get_repos_for_lang(lang)?.path().clone();
         if repos_path.exists() {
-            let mut loader = Loader::new().map_err(|e| e.to_string())?;
             // Even if the repos exists, it might not be a valid Tree-Sitter syntax
             let language = loader
-                .load_language_at_path(CompileConfig::new(&repos_path, None, None))
+                .load_language_at_path(CompileConfig::new(&repos_path.join("src"), None, None))
                 .map_err(|e| e.to_string())?;
 
             let mut parser = tree_sitter::Parser::new();
@@ -55,9 +58,10 @@ impl<'a> TreeSitterHighlighter<'a> {
                 .collect::<Vec<String>>()
                 .join("\n");
 
-            let highlight_config =
-                HighlightConfiguration::new(language, lang, &highlights_queries, "", "")
-                    .map_err(|e| e.to_string())?;
+            let highlight_config = first
+                .highlight_config(language.clone(), None)
+                .map_err(|e| e.to_string())?
+                .ok_or("No highlighting queries defined for the language")?;
 
             Ok(TreeSitterHighlighter {
                 lang,
@@ -100,25 +104,27 @@ impl<'a> TreeSitterHighlighter<'a> {
     /// based on the highlighted tokens of your code. If the highlight fails,
     /// it returns the code without modification.
     pub fn highlight(&self, code: &str) -> Html {
-        let mut highlighter = Highlighter::new();
-
-        // Do the final highlighting of given code
-        let highlights = highlighter
-            .highlight(&self.highlight_config, code.as_bytes(), None, |_| None)
-            .unwrap();
-
-        let mut renderer = HtmlRenderer::new();
-        renderer
-            .render(
-                highlights,
-                code.as_bytes(),
-                &self.get_callback_to_apply_highlight_on_token(),
-            )
-            .unwrap();
-        Html(
-            String::from_utf8(renderer.html)
-                .unwrap_or("Rendered HTML is not a valid UTF8, could not render.".to_string()),
-        )
+        // Do the final highlighting of given code, if it fails just return the code as is
+        match Highlighter::new().highlight(&self.highlight_config, code.as_bytes(), None, |_| None)
+        {
+            Ok(highlights) => {
+                let mut renderer = HtmlRenderer::new();
+                renderer
+                    .render(
+                        highlights,
+                        code.as_bytes(),
+                        &self.get_callback_to_apply_highlight_on_token(),
+                    )
+                    .unwrap();
+                Html(
+                    String::from_utf8(renderer.html).unwrap_or(
+                        "Rendered HTML is not a valid UTF8, could not render.".to_string(),
+                    ),
+                )
+            }
+            // Highlighting failed, just used non highlighted code
+            Err(_) => Html(code.to_string()),
+        }
     }
 
     /// Normalise code block given lang to a set of known equivalence
@@ -144,6 +150,8 @@ impl<'a> TreeSitterHighlighter<'a> {
 mod tests {
     use std::{env::current_dir, fs::create_dir_all, path::PathBuf};
 
+    use tree_sitter_loader::Loader;
+
     use crate::preview::{
         preview::Html,
         tree_sitter_grammars::{
@@ -154,8 +162,6 @@ mod tests {
 
     use super::TreeSitterHighlighter;
 
-    static CSS_SNIPPET: &str = "#form { border: 1px solid #55232; }";
-
     #[test]
     fn test_highlight_with_test_grammar() {
         let mut m = TreeSitterGrammarsManager::new_with_grammars_folder(
@@ -163,7 +169,13 @@ mod tests {
         )
         .unwrap();
         m.install(&get_test_grammar_repos()).unwrap();
-        let h = TreeSitterHighlighter::new(TEST_GRAMMAR, &m).unwrap();
-        assert_eq!(h.highlight(CSS_SNIPPET), Html::from("salut".to_string()));
+
+        let snippet = "color: blue";
+        let mut loader = Loader::new().unwrap();
+        let h = TreeSitterHighlighter::new(&mut loader, TEST_GRAMMAR, &m).unwrap();
+        assert_eq!(h.highlight(snippet), Html("<span class='tag'>color</span><span class='punctuation delimiter'>:</span> <span class='attribute'>blue</span>\n".to_string()));
+
+        let snippet = "#form { border: 1px solid #55232; }";
+        assert_eq!(h.highlight(snippet), Html("<span class='punctuation delimiter'>#</span><span class='property'>form</span> <span class='punctuation bracket'>{</span> <span class='property'>border</span><span class='punctuation delimiter'>:</span> <span class='number'>1<span class='type'>px</span></span> solid <span class='string special'><span class='punctuation delimiter'>#</span>55232</span><span class='punctuation delimiter'>;</span> <span class='punctuation bracket'>}</span>\n".to_string()));
     }
 }

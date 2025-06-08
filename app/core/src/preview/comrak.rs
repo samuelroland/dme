@@ -8,6 +8,7 @@ use once_cell::sync::Lazy;
 use std::collections::HashMap;
 use std::io::{self, Write};
 use std::path::PathBuf;
+use tree_sitter_loader::Loader;
 
 static TREE_SITTER_GRAMMARS_FOLDER_VIA_ENV: Lazy<Option<String>> =
     Lazy::new(|| std::env::var("TREE_SITTER_GRAMMARS_FOLDER").ok());
@@ -71,7 +72,9 @@ impl SyntaxHighlighterAdapter for ComrakParser {
             output.write_all(code.as_bytes())
         } else {
             let lang = TreeSitterHighlighter::normalize_lang(lang.unwrap_or_default());
-            let highlighter = TreeSitterHighlighter::new(lang, &self.manager);
+            let mut loader =
+                Loader::new().map_err(|e| std::io::Error::new(io::ErrorKind::Other, e))?;
+            let highlighter = TreeSitterHighlighter::new(&mut loader, lang, &self.manager);
             // If lang might be supported or not
             match highlighter {
                 Ok(highlighter) => {
