@@ -239,7 +239,7 @@ mod tests {
         // this would fail on a machine without Git, this is good as we need it for further testing
         assert!(GitRepos::is_git_installed());
 
-        std::env::set_var("PATH", ""); // empty the PATH so git will not be found
-        assert!(!GitRepos::is_git_installed());
+        // Note: that's impossible to test without changing the PATH which affects other tests
+        // assert!(!GitRepos::is_git_installed());
     }
 }
