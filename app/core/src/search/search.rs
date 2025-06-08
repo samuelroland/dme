@@ -1,3 +1,5 @@
+use std::sync::mpsc::SyncSender;
+
 #[derive(Debug, PartialEq)]
 pub struct Progress(pub u8);
 
@@ -7,10 +9,12 @@ impl Progress {
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, Clone)]
 pub struct ResearchResult {
-    pub(crate) path: String,
-    pub(crate) title: Option<String>,
+    pub path: String,
+    pub title: Option<String>,
+    /// The highest, the more high in the results
+    pub priority: u32,
 }
 
 /// A component that will be able to do fast research on a specific ressource
@@ -25,5 +29,5 @@ pub trait Researcher {
     fn progress(&self) -> Progress;
 
     /// The actual research of a raw string returning some matches
-    fn search(&self, raw: &str, limit: u8) -> Vec<ResearchResult>;
+    fn search(&self, raw: &str, limit: u8, sender: Option<SyncSender<ResearchResult>>) -> Vec<ResearchResult>;
 }

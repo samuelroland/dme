@@ -141,6 +141,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "btree-vec"
+version = "0.3.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "48180a8123cf9783422f437d3c4e5d780684db8985c278d49b35c30e923c37eb"
+dependencies = [
+ "tagged-pointer",
+]
+
+[[package]]
 name = "bumpalo"
 version = "3.17.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -305,6 +314,7 @@ checksum = "56254986775e3233ffa9c4d7d3faaf6d36a2c09d30b20687e9f88bc8bafc16c8"
 name = "dme-core"
 version = "0.1.0"
 dependencies = [
+ "btree-vec",
  "comrak",
  "inkjet",
  "num_cpus",
@@ -812,6 +822,12 @@ dependencies = [
  "walkdir",
  "yaml-rust",
 ]
+
+[[package]]
+name = "tagged-pointer"
+version = "0.2.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3538c399a85621c9b74ac21001d7e1dd81867ebd076724f047b1227e722de4a7"
 
 [[package]]
 name = "terminal_size"
