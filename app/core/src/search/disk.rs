@@ -1,11 +1,10 @@
 use crate::search::search::{Progress, ResearchResult, Researcher};
-use std::collections::{HashMap};
+use std::collections::{BinaryHeap, HashMap};
 use std::ffi::OsStr;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::{fs, thread};
 use std::sync::mpsc::SyncSender;
-use btree_vec::BTreeVec;
 use walkdir::WalkDir;
 
 impl PartialOrd for ResearchResult {
@@ -29,14 +28,14 @@ struct Disk {}
 /// Storing the results incrementally found in the search index
 #[derive(Clone)]
 struct OrderedResults {
-    results: BTreeVec<ResearchResult>,
+    results: BinaryHeap<ResearchResult>,
     tx: Option<SyncSender<ResearchResult>>,
 }
 
 impl OrderedResults {
     pub fn new(tx: Option<SyncSender<ResearchResult>>) -> Self {
         Self {
-            results: BTreeVec::default(),
+            results: BinaryHeap::default(),
             tx,
         }
     }
@@ -54,7 +53,8 @@ impl OrderedResults {
 
     /// First `limit` results from internal partial ordered list of results
     pub fn results(&self, limit: usize) -> Vec<ResearchResult> {
-        self.results.iter().take(limit).cloned().collect()
+        let mut heap = self.results.clone();
+        (0..limit).filter_map(|_| heap.pop()).collect()
     }
     pub fn len(&self) -> usize {
         self.results.len()
@@ -412,4 +412,17 @@ fn test_that_limit_works() {
     thread::sleep(std::time::Duration::from_secs(1));
     let results = search.search("hello", 1, None);
     assert_eq!(results.len(), 1);
+}
+#[test]
+fn test_priority_is_respected() {
+    let mut search = DiskResearcher::new("test".parse().unwrap());
+    search.start();
+    thread::sleep(std::time::Duration::from_secs(1));
+    let results = search.search("t", 10, None);
+    let mut priortiy = 3; //Higher than the max possible
+    for result in results {
+        assert!(result.priority <= priortiy);
+        priortiy = result.priority;
+        dbg!(priortiy);
+    }
 }
