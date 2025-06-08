@@ -12,12 +12,6 @@ impl PartialOrd for ResearchResult {
         self.priority.partial_cmp(&other.priority)
     }
 }
-impl PartialEq for ResearchResult {
-    fn eq(&self, other: &Self) -> bool {
-        self.priority == other.priority
-    }
-}
-impl Eq for ResearchResult {}
 impl Ord for ResearchResult {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         self.priority.cmp(&other.priority)
@@ -45,7 +39,8 @@ impl OrderedResults {
         if let Some(tx) = &self.tx {
             let  err = tx.send(result.clone());
             if err.is_err() {
-                println!("Error sending result: {:?}", result.clone());
+                //This means the channel is closed, or we cannot write on it
+                //Either stop sending message to the channel
                 self.tx = None;
             }
         }
@@ -297,7 +292,6 @@ fn test_that_search_works_inside_files() {
     assert_eq!(results.len(), 0);
 
     let results2 = search.search("Introduction", 10, None);
-    dbg!(&results2);
     assert_eq!(results2.len(), 2);
     assert!(results2.contains(&ResearchResult {
         path: "test/depth2/test.md".to_string(),
@@ -423,6 +417,5 @@ fn test_priority_is_respected() {
     for result in results {
         assert!(result.priority <= priortiy);
         priortiy = result.priority;
-        dbg!(priortiy);
     }
 }

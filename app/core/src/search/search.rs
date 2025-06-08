@@ -9,7 +9,7 @@ impl Progress {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct ResearchResult {
     pub path: String,
     pub title: Option<String>,
@@ -29,5 +29,6 @@ pub trait Researcher {
     fn progress(&self) -> Progress;
 
     /// The actual research of a raw string returning some matches
+    /// Giving a SyncSender allows to receive result live (unsorted, unlimited)
     fn search(&self, raw: &str, limit: u8, sender: Option<SyncSender<ResearchResult>>) -> Vec<ResearchResult>;
 }
