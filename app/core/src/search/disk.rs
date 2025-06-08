@@ -1,10 +1,60 @@
 use crate::search::search::{Progress, ResearchResult, Researcher};
-use std::collections::HashMap;
+use std::collections::{BinaryHeap, HashMap};
 use std::ffi::OsStr;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::{fs, thread};
+use std::sync::mpsc::SyncSender;
 use walkdir::WalkDir;
+
+impl PartialOrd for ResearchResult {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        self.priority.partial_cmp(&other.priority)
+    }
+}
+impl Ord for ResearchResult {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.priority.cmp(&other.priority)
+    }
+}
+struct Disk {}
+
+/// Storing the results incrementally found in the search index
+#[derive(Clone)]
+struct OrderedResults {
+    results: BinaryHeap<ResearchResult>,
+    tx: Option<SyncSender<ResearchResult>>,
+}
+
+impl OrderedResults {
+    pub fn new(tx: Option<SyncSender<ResearchResult>>) -> Self {
+        Self {
+            results: BinaryHeap::default(),
+            tx,
+        }
+    }
+
+    pub fn push(&mut self, result: ResearchResult) {
+        self.results.push(result.clone());
+        if let Some(tx) = &self.tx {
+            let  err = tx.send(result.clone());
+            if err.is_err() {
+                //This means the channel is closed, or we cannot write on it
+                //Either stop sending message to the channel
+                self.tx = None;
+            }
+        }
+    }
+
+    /// First `limit` results from internal partial ordered list of results
+    pub fn results(&self, limit: usize) -> Vec<ResearchResult> {
+        let mut heap = self.results.clone();
+        (0..limit).filter_map(|_| heap.pop()).collect()
+    }
+    pub fn len(&self) -> usize {
+        self.results.len()
+    }
+}
 
 struct DiskResearcher {
     markdown_paths_set: Arc<Mutex<Vec<String>>>,
@@ -140,46 +190,69 @@ impl Researcher for DiskResearcher {
             ((*self.progress_counter.lock().unwrap() as f32 / total as f32) * 100f32).ceil() as u8,
         )
     }
-
     /// The actual research of a raw string returning some matches
-    fn search(&self, raw: &str, limit: u8) -> Vec<ResearchResult> {
+    fn search(&self, raw: &str, limit: u8, sender: Option<SyncSender<ResearchResult>>)  -> Vec<ResearchResult> {
         let query = raw.to_lowercase();
-        let map = self.title_map.lock().unwrap();
+        let map = self.title_map.lock().unwrap().clone();
 
-        let mut results = Vec::new();
+        let results: Arc<Mutex<OrderedResults>> = Arc::new(Mutex::new(OrderedResults::new(sender)));
+        let vector: Vec<_> = map.into_iter().collect();
 
-        for (title, paths) in map.iter() {
-            if title.to_lowercase().contains(&query) {
-                for path in paths {
-                    results.push(ResearchResult {
-                        title: Some(title.clone()),
-                        path: path.clone().parse().unwrap(),
-                    });
+        let mut threads = Vec::new();
+        let chunk_size = if vector.len() < self.nb_threads {
+            1
+        } else {
+            vector.len().div_ceil(self.nb_threads)
+        };
+        for tuple_chunk in vector.chunks(chunk_size) {
+            let tuple= tuple_chunk.to_vec(); // copy chunk
+            let results = Arc::clone(&results);
+            let query = query.to_lowercase();
 
-                    if results.len() >= limit.into() {
-                        return results;
+            let handle = thread::spawn(move || {
+                for (title, paths) in tuple {
+                    if results.lock().unwrap().len() >= limit as usize {
+                        return;
+                    }
+                    if title.to_lowercase().contains(&query) {
+                        for path in paths.iter() {
+                            let mut results = results.lock().unwrap();
+                            if results.len() >= limit as usize {
+                                return;
+                            }
+                            results.push(ResearchResult {
+                                title: Some(title.clone()),
+                                path: path.clone(),
+                                priority: 1,
+                            });
+                        }
+                    }
+                    if results.lock().unwrap().len() >= limit as usize {
+                        return;
                     }
                 }
-            }
+            });
+            threads.push(handle);
         }
 
-        drop(map);
-
-        let file_list = self.markdown_paths_set.lock().unwrap();
-
+        let file_list = self.markdown_paths_set.lock().unwrap().clone();
         for file in file_list.iter() {
+            if results.lock().unwrap().len() >= limit as usize {
+                break;
+            }
             if file.contains(query.as_str()) {
-                results.push(ResearchResult {
+                results.lock().unwrap().push(ResearchResult {
                     title: None,
                     path: file.clone().parse().unwrap(),
+                    priority: 2,
                 });
-
-                if results.len() >= limit.into() {
-                    return results;
-                }
             }
         }
-        results
+        for thread in threads {
+            thread.join().unwrap();
+        }
+        let final_results = results.lock().unwrap().clone();
+        final_results.results(limit as usize)
     }
 }
 
@@ -215,36 +288,42 @@ fn test_that_search_works_inside_files() {
     let mut search = DiskResearcher::new("test".parse().unwrap());
     search.start();
     thread::sleep(std::time::Duration::from_secs(1));
-    let results = search.search("Hello world!", 10);
+    let results = search.search("Hello world!", 10, None);
     assert_eq!(results.len(), 0);
 
-    let results2 = search.search("Introduction", 10);
+    let results2 = search.search("Introduction", 10, None);
     assert_eq!(results2.len(), 2);
     assert!(results2.contains(&ResearchResult {
         path: "test/depth2/test.md".to_string(),
-        title: Some("Introduction".to_string())
+        title: Some("Introduction".to_string()),
+        priority: 1,
     }));
     assert!(results2.contains(&ResearchResult {
         path: "test/depth1/test.md".to_string(),
-        title: Some("Introduction".to_string())
+        title: Some("Introduction".to_string()),
+        priority: 1,
     }));
-    let results2 = search.search("intro", 10);
+    let results2 = search.search("intro", 10, None);
 
     assert!(results2.contains(&ResearchResult {
         path: "test/depth2/test.md".to_string(),
-        title: Some("Introduction".to_string())
+        title: Some("Introduction".to_string()),
+        priority: 1,
     }));
     assert!(results2.contains(&ResearchResult {
         path: "test/depth1/test.md".to_string(),
-        title: Some("Introduction".to_string())
+        title: Some("Introduction".to_string()),
+        priority: 1,
     }));
     assert!(results2.contains(&ResearchResult {
         path: "test/depth1/test.md".to_string(),
-        title: Some("Intro".to_string())
+        title: Some("Intro".to_string()),
+        priority: 1,
     }));
     assert!(results2.contains(&ResearchResult {
         path: "test/depth1/test.md".to_string(),
-        title: Some("I swear introspection".to_string())
+        title: Some("I swear introspection".to_string()),
+        priority: 1,
     }));
     assert_eq!(results2.len(), 4);
 }
@@ -254,22 +333,25 @@ fn test_that_search_works_on_filename() {
     let mut search = DiskResearcher::new("test".parse().unwrap());
     search.start();
     thread::sleep(std::time::Duration::from_secs(1));
-    let results = search.search("depth2", 10);
+    let results = search.search("depth2", 10, None);
     assert_eq!(results.len(), 2);
     assert!(results.contains(&ResearchResult {
         path: "test/depth2/test.md".to_string(),
-        title: None
+        title: None,
+        priority: 2,
     }));
     assert!(results.contains(&ResearchResult {
         path: "test/depth2/depth3/test3.md".to_string(),
-        title: None
+        title: None,
+        priority: 2,
     }));
 
-    let results = search.search("depth3", 10);
+    let results = search.search("depth3", 10, None);
     assert_eq!(results.len(), 1);
     assert!(results.contains(&ResearchResult {
         path: "test/depth2/depth3/test3.md".to_string(),
-        title: None
+        title: None,
+        priority: 2,
     }));
 }
 #[test]
@@ -277,15 +359,17 @@ fn test_mixed_search() {
     let mut search = DiskResearcher::new("test".parse().unwrap());
     search.start();
     thread::sleep(std::time::Duration::from_secs(1));
-    let results = search.search("hello", 10);
+    let results = search.search("hello", 10, None);
     assert_eq!(results.len(), 2);
     assert!(results.contains(&ResearchResult {
         path: "test/depth1/hello.md".to_string(),
-        title: None
+        title: None,
+        priority: 2,
     }));
     assert!(results.contains(&ResearchResult {
         path: "test/depth1/test4.md".to_string(),
-        title: Some("Hello".to_string())
+        title: Some("Hello".to_string()),
+        priority: 1,
     }));
 }
 
@@ -311,7 +395,7 @@ fn test_that_empty_directory_cause_no_issue() {
     let mut search = DiskResearcher::new("test/depth2/depth3/depth4/".to_string());
     search.start();
     thread::sleep(std::time::Duration::from_secs(1));
-    let results = search.search("hello", 10);
+    let results = search.search("hello", 10, None);
     assert_eq!(results.len(), 0);
 }
 
@@ -320,6 +404,18 @@ fn test_that_limit_works() {
     let mut search = DiskResearcher::new("test".parse().unwrap());
     search.start();
     thread::sleep(std::time::Duration::from_secs(1));
-    let results = search.search("hello", 1);
+    let results = search.search("hello", 1, None);
     assert_eq!(results.len(), 1);
+}
+#[test]
+fn test_priority_is_respected() {
+    let mut search = DiskResearcher::new("test".parse().unwrap());
+    search.start();
+    thread::sleep(std::time::Duration::from_secs(1));
+    let results = search.search("t", 10, None);
+    let mut priortiy = 3; //Higher than the max possible
+    for result in results {
+        assert!(result.priority <= priortiy);
+        priortiy = result.priority;
+    }
 }
