@@ -172,39 +172,41 @@ impl<'a> TreeSitterGrammarsManager {
 }
 
 #[cfg(test)]
+pub static TEST_GRAMMAR: &str = "css";
+#[cfg(test)]
+pub fn get_test_grammar_repos() -> String {
+    use super::proposed_grammars::PROPOSED_GRAMMAR_SOURCES;
+
+    PROPOSED_GRAMMAR_SOURCES
+        .get(TEST_GRAMMAR)
+        .unwrap()
+        .to_string()
+}
+#[cfg(test)]
+pub fn get_unique_local_tree_sitter_grammars_folder() -> PathBuf {
+    use std::{env::current_dir, fs::create_dir_all};
+
+    let base = current_dir()
+        .unwrap()
+        .join("target")
+        .join("tree-sitter-grammars");
+    let random: u32 = rand::random_range(0..=1000000000);
+    let unique_folder = base.join(random.to_string());
+    if !unique_folder.exists() {
+        create_dir_all(&unique_folder).expect("Couldn't create tests folder inside target/");
+    }
+    unique_folder
+}
+#[cfg(test)]
 mod tests {
-    use std::{env::current_dir, fs::create_dir_all, path::PathBuf};
+    use crate::preview::tree_sitter_grammars::get_test_grammar_repos;
+    use crate::preview::tree_sitter_grammars::get_unique_local_tree_sitter_grammars_folder;
+    use crate::preview::tree_sitter_grammars::TEST_GRAMMAR;
 
-    use crate::{
-        preview::{
-            proposed_grammars::PROPOSED_GRAMMAR_SOURCES,
-            tree_sitter_grammars::TreeSitterGrammarsManager,
-        },
-        util::git::GitRepos,
-    };
-
-    static TEST_GRAMMAR: &str = "css";
-    fn get_test_grammar_repos() -> String {
-        PROPOSED_GRAMMAR_SOURCES
-            .get(TEST_GRAMMAR)
-            .unwrap()
-            .to_string()
-    }
-
-    fn get_unique_local_tree_sitter_grammars_folder() -> PathBuf {
-        let base = current_dir()
-            .unwrap()
-            .join("target")
-            .join("tree-sitter-grammars");
-        let random: u32 = rand::random_range(0..=1000000000);
-        let unique_folder = base.join(random.to_string());
-        if !unique_folder.exists() {
-            create_dir_all(&unique_folder).expect("Couldn't create tests folder inside target/");
-        }
-        unique_folder
-    }
+    use crate::{preview::tree_sitter_grammars::TreeSitterGrammarsManager, util::git::GitRepos};
 
     #[test]
+    #[ignore = "Slow and network usage"]
     fn test_can_install_test_grammar() {
         // Configure another grammars installation folder to avoid impacting the dev environnement
         let grammars_folder = get_unique_local_tree_sitter_grammars_folder();
@@ -216,6 +218,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "Slow and network usage"]
     fn test_can_update_test_grammar() {
         let grammars_folder = get_unique_local_tree_sitter_grammars_folder();
         let mut m = TreeSitterGrammarsManager::new_with_grammars_folder(grammars_folder).unwrap();
@@ -235,6 +238,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "Slow and network usage"]
     fn test_can_remove_test_grammar() {
         let grammars_folder = get_unique_local_tree_sitter_grammars_folder();
         let mut m = TreeSitterGrammarsManager::new_with_grammars_folder(grammars_folder).unwrap();

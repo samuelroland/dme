@@ -139,3 +139,31 @@ impl<'a> TreeSitterHighlighter<'a> {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::{env::current_dir, fs::create_dir_all, path::PathBuf};
+
+    use crate::preview::{
+        preview::Html,
+        tree_sitter_grammars::{
+            get_test_grammar_repos, get_unique_local_tree_sitter_grammars_folder,
+            TreeSitterGrammarsManager, TEST_GRAMMAR,
+        },
+    };
+
+    use super::TreeSitterHighlighter;
+
+    static CSS_SNIPPET: &str = "#form { border: 1px solid #55232; }";
+
+    #[test]
+    fn test_highlight_with_test_grammar() {
+        let mut m = TreeSitterGrammarsManager::new_with_grammars_folder(
+            get_unique_local_tree_sitter_grammars_folder(),
+        )
+        .unwrap();
+        m.install(&get_test_grammar_repos()).unwrap();
+        let h = TreeSitterHighlighter::new(TEST_GRAMMAR, &m).unwrap();
+        assert_eq!(h.highlight(CSS_SNIPPET), Html::from("salut".to_string()));
+    }
+}
