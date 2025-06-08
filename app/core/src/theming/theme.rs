@@ -1,8 +1,8 @@
 // Source: This comes from the unmaintained tree-painter crate released under MIT license
 // and it has been is adapted to our situation
 // https://github.com/matze/tree-painter
-use crate::renderer::HIGHLIGHT_NAMES;
-use crate::Error;
+use crate::theming::error::Error;
+use crate::theming::renderer::HIGHLIGHT_NAMES;
 use std::collections::HashMap;
 use std::convert::From;
 use toml::value::Table;
@@ -92,7 +92,7 @@ impl Theme {
         let mut style_map = HashMap::default();
 
         for (index, name) in HIGHLIGHT_NAMES.iter().enumerate() {
-            if let Some(style) = fg_color(*name)? {
+            if let Some(style) = fg_color(name)? {
                 style_map.insert(index, style);
             }
         }

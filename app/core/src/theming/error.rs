@@ -14,7 +14,4 @@ pub enum Error {
     /// A color is referenced but is not defined.
     #[error("toml color {0} not found")]
     InvalidColorReference(String),
-    /// Failed to highlight source.
-    #[error("highlighting failed: {0}")]
-    Highlighting(#[from] tree_sitter_highlight::Error),
 }
