@@ -62,8 +62,7 @@ impl<'a> TreeSitterGrammarsManager {
             .compile_parser_at_path(
                 repos.path(),
                 repos.path().clone().join(repos_name + ".so"),
-                // TODO: this
-                // will only work on Linux...
+                // TODO: this will only work on Linux...
                 Vec::default().as_slice(),
             )
             .map_err(|e| e.to_string())?;
@@ -176,14 +175,16 @@ mod tests {
         let mut m = TreeSitterGrammarsManager::new().unwrap();
         assert!(m.list_installed_langs().unwrap().is_empty());
         let result = m.install(&get_test_grammar_repos());
-        dbg!(&result);
         result.unwrap();
+        assert_eq!(m.list_installed_langs().unwrap().len(), 1);
     }
+
     #[test]
     fn test_check_local_deps() {
-        assert!(TreeSitterGrammarsManager::check_local_deps().is_ok());
-
-        std::env::set_var("PATH", ""); // empty the PATH so git will not be found
-        assert!(TreeSitterGrammarsManager::check_local_deps().is_err());
+        let result = TreeSitterGrammarsManager::check_local_deps();
+        dbg!(&result);
+        assert!(result.is_ok());
+        // Note: that's impossible to test without changing the PATH which affects other tests
+        // assert!(TreeSitterGrammarsManager::check_local_deps().is_err());
     }
 }
