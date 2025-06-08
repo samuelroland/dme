@@ -6,86 +6,90 @@ use crate::theming::{error::Error, theme};
 use std::collections::HashMap;
 use std::fmt::Write;
 
-pub(crate) const HIGHLIGHT_NAMES: [&str; 27] = [
-    "attribute",
-    "comment",
-    "constant",
-    "constant.builtin",
-    "constructor",
-    "escape",
-    "function",
-    "function.builtin",
-    "function.method",
-    "function.macro",
-    "include",
-    "keyword",
-    "label",
-    "namespace",
-    "number",
-    "operator",
-    "property",
-    "punctuation",
-    "punctuation.bracket",
-    "punctuation.delimiter",
-    "repeat",
-    "string",
-    "type",
-    "type.builtin",
-    "variable",
-    "variable.builtin",
-    "variable.parameter",
-];
-
 /// HTML syntax highlighting renderer.
 pub struct Renderer {
     theme: theme::Theme,
-    css_classes: HashMap<usize, String>,
 }
+
+/// Only apply the generated css when we are inside <code> (inline and block)
+/// Just to avoid CSS names conflicts with other
+const CSS_SCOPE: &str = "code";
 
 impl Renderer {
     /// Create a new renderer based on `theme`.
     pub fn new(theme: theme::Theme) -> Self {
-        let mut css_classes = HashMap::default();
-
-        for index in theme.style_map.keys() {
-            css_classes.insert(
-                *index,
-                format!(r#"class="tsc-{}""#, HIGHLIGHT_NAMES[*index]),
-            );
-        }
-
-        Self { theme, css_classes }
+        Self { theme }
     }
 
     /// Generate CSS block to be included in the `<style></style>` block or in an external CSS file.
+    /// The generated classes are based on all available highlighting names defined in the `theme`
     pub fn css(&self) -> String {
-        let mut css = String::new();
-
-        let _ = writeln!(
-            css,
-            ":root {{ --tsc-main-fg-color: {}; --tsc-main-bg-color: {}; }}",
-            self.theme.foreground.color, self.theme.background.color
+        let mut css = format!(
+            "{} {{color:{};background-color:{};}}\n",
+            CSS_SCOPE, self.theme.foreground.color, self.theme.background.color
         );
 
         for (index, style) in &self.theme.style_map {
             let _ = write!(
                 css,
-                ".tsc-{} {{ color: {};",
-                HIGHLIGHT_NAMES[*index], style.color
+                "{} .{}{{color:{};",
+                CSS_SCOPE, self.theme.supported_highlight_names[*index], style.color
             );
 
             if style.is_bold {
-                css.push_str("font-weight: bold;");
+                css.push_str("font-weight:bold;");
             }
 
             if style.is_italic {
-                css.push_str("font-style: italic;");
+                css.push_str("font-style:italic;");
             }
 
             css.push_str("}\n");
         }
 
-        css.push_str(".tsc-line { word-wrap: normal; white-space: pre; }\n");
+        // TODO: remove that if that's actually useless
+        // css.push_str(".tsc-line { word-wrap: normal; white-space: pre; }\n");
         css
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::{env::current_dir, fs::read_to_string};
+
+    use crate::theming::theme::Theme;
+
+    use super::Renderer;
+
+    #[test]
+    fn test_can_render_css_for_catppuccin_latte_theme() {
+        let content = read_to_string(
+            current_dir()
+                .unwrap()
+                .join("src/theming/default/catppuccin_latte.toml"),
+        )
+        .unwrap();
+        let theme = Theme::from_helix(
+            &content,
+            vec![
+                "variable".to_string(),
+                "function".to_string(),
+                "markup.bold".to_string(),
+            ],
+        )
+        .unwrap();
+
+        let renderer = Renderer::new(theme);
+        // Simple sorter by lines
+        let sorter = |given: &str| -> String {
+            let mut lines = given.lines().collect::<Vec<&str>>();
+            lines.sort();
+            lines.join("\n")
+        };
+        assert_eq!(sorter(&renderer.css()), sorter("code .function{color:#1e66f5;}\ncode .markup.bold{color:#d20f39;font-weight:bold;}\ncode .variable{color:#4c4f69;}\ncode {color:#4c4f69;background-color:#eff1f5;}"));
+
+        // TODO: we could try to minimize later the size of the generated CSS
+        // I see that color in variable is from "text" var in TOML file so it's a duplicated from
+        // the default value given in the first CSS default rule.
     }
 }
