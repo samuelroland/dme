@@ -31,6 +31,8 @@ pub struct Theme {
     pub(crate) supported_highlight_names: Vec<String>,
 }
 
+pub const DEFAULT_THEME: &str = include_str!("default/catppuccin_latte.toml");
+
 impl Theme {
     /// Load theme from a Helix [compatible](https://docs.helix-editor.com/themes.html) theme
     /// description stored in `data`.
@@ -129,7 +131,7 @@ impl Theme {
 mod tests {
     use std::{env::current_dir, fs::read_to_string};
 
-    use super::Theme;
+    use super::{Theme, DEFAULT_THEME};
 
     #[test]
     fn test_can_load_catppuccin_latte_toml_theme() {
@@ -147,5 +149,10 @@ mod tests {
 
         // See line with: text = "#4c4f69"
         assert_eq!(theme.foreground.color, "#4c4f69");
+    }
+
+    #[test]
+    fn test_default_theme_can_be_loaded() {
+        Theme::from_helix(DEFAULT_THEME, vec![]).unwrap();
     }
 }
