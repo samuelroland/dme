@@ -101,28 +101,23 @@ impl<'a> TreeSitterHighlighter<'a> {
     }
 
     /// Given a code content dynamically load this Tree-sitter parser return HTML
-    /// based on the highlighted tokens of your code. If the highlight fails,
-    /// it returns the code without modification.
+    /// based on the highlighted tokens of your code.
+    /// If the highlight fails, it returns the code without modification.
     pub fn highlight(&self, code: &str) -> Html {
-        // Do the final highlighting of given code, if it fails just return the code as is
-        match Highlighter::new().highlight(&self.highlight_config, code.as_bytes(), None, |_| None)
-        {
-            Ok(highlights) => {
-                let mut renderer = HtmlRenderer::new();
-                renderer
-                    .render(
-                        highlights,
-                        code.as_bytes(),
-                        &self.get_callback_to_apply_highlight_on_token(),
-                    )
-                    .unwrap();
-                Html(
-                    String::from_utf8(renderer.html).unwrap_or(
-                        "Rendered HTML is not a valid UTF8, could not render.".to_string(),
-                    ),
+        let mut renderer = HtmlRenderer::new();
+        match Highlighter::new()
+            .highlight(self.highlight_config, code.as_bytes(), None, |_| None)
+            .and_then(|highlights| {
+                renderer.render(
+                    highlights,
+                    code.as_bytes(),
+                    &self.get_callback_to_apply_highlight_on_token(),
                 )
-            }
-            // Highlighting failed, just used non highlighted code
+            }) {
+            Ok(_) => Html(
+                String::from_utf8(renderer.html)
+                    .unwrap_or("Rendered HTML is not a valid UTF8, could not render.".to_string()),
+            ),
             Err(_) => Html(code.to_string()),
         }
     }
