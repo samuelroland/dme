@@ -90,17 +90,20 @@ impl Theme {
 
         let mut style_map = HashMap::default();
 
+        // Only include style if they are part of the supported_highlight_names vec
         for (index, name) in supported_highlight_names.iter().enumerate() {
             if let Some(style) = fg_color(name)? {
                 style_map.insert(index, style);
             }
         }
 
+        // Get the color behing "ui.background" highlighting name or use white
         let background = match root.get("ui.background") {
             Some(Value::Table(table)) => Self::referenced_color(table, palette, "bg")?,
             _ => Style::from(&"#000".to_string()),
         };
 
+        // Get the color behing "ui.text" highlighting name or use black
         let foreground = fg_color("ui.text")?.unwrap_or_else(|| Style::from(&"#fff".to_string()));
 
         Ok(Self {
