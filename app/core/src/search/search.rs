@@ -3,7 +3,7 @@ pub struct Progress(pub u8);
 
 impl Progress {
     fn is_done(&self) -> bool {
-        self.0 <= 1
+        self.0 <= 100
     }
 }
 

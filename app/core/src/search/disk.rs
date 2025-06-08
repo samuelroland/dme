@@ -1,13 +1,13 @@
-use std::collections::{HashMap, HashSet};
-use std::path::{PathBuf};
+use crate::search::search::{Progress, ResearchResult, Researcher};
+use std::collections::HashMap;
+use std::ffi::OsStr;
+use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::{fs, thread};
-use std::ffi::OsStr;
 use walkdir::WalkDir;
-use crate::search::search::{Progress, ResearchResult, Researcher};
 
 struct DiskResearcher {
-    markdown_paths_set: Arc<Mutex<HashSet<String>>>,
+    markdown_paths_set: Arc<Mutex<Vec<String>>>,
     /// Each heading found will have an entry with a vector of files where it was found.
     title_map : Arc<Mutex<HashMap<String, Vec<String>>>>,
     base_path : PathBuf,
@@ -20,7 +20,7 @@ struct DiskResearcher {
 impl DiskResearcher {
     fn new(path: String) -> Self {
         Self {
-            markdown_paths_set: Arc::new(Mutex::new(HashSet::new())),
+            markdown_paths_set: Arc::new(Mutex::new(Vec::new())),
             title_map: Arc::new(Mutex::new(HashMap::new())),
             base_path: PathBuf::from(path),
             nb_threads: num_cpus::get(),
@@ -69,7 +69,7 @@ impl Researcher for DiskResearcher {
     fn start(&mut self) {
         self.has_started = true;
         //Get all paths. We have to accept the directory at first otherwise their content would be ignored
-        let markdown_paths: HashSet<String> = WalkDir::new(&self.base_path.to_path_buf())
+        let markdown_paths: Vec<String> = WalkDir::new(&self.base_path.to_path_buf())
             .into_iter()
             .filter_entry(|entry|
                 entry.file_type().is_dir() || entry.path().extension() == Some(OsStr::new("md"))
@@ -77,22 +77,22 @@ impl Researcher for DiskResearcher {
             .filter_map(Result::ok)
             .filter(|e| e.file_type().is_file())
             .map(|e| {
-                e.path().to_path_buf().to_str().unwrap().to_string()
+                e.path().to_path_buf().to_str().unwrap_or_default().to_string()
             } )
             .collect();
+        let all_paths: Vec<_> = markdown_paths.clone();
         {
             let mut map = self.markdown_paths_set.lock().unwrap();
             *map = markdown_paths.clone();
         }
 
-        let all_paths: Vec<_> = markdown_paths.iter().cloned().collect();
         if all_paths.is_empty() {
             return;
         }
         let chunk_size =  if (all_paths.len()) < self.nb_threads {
             1 //This means we have more thread than the number of files
         } else {
-            (all_paths.len() + self.nb_threads - 1) / self.nb_threads
+            all_paths.len().div_ceil(self.nb_threads)
         };
 
         for chunk in all_paths.chunks(chunk_size) {
@@ -103,7 +103,7 @@ impl Researcher for DiskResearcher {
             //Create the thread to search for markdown in chunk
             let handle = thread::spawn(move || {
                 //Local counter to avoid locking unlocking every loop.
-                let mut  local_counter: usize = 0;
+                let mut  local_counter = 0;
                 for path in chunk {
                     let titles = DiskResearcher::extract_markdown_titles(&path);
                     let mut map = title_map.lock().unwrap();
@@ -111,16 +111,17 @@ impl Researcher for DiskResearcher {
                         map.entry(title).or_default().push(path.clone())
                     }
                     local_counter += 1;
-                    if local_counter % 10 == 0 {
+                    if local_counter == 10 {
                         let mut global_counter = counter.lock().unwrap();
                         *global_counter += 10;
+                        local_counter = 0;
                     }
                 }
-                //If final counter is not divisible by 10 we need to add the rest
+                //If final counter is not 0 then we need to add the rest
                 // to the total to have the real total when finished.
-                if local_counter % 10 != 0 {
+                if local_counter  != 0 {
                     let mut global_counter = counter.lock().unwrap();
-                    *global_counter += local_counter % 10;
+                    *global_counter += local_counter;
                 }
             });
             self.threads.push(handle);
@@ -132,7 +133,7 @@ impl Researcher for DiskResearcher {
         if total == 0 {
             return Progress(0);
         }
-        Progress(((total as f32 / *self.progress_counter.lock().unwrap() as f32) * 100f32).ceil() as u8)
+        Progress(((*self.progress_counter.lock().unwrap() as f32 / total as f32) * 100f32).ceil() as u8)
     }
 
     /// The actual research of a raw string returning some matches
