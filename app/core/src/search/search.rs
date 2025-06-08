@@ -7,7 +7,7 @@ impl Progress {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct ResearchResult {
     pub(crate) path: String,
     pub(crate) title: Option<String>,

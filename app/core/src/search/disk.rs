@@ -140,46 +140,65 @@ impl Researcher for DiskResearcher {
             ((*self.progress_counter.lock().unwrap() as f32 / total as f32) * 100f32).ceil() as u8,
         )
     }
-
     /// The actual research of a raw string returning some matches
     fn search(&self, raw: &str, limit: u8) -> Vec<ResearchResult> {
         let query = raw.to_lowercase();
-        let map = self.title_map.lock().unwrap();
+        let map = self.title_map.lock().unwrap().clone();
 
-        let mut results = Vec::new();
+        let results: Arc<Mutex<Vec<ResearchResult>>> = Arc::new(Mutex::new(Vec::new()));
+        let vector: Vec<_> = map.into_iter().collect();
 
-        for (title, paths) in map.iter() {
-            if title.to_lowercase().contains(&query) {
-                for path in paths {
-                    results.push(ResearchResult {
-                        title: Some(title.clone()),
-                        path: path.clone().parse().unwrap(),
-                    });
+        let mut threads = Vec::new();
+        let chunk_size = if vector.len() < self.nb_threads {
+            1
+        } else {
+            vector.len().div_ceil(self.nb_threads)
+        };
+        for tuple in vector.chunks(chunk_size) {
+            let tuple = tuple.to_vec(); // copy chunk
+            let results = Arc::clone(&results);
+            let query = query.to_lowercase().clone();
 
-                    if results.len() >= limit.into() {
-                        return results;
+            let handle = thread::spawn(move || {
+                for (title, paths) in tuple {
+                    if results.lock().unwrap().len() >= limit as usize {
+                        return;
+                    }
+                    if title.to_lowercase().contains(&query) {
+                        for path in paths.iter() {
+                            let mut results = results.lock().unwrap();
+                            if results.len() >= limit as usize {
+                                return;
+                            }
+                            results.push(ResearchResult {
+                                title: Some(title.clone()),
+                                path: path.clone(),
+                            });
+                        }
+                    }
+                    if results.lock().unwrap().len() >= limit as usize {
+                        return;
                     }
                 }
-            }
+            });
+            threads.push(handle);
         }
 
-        drop(map);
-
-        let file_list = self.markdown_paths_set.lock().unwrap();
-
+        let file_list = self.markdown_paths_set.lock().unwrap().clone();
         for file in file_list.iter() {
+            let results = Arc::clone(&results);
             if file.contains(query.as_str()) {
-                results.push(ResearchResult {
+                results.lock().unwrap().push(ResearchResult {
                     title: None,
                     path: file.clone().parse().unwrap(),
                 });
-
-                if results.len() >= limit.into() {
-                    return results;
-                }
             }
         }
-        results
+        for thread in threads {
+            thread.join().unwrap();
+        }
+        let x = results.lock().unwrap().clone();
+        x
     }
 }
 
