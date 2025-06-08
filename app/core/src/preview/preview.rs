@@ -1,4 +1,4 @@
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq)]
 pub struct Html(pub String);
 
 impl From<String> for Html {
@@ -15,5 +15,5 @@ impl Html {
 
 /// A component that will be able to preview a given document into HTML
 pub trait Previewable<'a> {
-    fn to_html(&self) -> Html;
+    fn to_html(&self, source: &str) -> Html;
 }
