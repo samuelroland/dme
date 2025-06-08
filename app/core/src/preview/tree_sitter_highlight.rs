@@ -23,9 +23,8 @@ pub struct TreeSitterHighlighter<'a> {
 
 impl<'a> TreeSitterHighlighter<'a> {
     /// Try to create a new highlighter based on a
-    pub fn new(lang: &'a str) -> Result<Self, String> {
+    pub fn new(lang: &'a str, manager: &TreeSitterGrammarsManager) -> Result<Self, String> {
         // Note: we making the supposition that the lang is in the folder name, for now
-        let manager = TreeSitterGrammarsManager::new()?;
         let repos_path = manager.get_repos_for_lang(lang)?.path().clone();
         if repos_path.exists() {
             let mut loader = Loader::new().map_err(|e| e.to_string())?;

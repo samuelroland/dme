@@ -50,7 +50,10 @@ impl<'a> TreeSitterGrammarsManager {
     }
 
     /// Create a manager by specifying another folder instead of DEFAULT_TREE_SITTER_GRAMMARS_FOLDER
-    pub fn new_with_grammars_folder(another_grammars_folder: PathBuf) -> Result<Self, String> {
+    /// Public only for this crate because only useful for testing
+    pub(crate) fn new_with_grammars_folder(
+        another_grammars_folder: PathBuf,
+    ) -> Result<Self, String> {
         let loader = Loader::new().map_err(|e| e.to_string())?;
         Ok(TreeSitterGrammarsManager {
             loader,
