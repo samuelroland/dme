@@ -71,10 +71,10 @@ impl SyntaxHighlighterAdapter for ComrakParser {
         if lang.is_none_or(|v| v.trim().is_empty()) {
             output.write_all(code.as_bytes())
         } else {
-            let lang = TreeSitterHighlighter::normalize_lang(lang.unwrap_or_default());
             let mut loader =
                 Loader::new().map_err(|e| std::io::Error::new(io::ErrorKind::Other, e))?;
-            let highlighter = TreeSitterHighlighter::new(&mut loader, lang, &self.manager);
+            let highlighter =
+                TreeSitterHighlighter::new(&mut loader, lang.unwrap_or_default(), &self.manager);
             // If lang might be supported or not
             match highlighter {
                 Ok(highlighter) => {

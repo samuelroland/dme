@@ -16,18 +16,23 @@ use super::{preview::Html, tree_sitter_grammars::TreeSitterGrammarsManager};
 pub struct TreeSitterHighlighter<'a> {
     /// The language identifier
     lang: &'a str,
-    /// The highlighting configuration containing highlight queries, injections queries and local
-    /// queries.
+    /// The highlighting configuration containing highlight queries,
+    /// injections queries and local queries.
     highlight_config: &'a HighlightConfiguration,
 }
 
 impl<'a> TreeSitterHighlighter<'a> {
-    /// Try to create a new highlighter based on a
+    /// Try to create a new highlighter based on an external loader
+    /// A loader created with Loader::new() is fine
+    /// The language to highlight, a grammar for this must be installed or it will fail
+    /// The manager is used to get the grammar folder for this language
     pub fn new(
         loader: &'a mut Loader,
         lang: &'a str,
         manager: &TreeSitterGrammarsManager,
     ) -> Result<Self, String> {
+        let lang = Self::normalize_lang(lang);
+
         // Note: we making the supposition that the lang is in the folder name, for now
         let repos_path = manager.get_repos_for_lang(lang)?.path().clone();
         if repos_path.exists() {
@@ -158,6 +163,7 @@ mod tests {
     use super::TreeSitterHighlighter;
 
     #[test]
+    #[ignore = "Network dependency"]
     fn test_highlight_with_test_grammar() {
         let mut m = TreeSitterGrammarsManager::new_with_grammars_folder(
             get_unique_local_tree_sitter_grammars_folder(),
