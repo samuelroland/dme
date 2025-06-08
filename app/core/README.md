@@ -21,14 +21,9 @@ How to run tests
 cargo test
 ```
 
-How to run tests and include ignored tests (because need network access or are slow)
+How to run tests and include ignored tests (they are marked as `#[ignored]` because they need network access or are slow to run)
 ```sh
-cargo test -- --include-ignored --test-threads 1
+cargo test -- --include-ignored
 ```
-Note: they must be used in parallel because some operations with Git don't work in 
 
-
-How to run tests only ignored tests
-```sh
-cargo test -- --ignored --test-threads 1
-```
+Note: **never change the `PATH`** variable in tests, it will affects other tests as well!
