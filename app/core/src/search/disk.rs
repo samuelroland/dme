@@ -86,7 +86,6 @@ impl Researcher for DiskResearcher {
         }
 
         let all_paths: Vec<_> = markdown_paths.iter().cloned().collect();
-        //Calculate chunks size to divide by threads. With the + thread we ensure chunk size > 0
         if all_paths.is_empty() {
             return;
         }
@@ -103,20 +102,29 @@ impl Researcher for DiskResearcher {
 
             //Create the thread to search for markdown in chunk
             let handle = thread::spawn(move || {
+                //Local counter to avoid locking unlocking every loop.
+                let mut  local_counter: usize = 0;
                 for path in chunk {
                     let titles = DiskResearcher::extract_markdown_titles(&path);
                     let mut map = title_map.lock().unwrap();
                     for title in titles {
-                        map.entry(title).or_default().push(path.clone().to_string())
+                        map.entry(title).or_default().push(path.clone())
                     }
-                    let mut count = counter.lock().unwrap();
-                    *count += 1;
+                    local_counter += 1;
+                    if local_counter % 10 == 0 {
+                        let mut global_counter = counter.lock().unwrap();
+                        *global_counter += 10;
+                    }
+                }
+                //If final counter is not divisible by 10 we need to add the rest
+                // to the total to have the real total when finished.
+                if local_counter % 10 != 0 {
+                    let mut global_counter = counter.lock().unwrap();
+                    *global_counter += local_counter % 10;
                 }
             });
             self.threads.push(handle);
         }
-        //Once all thread are started, spawn one to say when finding is finished
-
     }
     /// Ask about the progress, from 0 to 100 percent of research
     fn progress(&self) -> Progress {
@@ -124,11 +132,11 @@ impl Researcher for DiskResearcher {
         if total == 0 {
             return Progress(0);
         }
-        Progress((total as f32 / self.nb_threads as f32).ceil() as u8)
+        Progress(((total as f32 / *self.progress_counter.lock().unwrap() as f32) * 100f32).ceil() as u8)
     }
 
     /// The actual research of a raw string returning some matches
-    fn search(&self, raw: String, limit: u8) -> Vec<ResearchResult> {
+    fn search(&self, raw: &str, limit: u8) -> Vec<ResearchResult> {
         let query = raw.to_lowercase();
         let map = self.title_map.lock().unwrap();
 
@@ -177,7 +185,9 @@ fn test_that_file_are_found() {
     thread::sleep(std::time::Duration::from_secs(1));
 
     assert!(!search.markdown_paths_set.lock().unwrap().is_empty());
-    println!("{:?}", search.markdown_paths_set.lock().unwrap());
+    for path in search.markdown_paths_set.lock().unwrap().iter() {
+        assert!(path.ends_with(".md"));
+    }
 }
 
 #[test]
@@ -187,11 +197,11 @@ fn test_that_progress_is_zero_at_start() {
 }
 
 #[test]
-fn test_that_progress_is_one_at_end() {
+fn test_that_progress_is_one_hundred_at_end() {
     let mut search = DiskResearcher::new("test".parse().unwrap());
     search.start();
     thread::sleep(std::time::Duration::from_secs(1));
-    assert_eq!(search.progress(),Progress(1));
+    assert_eq!(search.progress(),Progress(100));
 }
 
 #[test]
@@ -199,14 +209,20 @@ fn test_that_search_works_inside_files() {
     let mut search = DiskResearcher::new("test".parse().unwrap());
     search.start();
     thread::sleep(std::time::Duration::from_secs(1));
-    let results = search.search("Hello world!".to_string(), 10);
+    let results = search.search("Hello world!", 10);
     assert_eq!(results.len(), 0);
 
-    let resutts2 = search.search("Introduction".to_string(), 10);
-    assert_eq!(resutts2.len(), 2);
+    let results2 = search.search("Introduction", 10);
+    assert_eq!(results2.len(), 2);
+    assert!(results2.contains(&ResearchResult { path: "test/depth2/test.md".to_string(), title: Some("Introduction".to_string())}));
+    assert!(results2.contains(&ResearchResult{path : "test/depth1/test.md".to_string(), title: Some("Introduction".to_string())}));
+    let results2 = search.search("intro", 10);
 
-    let resutts2 = search.search("intro".to_string(), 10);
-    assert_eq!(resutts2.len(), 4);
+    assert!(results2.contains(&ResearchResult { path: "test/depth2/test.md".to_string(), title: Some("Introduction".to_string())}));
+    assert!(results2.contains(&ResearchResult{path : "test/depth1/test.md".to_string(), title: Some("Introduction".to_string())}));
+    assert!(results2.contains(&ResearchResult { path: "test/depth1/test.md".to_string(), title: Some("Intro".to_string())}));
+    assert!(results2.contains(&ResearchResult{path : "test/depth1/test.md".to_string(), title: Some("I swear introspection".to_string())}));
+    assert_eq!(results2.len(), 4);
 }
 
 #[test]
@@ -214,20 +230,27 @@ fn test_that_search_works_on_filename() {
     let mut search = DiskResearcher::new("test".parse().unwrap());
     search.start();
     thread::sleep(std::time::Duration::from_secs(1));
-    let results = search.search("depth2".to_string(), 10);
+    let results = search.search("depth2", 10);
     assert_eq!(results.len(), 2);
+    assert!(results.contains(&ResearchResult { path: "test/depth2/test.md".to_string(), title: None}));
+    assert!(results.contains(&ResearchResult{path : "test/depth2/depth3/test3.md".to_string(), title: None}));
 
 
-    let results = search.search("depth3".to_string(), 10);
+    let results = search.search("depth3", 10);
     assert_eq!(results.len(), 1);
+    assert!(results.contains(&ResearchResult{path : "test/depth2/depth3/test3.md".to_string(), title: None}));
+
 }
 #[test]
 fn test_mixed_search() {
     let mut search = DiskResearcher::new("test".parse().unwrap());
     search.start();
     thread::sleep(std::time::Duration::from_secs(1));
-    let results = search.search("hello".to_string(), 10);
+    let results = search.search("hello", 10);
     assert_eq!(results.len(),2 );
+    assert!(results.contains(&ResearchResult{path : "test/depth1/hello.md".to_string(), title: None}));
+    assert!(results.contains(&ResearchResult{path : "test/depth1/test4.md".to_string(), title: Some("Hello".to_string())}));
+
 }
 
 #[test]
@@ -252,7 +275,7 @@ fn test_that_empty_directory_cause_no_issue() {
     let mut search = DiskResearcher::new("test/depth2/depth3/depth4/".to_string());
     search.start();
     thread::sleep(std::time::Duration::from_secs(1));
-    let results = search.search("hello".to_string(), 10);
+    let results = search.search("hello", 10);
     assert_eq!(results.len(),0 );
 }
 
@@ -261,6 +284,6 @@ fn test_that_limit_works() {
     let mut search = DiskResearcher::new("test".parse().unwrap());
     search.start();
     thread::sleep(std::time::Duration::from_secs(1));
-    let results = search.search("hello".to_string(), 1);
+    let results = search.search("hello", 1);
     assert_eq!(results.len(),1);
 }

@@ -1,11 +1,15 @@
-use std::path::PathBuf;
-
 #[derive(Debug, PartialEq)]
 pub struct Progress(pub u8);
 
+impl Progress {
+    fn is_done(&self) -> bool {
+        self.0 <= 1
+    }
+}
+
 #[derive(Debug, PartialEq)]
 pub struct ResearchResult {
-    pub(crate) path: PathBuf,
+    pub(crate) path: String,
     pub(crate) title: Option<String>,
 }
 
@@ -21,5 +25,5 @@ pub trait Researcher {
     fn progress(&self) -> Progress;
 
     /// The actual research of a raw string returning some matches
-    fn search(&self, raw: String, limit: u8) -> Vec<ResearchResult>;
+    fn search(&self, raw: &str, limit: u8) -> Vec<ResearchResult>;
 }
