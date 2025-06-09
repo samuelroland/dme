@@ -1,13 +1,15 @@
 use std::fs::read_to_string;
+pub mod export;
+pub mod preview;
+pub mod search;
+pub mod theming;
+mod util;
 
 use preview::{
     comrak::ComrakParser,
     preview::{Html, Previewable},
     tree_sitter_highlight::TreeSitterHighlighter,
 };
-
-pub mod preview;
-pub mod util;
 
 /// Given a Markdown file convert it to a full Html document that can be used as a .html file
 /// directly, with all the Tre-Sitter highlighting for code blocks and a default code theme applied
