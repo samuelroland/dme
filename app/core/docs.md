@@ -1,6 +1,9 @@
 # High level overview of the library
 This is coming to complet the inline triple slash comments to have a high level overview and understand design decisions.
 
+## Markdown parsing
+We use `comrak` to parse Markdown. We integrate Tree-Sitter highlighting via the `SyntaxHighlighterAdapter` trait that allow us to call our `TreeSitterHighlighter` on each code blocks.
+
 ## Preview
 
 ### What's a Tree-Sitter grammar ?
@@ -58,7 +61,9 @@ src> tree
 
 This parser need to be built into a shared library before we can load it dynamically via the `tree-sitter` crate which are Rust bindings to the C library.
 
-Once a source code has been parsed, it still need to attributes highlight names to tokens. As we see in the `tree-sitter.json` configuration, each grammar can indicate one or more highlight query files like here `"highlights": "queries/highlights.scm"`. Here is the small extract that shows some tokens containing literal char are associated with the `operator` highlight name. Then, the token of type `class_name` get attributed the `property` name.
+Once a source code has been parsed into a tree of nodes representing each token, it still need to attributes highlight names. A highlight name is something like `type.builtin`, `variable.local`, `keyword` or `constant` which indicate the type of the token in a generic theming way. These names are not specific to a language, contrary to nodes types who are different for each language.
+
+As we see in the `tree-sitter.json` configuration, each grammar can indicate one or more highlight query files like here `highlights: queries/highlights.scm`. Here is the small extract that shows some tokens containing literal char are associated with the `operator` highlight name. Then, the token of type `class_name` get attributed the `property` name.
 
 ```scm
 "~" @operator
@@ -147,34 +152,13 @@ Given a Git link like `https://github.com/tree-sitter-grammars/tree-sitter-yaml`
 We can then update, remove or list these grammars based on the lang identifier. If want to remove the grammar for id `css`, it will search for a folder `tree-sitter-css` inside the grammars folder. The update runs `git pull` and trigger a recompilation.
 
 #### How the highlight process work ?
-1. We normalize the given lang id (so `js` become `javascript`)
-1. We search a grammar inside the grammars folder with name `tree-sitter-lang` where `lang` is the language id after normalisation)
-1
-
-            // Note: tree-sitter.json contains an array of `grammars` which could be more than one
-            // grammar sometimes (typescript -> typescript, tsx and flow. xml -> xml and dtd)
-            // For now, we only support the first entry.
-
-
-        // Note: we making the supposition that the lang is in the folder name, for now
-We don't support local queries and injections queries for now.
-
-
-
-    /// Get a slice containing all of the highlight names used in the configuration.
-    #[must_use]
-    pub const fn names(&self) -> &[&str] {
-
-doesnt support language injection
-
-
-
-    /// Parse highlight names from queries files as we need to give a list of recognized
-    /// names, we want to accept all of them
-    /// highlight name is something like "type.builtin" "variable.local" "keyword" "constant"
-    /// The whole list of supported names for Helix themes are here
-    /// https://docs.helix-editor.com/themes.html#scopes
+1. First the creation of `TreeSitterHighlighter` via `new()`
+    1. We normalize the given lang id (so `js` become `javascript`)
+    1. We search a grammar inside the grammars folder with name `tree-sitter-lang` where `lang` is the language id after normalisation)
+    1. We load it via `Loader::load_language_at_path()` which returns a `Language`. After loading the first language configuaration for this grammar folder, we can run `LanguageConfiguration::highlight_config()` with the previous `language` and if it succeeded it has loaded internally all the queries files and parsed all the highlight names present in all queries files of the grammar. We get a `HighlightConfiguration` which allow us to get access via `HighlightConfiguration::names()` to the list of detected names later.
+1. Then, each call to `highlight()` will do the job based on the `highlight_config` saved as attribute, we apply the highlight name as a CSS class with `.` replaced by a space. This is where we use `self.highlight_config.names()`.
 
 #### Limits
 Looking at syntaxes via folder name is not the best approach, that's a temporary simplification. The `tree-sitter-typescript` contains multiple grammars: `typescript`, `tsx` and `flow` and we only consider the first for now. A code highlighted as `tsx` will not receive any highlights for now.
 
+We don't support local queries and injections queries for now. If a language contains another language, this integrated language will not be highlighted (this is called language injection).
