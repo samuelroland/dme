@@ -1,3 +1,4 @@
-mod error;
-mod renderer;
-mod theme;
+pub mod error;
+pub mod helix;
+pub mod renderer;
+pub mod theme;
