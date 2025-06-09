@@ -1,4 +1,6 @@
-#[derive(Debug, Eq, PartialEq)]
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
 pub struct Html(pub String);
 
 impl From<String> for Html {

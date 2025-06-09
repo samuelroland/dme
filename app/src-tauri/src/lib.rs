@@ -1,3 +1,13 @@
+use std::{env::current_dir, path::PathBuf, sync::mpsc};
+
+use dme_core::{
+    markdown_to_highlighted_html,
+    preview::preview::Html,
+    search::{
+        disk::DiskResearcher,
+        search::{ResearchResult, Researcher},
+    },
+};
 use serde::Serialize;
 use tauri::{AppHandle, Emitter};
 
@@ -16,7 +26,7 @@ fn get_app_info() -> AppInfo {
 #[tauri::command]
 /// Open given Markdown file or the default one provided as argument
 /// or none otherwise
-fn open_markdown_file(mut path: String) -> Result<Option<String>, String> {
+fn open_markdown_file(mut path: String) -> Result<Option<Html>, String> {
     println!("{path:?}");
     if path.is_empty() {
         path = {
@@ -32,7 +42,7 @@ fn open_markdown_file(mut path: String) -> Result<Option<String>, String> {
     if path.is_empty() {
         Ok(None)
     } else if PathBuf::from(&path).exists() {
-        Ok(Some(load_markdown_as_html(&path)?))
+        Ok(Some(markdown_to_highlighted_html(&path)?))
     } else {
         Err(format!("File {path} doesn't exist !").to_string())
     }
@@ -49,7 +59,6 @@ fn run_search(search: String) -> Result<Vec<ResearchResult>, String> {
             .to_string(),
     );
     disk_search.start();
-    disk_search.print_index_stats();
     let (tx, rx) = mpsc::channel::<ResearchResult>();
     let results = disk_search.search(&search, 20, Some(tx.clone()));
     Ok(results)
