@@ -1,8 +1,8 @@
 use std::fs::read_to_string;
-mod export;
-mod preview;
-mod search;
-mod theming;
+pub mod export;
+pub mod preview;
+pub mod search;
+pub mod theming;
 mod util;
 
 use comrak::adapters::SyntaxHighlighterAdapter;

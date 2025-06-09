@@ -44,37 +44,6 @@ blockquote p::before, blockquote p::after {
 	@apply border text-center px-3 py-2
 }
 
-/* Tree Sitter random theme */
-.keyword {
-    color: lightgreen;
-}
-
-.variable {
-    color: orange;
-}
-
-.delimiter {
-    color: gray;
-}
-
-.operator {
-    color: violet;
-}
-.constant {
-    color: yellow;
-}
-.type {
-    color: cyan;
-}
-
-.function {
-    color: #ed5fad;
-}
-
-.punctuation {
-    color: #ed6630;
-}
-
 a {
     color: #394e98ff
 }

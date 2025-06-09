@@ -2,9 +2,9 @@ use crate::search::search::{Progress, ResearchResult, Researcher};
 use std::collections::{BinaryHeap, HashMap};
 use std::ffi::OsStr;
 use std::path::PathBuf;
+use std::sync::mpsc::Sender;
 use std::sync::{Arc, Mutex};
 use std::{fs, thread};
-use std::sync::mpsc::SyncSender;
 use walkdir::WalkDir;
 
 impl PartialOrd for ResearchResult {
@@ -23,11 +23,11 @@ struct Disk {}
 #[derive(Clone)]
 struct OrderedResults {
     results: BinaryHeap<ResearchResult>,
-    tx: Option<SyncSender<ResearchResult>>,
+    tx: Option<Sender<ResearchResult>>,
 }
 
 impl OrderedResults {
-    pub fn new(tx: Option<SyncSender<ResearchResult>>) -> Self {
+    pub fn new(tx: Option<Sender<ResearchResult>>) -> Self {
         Self {
             results: BinaryHeap::default(),
             tx,
@@ -37,7 +37,7 @@ impl OrderedResults {
     pub fn push(&mut self, result: ResearchResult) {
         self.results.push(result.clone());
         if let Some(tx) = &self.tx {
-            let  err = tx.send(result.clone());
+            let err = tx.send(result.clone());
             if err.is_err() {
                 //This means the channel is closed, or we cannot write on it
                 //Either stop sending message to the channel
@@ -56,7 +56,8 @@ impl OrderedResults {
     }
 }
 
-struct DiskResearcher {
+#[derive(Debug)]
+pub struct DiskResearcher {
     markdown_paths_set: Arc<Mutex<Vec<String>>>,
     /// Each heading found will have an entry with a vector of files where it was found.
     title_map: Arc<Mutex<HashMap<String, Vec<String>>>>,
@@ -68,7 +69,7 @@ struct DiskResearcher {
 }
 
 impl DiskResearcher {
-    fn new(path: String) -> Self {
+    pub fn new(path: String) -> Self {
         Self {
             markdown_paths_set: Arc::new(Mutex::new(Vec::new())),
             title_map: Arc::new(Mutex::new(HashMap::new())),
@@ -80,7 +81,8 @@ impl DiskResearcher {
         }
     }
 
-    fn set_nb_thread(&mut self, nb_thread: usize) -> Result<(), String> {
+
+    pub fn set_nb_thread(&mut self, nb_thread: usize) -> Result<(), String> {
         if nb_thread == 0 {
             Err("Number of thread must be greater than 0".to_string())
         } else if self.has_started {
@@ -90,13 +92,13 @@ impl DiskResearcher {
         }
     }
 
-    fn extract_markdown_titles(path: &str) -> Vec<String> {
+    pub fn extract_markdown_titles(path: &str) -> Vec<String> {
         let content = fs::read_to_string(path).unwrap_or_default();
 
         let mut headings = Vec::new();
-        let mut lines = content.lines();
+        let lines = content.lines();
         let mut is_in_code_block = false;
-        while let Some(line) = lines.next() {
+        for line in lines {
             if line.starts_with("~~~") || line.starts_with("```") {
                 is_in_code_block = !is_in_code_block;
             }
@@ -118,7 +120,7 @@ impl Researcher for DiskResearcher {
     fn start(&mut self) {
         self.has_started = true;
         //Get all paths. We have to accept the directory at first otherwise their content would be ignored
-        let markdown_paths: Vec<String> = WalkDir::new(&self.base_path.to_path_buf())
+        let markdown_paths: Vec<String> = WalkDir::new(&self.base_path)
             .into_iter()
             .filter_entry(|entry| {
                 entry.file_type().is_dir() || entry.path().extension() == Some(OsStr::new("md"))
@@ -191,7 +193,12 @@ impl Researcher for DiskResearcher {
         )
     }
     /// The actual research of a raw string returning some matches
-    fn search(&self, raw: &str, limit: u8, sender: Option<SyncSender<ResearchResult>>)  -> Vec<ResearchResult> {
+    fn search(
+        &self,
+        raw: &str,
+        limit: u8,
+        sender: Option<Sender<ResearchResult>>,
+    ) -> Vec<ResearchResult> {
         let query = raw.to_lowercase();
         let map = self.title_map.lock().unwrap().clone();
 
@@ -205,7 +212,7 @@ impl Researcher for DiskResearcher {
             vector.len().div_ceil(self.nb_threads)
         };
         for tuple_chunk in vector.chunks(chunk_size) {
-            let tuple= tuple_chunk.to_vec(); // copy chunk
+            let tuple = tuple_chunk.to_vec(); // copy chunk
             let results = Arc::clone(&results);
             let query = query.to_lowercase();
 

@@ -1,2 +1,2 @@
-mod search;
-mod disk;
+pub mod disk;
+pub mod search;

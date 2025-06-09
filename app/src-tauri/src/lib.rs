@@ -1,5 +1,8 @@
-use dme_core::{convert_md_to_html, load_markdown_as_html};
-use std::fs::read_to_string;
+use dme_core::search::{
+    disk::{self, DiskResearcher},
+    search::{ResearchResult, Researcher},
+};
+use std::{env::current_dir, fs::read_to_string, path::PathBuf, sync::mpsc};
 
 use serde::Serialize;
 use tauri::{AppHandle, Emitter};
@@ -17,21 +20,56 @@ fn get_app_info() -> AppInfo {
 }
 
 #[tauri::command]
-fn get_file_to_show() -> Option<Result<String, String>> {
-    let args: Vec<String> = std::env::args().collect();
-    if args.len() < 2 {
-        None
-    } else {
-        let file = &args[1];
-        Some(load_markdown_as_html(file))
+/// Open given Markdown file or the default one provided as argument
+/// or none otherwise
+fn open_markdown_file(mut path: String) -> Result<Option<String>, String> {
+    println!("{path:?}");
+    if path.is_empty() {
+        path = {
+            let args: Vec<String> = std::env::args().collect();
+            if args.len() < 2 {
+                String::default()
+            } else {
+                args[1].clone()
+            }
+        }
     }
+
+    if path.is_empty() {
+        Ok(None)
+    } else if PathBuf::from(&path).exists() {
+        Ok(Some(load_markdown_as_html(&path)?))
+    } else {
+        Err(format!("File {path} doesn't exist !").to_string())
+    }
+}
+
+#[tauri::command]
+fn run_search(search: String) -> Result<Vec<ResearchResult>, String> {
+    let mut disk_search = DiskResearcher::new(
+        current_dir()
+            .map_err(|e| e.to_string())?
+            .join("../..")
+            .to_str()
+            .unwrap_or_default()
+            .to_string(),
+    );
+    disk_search.start();
+    disk_search.print_index_stats();
+    let (tx, rx) = mpsc::channel::<ResearchResult>();
+    let results = disk_search.search(&search, 20, Some(tx.clone()));
+    Ok(results)
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![get_file_to_show, get_app_info])
+        .invoke_handler(tauri::generate_handler![
+            get_app_info,
+            run_search,
+            open_markdown_file
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

@@ -1,4 +1,6 @@
-use std::sync::mpsc::SyncSender;
+use std::sync::mpsc::Sender;
+
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, PartialEq)]
 pub struct Progress(pub u8);
@@ -9,7 +11,7 @@ impl Progress {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
 pub struct ResearchResult {
     pub path: String,
     pub title: Option<String>,
@@ -30,5 +32,10 @@ pub trait Researcher {
 
     /// The actual research of a raw string returning some matches
     /// Giving a SyncSender allows to receive result live (unsorted, unlimited)
-    fn search(&self, raw: &str, limit: u8, sender: Option<SyncSender<ResearchResult>>) -> Vec<ResearchResult>;
+    fn search(
+        &self,
+        raw: &str,
+        limit: u8,
+        sender: Option<Sender<ResearchResult>>,
+    ) -> Vec<ResearchResult>;
 }
