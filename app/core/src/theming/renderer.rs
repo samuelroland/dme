@@ -25,8 +25,8 @@ impl<'a> Renderer<'a> {
     /// The generated classes are based on all available highlighting names defined in the `theme`
     pub fn css(&self) -> String {
         let mut css = format!(
-            "{} {{color:{};background-color:{};}}\n",
-            CSS_SCOPE, self.theme.foreground.color, self.theme.background.color
+            "pre {{background-color:{};}}\n{} {{color:{};}}\n",
+            self.theme.background.color, CSS_SCOPE, self.theme.foreground.color
         );
 
         for (index, style) in &self.theme.style_map {
@@ -78,7 +78,7 @@ mod tests {
             lines.sort();
             lines.join("\n")
         };
-        assert_eq!(sorter(&renderer.css()), sorter("code .function{color:#1e66f5;}\ncode .markup.bold{color:#d20f39;font-weight:bold;}\ncode .variable{color:#4c4f69;}\ncode {color:#4c4f69;background-color:#eff1f5;}"));
+        assert_eq!(sorter(&renderer.css()), sorter("code .function{color:#1e66f5;}\ncode .markup.bold{color:#d20f39;font-weight:bold;}\ncode .variable{color:#4c4f69;}\ncode {color:#4c4f69;}\npre {background-color:#eff1f5;}"));
 
         // TODO: we could try to minimize later the size of the generated CSS
         // I see that color in variable is from "text" var in TOML file so it's a duplicated from
