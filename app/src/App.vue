@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import Home from "./Home.vue"
+import Search from "./Search.vue"
+import { onKeyStroke } from '@vueuse/core'
 import { ref, onMounted } from "vue";
 import type { Ref } from "vue";
 import { invoke } from "@tauri-apps/api/core";
@@ -9,28 +11,20 @@ export type AppInfo = {
 }
 const mdcontent = ref(null);
 const appInfo: Ref<AppInfo> = ref({ version: "??" });
+const lastPathUsed = ref(null)
 
-//type Some<T> = T
-//type None = null
-//type Option<T> = Some<T> | None
-
-type Result<T> = {
-    Ok?: T
-    Err?: string
-}
-
-async function getMarkdown() {
-    const result = await invoke("get_file_to_show") as Result<string>;
-    if (result) {
-        if (result.Err) {
-            mdcontent.value = "<h2 class='text-red-300'>" + result.Err + "</h2>"
-        } else {
-            mdcontent.value = result.Ok
-            console.log("inserted file", mdcontent.value)
-        }
+async function openMarkdown(path: string | null) {
+    lastPathUsed.value = path
+    try {
+        const result = await invoke("open_markdown_file", {path: path ?? ""}) as string;
+        mdcontent.value = result
+        console.log("got a result", result)
+        return true
+    } catch (err) {
+        mdcontent.value = "<h2 class='text-red-300'>" + err + "</h2>"
+        return false
     }
-    console.log("got a result", result)
-    console.log("got a result", JSON.stringify(result))
+    // console.log("got a result", JSON.stringify(result))
 }
 
 async function getAppInfo() {
@@ -43,14 +37,14 @@ async function getAppInfo() {
 
 onMounted(() => {
     getAppInfo()
-    getMarkdown()
+    openMarkdown(lastPathUsed.value)
+    onKeyStroke(['r'], () => {
+        openMarkdown(lastPathUsed.value)
+    }
+    // Forced reload manually
+ )
     // TODO: remove this hacky polling based watch mode
-    document.addEventListener("keydown", (e) => {
-        if (e.key === 'r') {
-            getMarkdown()
-        }
-    })
-    setInterval(getMarkdown, 3000)
+    setInterval(() => {let lastPath = lastPathUsed.value; openMarkdown(lastPath)}, 3000)
 })
 </script>
 
@@ -99,4 +93,5 @@ onMounted(() => {
         <div v-html="mdcontent" class="m-auto p-2 sm:m-5 md:m-10 lg:my-10 lg:mx-40 max-w-[1300px]">
         </div>
     </article>
+    <Search :openMarkdown="openMarkdown"/>
 </template>
