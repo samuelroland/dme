@@ -16,6 +16,6 @@ impl Html {
 }
 
 /// A component that will be able to preview a given document into HTML
-pub trait Previewable<'a> {
+pub trait Previewable {
     fn to_html(&self, source: &str) -> Html;
 }

@@ -13,8 +13,9 @@ use tree_sitter_loader::{CompileConfig, Config, Loader};
 
 use crate::util::git::{self, GitRepos};
 
-/// Manager of local Tree-Sitter grammars
-/// Make it easy to download, compile, list, remove grammars
+/// Manager of local Tree-Sitter grammars, cloned with Git from any Git HTTPS links
+/// We also have a list of official grammars on GitHub for ~22 languages in `proposed_grammars.rs`
+/// This manager makes it very easy to install grammars, find their local folder, load, update, or remove them
 pub struct TreeSitterGrammarsManager {
     loader: Loader,
     /// The final grammars folder, can be the DEFAULT_TREE_SITTER_GRAMMARS_FOLDER
@@ -112,9 +113,9 @@ impl<'a> TreeSitterGrammarsManager {
         )
     }
 
-    /// This replace the Loader::compile_parser_at_path
-    /// because it forces us to decide on the output file,
-    /// we is not trivial to generate considering it's different on the 3 OS
+    /// This is a replacement over the Loader::compile_parser_at_path() method
+    /// because it forces us to decide on the output file. As the shared library
+    /// extension is different on the 3 main OS, that's better to let it manage this complexity
     fn compile_at_path(&mut self, repos_path: &Path) -> Result<Language, String> {
         let src_path = repos_path.join("src");
         // No output path, let it take the default in TREE_SITTER_LIBDIR
