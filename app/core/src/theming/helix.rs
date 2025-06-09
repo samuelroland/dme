@@ -6,7 +6,7 @@
 /// This list contains all elements from Helix themes docs in Section "Syntax highlighting"
 /// https://docs.helix-editor.com/themes.html#syntax-highlighting
 /// Copy pasted by hand on 2025-06-09
-pub static ALL_HIGHLIGHT_NAMES_SUPPORTED_BY_HELIX: [&str; 94] = [
+pub static ALL_HIGHLIGHT_NAMES_SUPPORTED_BY_HELIX: &[&str] = &[
     "attribute",
     "type",
     "type.builtin",

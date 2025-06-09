@@ -7,17 +7,17 @@ use std::collections::HashMap;
 use std::fmt::Write;
 
 /// HTML syntax highlighting renderer.
-pub struct Renderer {
-    theme: theme::Theme,
+pub struct Renderer<'a> {
+    theme: &'a theme::Theme<'a>,
 }
 
 /// Only apply the generated css when we are inside <code> (inline and block)
 /// Just to avoid CSS names conflicts with other
 const CSS_SCOPE: &str = "code";
 
-impl Renderer {
+impl<'a> Renderer<'a> {
     /// Create a new renderer based on `theme`.
-    pub fn new(theme: theme::Theme) -> Self {
+    pub fn new(theme: &'a theme::Theme) -> Self {
         Self { theme }
     }
 
@@ -69,17 +69,9 @@ mod tests {
                 .join("src/theming/default/catppuccin_latte.toml"),
         )
         .unwrap();
-        let theme = Theme::from_helix(
-            &content,
-            vec![
-                "variable".to_string(),
-                "function".to_string(),
-                "markup.bold".to_string(),
-            ],
-        )
-        .unwrap();
+        let theme = Theme::from_helix(&content, &["variable", "function", "markup.bold"]).unwrap();
 
-        let renderer = Renderer::new(theme);
+        let renderer = Renderer::new(&theme);
         // Simple sorter by lines
         let sorter = |given: &str| -> String {
             let mut lines = given.lines().collect::<Vec<&str>>();
