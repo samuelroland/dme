@@ -18,18 +18,15 @@ async function openMarkdown(path: string | null) {
     try {
         const result = await invoke("open_markdown_file", {path: path ?? ""}) as string;
         mdcontent.value = result
-        console.log("got a result", result)
         return true
     } catch (err) {
         mdcontent.value = "<h2 class='text-red-300'>" + err + "</h2>"
         return false
     }
-    // console.log("got a result", JSON.stringify(result))
 }
 
 async function getAppInfo() {
     const result = await invoke("get_app_info");
-    console.log("got app_info", result)
     if (result != null) {
         appInfo.value = result as AppInfo
     }
