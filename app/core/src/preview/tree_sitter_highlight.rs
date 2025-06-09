@@ -41,9 +41,6 @@ impl<'a> TreeSitterHighlighter<'a> {
                 .load_language_at_path(CompileConfig::new(&repos_path.join("src"), None, None))
                 .map_err(|e| e.to_string())?;
 
-            let mut parser = tree_sitter::Parser::new();
-            parser.set_language(&language).map_err(|e| e.to_string())?;
-
             // Note: tree-sitter.json contains an array of `grammars` which could be more than one
             // grammar sometimes (typescript -> typescript, tsx and flow. xml -> xml and dtd)
             // For now, we only support the first entry.
@@ -54,17 +51,10 @@ impl<'a> TreeSitterHighlighter<'a> {
                 .first()
                 .ok_or("Given path has no grammar at all in tree-sitter.json configuration")?;
 
-            let highlights_queries = first
-                .highlights_filenames
-                .clone()
-                .ok_or("No highlightings files detected !!")?
-                .iter()
-                .map(|path| read_to_string(path).unwrap_or_default())
-                .collect::<Vec<String>>()
-                .join("\n");
-
+            // Generate a highlight configuration based on the language
+            // and no additionnal paths to queries files
             let highlight_config = first
-                .highlight_config(language.clone(), None)
+                .highlight_config(language, None)
                 .map_err(|e| e.to_string())?
                 .ok_or("No highlighting queries defined for the language")?;
 
