@@ -3,7 +3,7 @@ pub mod export;
 pub mod preview;
 pub mod search;
 pub mod theming;
-mod util;
+pub mod util;
 
 use preview::{
     comrak::ComrakParser,
