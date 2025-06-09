@@ -24,16 +24,16 @@ impl From<&String> for Style {
 }
 
 /// A theme defining colors and modifiers to be used for syntax highlighting.
-pub struct Theme {
+pub struct Theme<'a> {
     pub(crate) style_map: HashMap<usize, Style>,
     pub(crate) foreground: Style,
     pub(crate) background: Style,
-    pub(crate) supported_highlight_names: Vec<String>,
+    pub(crate) supported_highlight_names: &'a [&'a str],
 }
 
 pub const DEFAULT_THEME: &str = include_str!("default/catppuccin_latte.toml");
 
-impl Theme {
+impl<'a> Theme<'a> {
     /// Load theme from a Helix [compatible](https://docs.helix-editor.com/themes.html) theme
     /// description stored in `data`.
     ///
@@ -47,7 +47,7 @@ impl Theme {
     /// amount of keys to generate CSS for
     /// Note: we might change that in the future to generate the whole CSS definitions for any
     /// highlighting name used in the theme itself
-    pub fn from_helix(data: &str, supported_highlight_names: Vec<String>) -> Result<Self, Error> {
+    pub fn from_helix(data: &str, supported_highlight_names: &'a [&'a str]) -> Result<Self, Error> {
         let root = match data.parse::<toml::Value>()? {
             Value::Table(table) => table,
             _ => return Err(Error::InvalidTheme),
@@ -144,11 +144,7 @@ mod tests {
                 .join("src/theming/default/catppuccin_latte.toml"),
         )
         .unwrap();
-        let theme = Theme::from_helix(
-            &content,
-            vec!["variable".to_string(), "function".to_string()],
-        )
-        .unwrap();
+        let theme = Theme::from_helix(&content, &["variable", "function"]).unwrap();
 
         // See line with: text = "#4c4f69"
         assert_eq!(theme.foreground.color, "#4c4f69");
@@ -156,6 +152,6 @@ mod tests {
 
     #[test]
     fn test_default_theme_can_be_loaded() {
-        Theme::from_helix(DEFAULT_THEME, vec![]).unwrap();
+        Theme::from_helix(DEFAULT_THEME, &[]).unwrap();
     }
 }

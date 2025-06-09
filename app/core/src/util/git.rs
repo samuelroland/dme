@@ -96,7 +96,7 @@ impl GitRepos {
 
     /// Given a git clone link like "https://codeberg.org/samuelroland/productivity",
     /// make sure the link is valid and extract the name "productivity"
-    fn validate_and_extract_repos_name_from_https_url(url: &str) -> Result<String, String> {
+    pub fn validate_and_extract_repos_name_from_https_url(url: &str) -> Result<String, String> {
         Ok(GIT_CLONE_HTTPS_LINK_REGEX
             .captures(url)
             .ok_or_else(|| "Given URL not a valid HTTPS git clone URL".to_string())?
@@ -107,7 +107,10 @@ impl GitRepos {
     }
 
     /// Run a git commands with given args and exec_directory in which the command will be ran
-    fn run_git_cmd(args: &Vec<&str>, exec_directory: &PathBuf) -> Result<Output, String> {
+    pub(crate) fn run_git_cmd(
+        args: &Vec<&str>,
+        exec_directory: &PathBuf,
+    ) -> Result<Output, String> {
         let cmd = Command::new("git")
             .args(args)
             .current_dir(exec_directory)
@@ -239,7 +242,7 @@ mod tests {
         // this would fail on a machine without Git, this is good as we need it for further testing
         assert!(GitRepos::is_git_installed());
 
-        std::env::set_var("PATH", ""); // empty the PATH so git will not be found
-        assert!(!GitRepos::is_git_installed());
+        // Note: that's impossible to test without changing the PATH which affects other tests
+        // assert!(!GitRepos::is_git_installed());
     }
 }

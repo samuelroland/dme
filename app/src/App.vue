@@ -108,7 +108,7 @@ onMounted(() => {
 	prose-pre:whitespace-pre-wrap
 	selection:bg-blue-100 selection:text-black justify-center flex">
 
-		<div v-html="mdcontent" class="m-auto p-2 sm:m-5 md:m-10 lg:my-10 lg:mx-40 max-w-[1300px]">
+		<div v-html="mdcontent" class="mx-2 sm:mx-5 lg:my-10 w-full md:mx-[5vw] lg:mx-[10vw] max-w-[1000px]">
 		</div>
 	</article>
 	<Search :openSearchEntry="openSearchEntry" />

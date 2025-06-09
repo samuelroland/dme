@@ -7,17 +7,17 @@ use std::collections::HashMap;
 use std::fmt::Write;
 
 /// HTML syntax highlighting renderer.
-pub struct Renderer {
-    theme: theme::Theme,
+pub struct Renderer<'a> {
+    theme: &'a theme::Theme<'a>,
 }
 
 /// Only apply the generated css when we are inside <code> (inline and block)
 /// Just to avoid CSS names conflicts with other
 const CSS_SCOPE: &str = "code";
 
-impl Renderer {
+impl<'a> Renderer<'a> {
     /// Create a new renderer based on `theme`.
-    pub fn new(theme: theme::Theme) -> Self {
+    pub fn new(theme: &'a theme::Theme) -> Self {
         Self { theme }
     }
 
@@ -25,8 +25,8 @@ impl Renderer {
     /// The generated classes are based on all available highlighting names defined in the `theme`
     pub fn css(&self) -> String {
         let mut css = format!(
-            "{} {{color:{};background-color:{};}}\n",
-            CSS_SCOPE, self.theme.foreground.color, self.theme.background.color
+            "pre {{background-color:{};}}\n{} {{color:{};}}\n",
+            self.theme.background.color, CSS_SCOPE, self.theme.foreground.color
         );
 
         for (index, style) in &self.theme.style_map {
@@ -69,24 +69,16 @@ mod tests {
                 .join("src/theming/default/catppuccin_latte.toml"),
         )
         .unwrap();
-        let theme = Theme::from_helix(
-            &content,
-            vec![
-                "variable".to_string(),
-                "function".to_string(),
-                "markup.bold".to_string(),
-            ],
-        )
-        .unwrap();
+        let theme = Theme::from_helix(&content, &["variable", "function", "markup.bold"]).unwrap();
 
-        let renderer = Renderer::new(theme);
+        let renderer = Renderer::new(&theme);
         // Simple sorter by lines
         let sorter = |given: &str| -> String {
             let mut lines = given.lines().collect::<Vec<&str>>();
             lines.sort();
             lines.join("\n")
         };
-        assert_eq!(sorter(&renderer.css()), sorter("code .function{color:#1e66f5;}\ncode .markup.bold{color:#d20f39;font-weight:bold;}\ncode .variable{color:#4c4f69;}\ncode {color:#4c4f69;background-color:#eff1f5;}"));
+        assert_eq!(sorter(&renderer.css()), sorter("code .function{color:#1e66f5;}\ncode .markup.bold{color:#d20f39;font-weight:bold;}\ncode .variable{color:#4c4f69;}\ncode {color:#4c4f69;}\npre {background-color:#eff1f5;}"));
 
         // TODO: we could try to minimize later the size of the generated CSS
         // I see that color in variable is from "text" var in TOML file so it's a duplicated from
