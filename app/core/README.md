@@ -1,19 +1,7 @@
 # dme_core
 ### The core library of DME, backing up the CLI and Tauri app
 ## Use
-
-### Code highlighting with Tree-Sitter
-To highlight this piece of CSS
-```css
-#submit {
-    color: blue !important;
-}
-```
-
-You have to install a CSS Tree-Sitter grammar like that
-```rust
-
-```
+Look at `src/lib.rs` for now and generate the doc with `cargo doc` to understand more about the available datastructures.
 
 ## Develop
 How to run tests
