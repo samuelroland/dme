@@ -41,7 +41,7 @@ impl ComrakParser {
     }
 }
 
-impl Previewable<'_> for ComrakParser {
+impl Previewable for ComrakParser {
     fn to_html(&self, source: &str) -> Html {
         let mut options = Options::default();
         options.extension.table = true; // Enable tables
