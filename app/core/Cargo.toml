@@ -14,13 +14,10 @@ name = "dme_core"
 
 [dependencies]
 comrak = "0.39.0"
-inkjet = { version = "0.11.1", default-features = false, features = [
-    "html",
-    "language-bash",
-    "language-c",
-] }
 pretty_assertions = "1.4.1"
 rand = "0.9.1"
 regex = "1.11.1"
 walkdir = "2"
 num_cpus = "1.16"
+thiserror = "2.0.12"
+toml = "0.8.23"
