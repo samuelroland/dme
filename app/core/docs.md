@@ -12,14 +12,24 @@ These decisions require the user to have a C compiler installed and Git.
 
 #### Where to store these grammars ?
 
-Grammars will managed separately from already available grammars defined in Tree-Sitter `config.json`, to not interfere with a development environment. Installing syntaxes during development will be maybe supported later. We want to store it in a folder that is not specific to DME, because other software could reuse them as well (like Delibay or PLX).
+Grammars will managed separately from already available grammars defined in Tree-Sitter `config.json`, to not interfere with an existing development environment. Installing syntaxes during development will be maybe supported later. We want to store it in a folder that is not specific to DME, because other software could reuse them as well (like Delibay or PLX).
 
-The location of these grammars will be stored in home data folder ([the XDG base directory specification](https://specifications.freedesktop.org/basedir-spec/latest/#basics)) under the `tree-sitter-grammars` subfolder. On Linux, it will be `~/.local/share/tree-sitter-grammars`. Choosing this folder in a cross-plateform way is achieved via [`etcetera`](https://crates.io/crates/etcetera) crate.
+**The default location of these grammars** is in th home data folder (for the [the XDG base directory specification](https://specifications.freedesktop.org/basedir-spec/latest/#basics) that's under `~/.local/share/tree-sitter-grammars` subfolder. Choosing this folder in a cross-plateform way is achieved via [`etcetera`](https://crates.io/crates/etcetera) crate.
+
+The environment variable `TREE_SITTER_GRAMMARS_FOLDER` can be changed outside of the program to override the folder at the level at of the `ComrakParser`. It will use the default 
+
+During tests, we redefine this entry to a unique subfolder like `target/tree-sitter-grammars/608257137`. It must be unique to avoid interference between tests.
+
+In fact we don't even have a `config.json` on disk, we only use a configuration in memory where we push the folder
 
 #### How we install these grammars
-Given a Git link like `https://github.com/tree-sitter-grammars/tree-sitter-yaml`:
-- `git clone https://github.com/tree-sitter-grammars/tree-sitter-yaml` inside `~/.local/share/tree-sitter-grammars`
-- Run compilation via `Loader::compile_parser_at_path()`
+Given a Git link like `https://github.com/tree-sitter-grammars/tree-sitter-yaml`
+- We extract the repos name from url -> `tree-sitter-yaml`
+- We stop if there is already a folder with this name
+- We run `git clone https://github.com/tree-sitter-grammars/tree-sitter-yaml` inside `~/.local/share/tree-sitter-grammars`
+- Run compilation once via `Loader::load_language_at_path()` after having configured to force recompilation, it will create a `~/.local/share/tree-sitter-grammars/tree-sitter-yaml/yaml.so` shared library to be loaded later.
+
+We can then update, remove or list these grammars based on the lang identifier. If want to remove the grammar for id `css`, it will search for a folder `tree-sitter-css` inside the grammars folder. The update runs `git pull` and trigger a recompilation.
 
 #### How the highlight process work ?
 1. We load the
