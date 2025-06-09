@@ -42,7 +42,7 @@ impl<'a> TreeSitterHighlighter<'a> {
                 .map_err(|e| e.to_string())?;
 
             let mut parser = tree_sitter::Parser::new();
-            parser.set_language(&language).unwrap();
+            parser.set_language(&language).map_err(|e| e.to_string())?;
 
             // Note: tree-sitter.json contains an array of `grammars` which could be more than one
             // grammar sometimes (typescript -> typescript, tsx and flow. xml -> xml and dtd)
@@ -84,7 +84,7 @@ impl<'a> TreeSitterHighlighter<'a> {
 
     /// Special callback passed to HtmlRenderer::render that take a token with a highlight name
     /// attributed via the usize index inside the vector of self.highlight_config.names()
-    /// This callback needs the context of self.highlight_config so it is wrapped in this function
+    /// This callback needs the context of self.highlight_config this is why it is wrapped in this function
     fn get_callback_to_apply_highlight_on_token(
         &'a self,
     ) -> impl Fn(tree_sitter_highlight::Highlight, &mut std::vec::Vec<u8>) + 'a {
@@ -96,8 +96,8 @@ impl<'a> TreeSitterHighlighter<'a> {
                         .names() // all highlight names used in queries files
                         .get(highlight.0)
                         // highlight is just a usize value indexing our vector of highlight names
-                        .unwrap()
-                        .replace(".", " ")
+                        .unwrap_or(&"")
+                        .replace(".", " ") // change "variable.parameter" to "variable parameter" to have separated CSS classes
                 )
                 .as_bytes(),
             );
