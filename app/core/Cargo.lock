@@ -311,6 +311,8 @@ dependencies = [
  "pretty_assertions",
  "rand",
  "regex",
+ "serde",
+ "serde_json",
  "walkdir",
 ]
 
