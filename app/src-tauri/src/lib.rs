@@ -1,9 +1,6 @@
-use dme_core::{
-    convert_md_to_html, load_markdown_as_html,
-    search::{
-        disk::{self, DiskResearcher},
-        search::{ResearchResult, Researcher},
-    },
+use dme_core::search::{
+    disk::{self, DiskResearcher},
+    search::{ResearchResult, Researcher},
 };
 use std::{env::current_dir, fs::read_to_string, path::PathBuf, sync::mpsc};
 
@@ -57,14 +54,10 @@ fn run_search(search: String) -> Result<Vec<ResearchResult>, String> {
             .unwrap_or_default()
             .to_string(),
     );
-    dbg!(&disk_search);
-    println!("RUN .start()");
     disk_search.start();
     disk_search.print_index_stats();
     let (tx, rx) = mpsc::channel::<ResearchResult>();
-    println!("RUN .search()");
     let results = disk_search.search(&search, 20, Some(tx.clone()));
-    println!("GOT RESULTS\n{:?}", results);
     Ok(results)
 }
 
