@@ -5,8 +5,9 @@ use std::fmt::Write;
 use std::fs::{create_dir_all, read_dir, read_to_string};
 use std::path::{Path, PathBuf};
 
-use dme_core::preview::proposed_grammars::PROPOSED_GRAMMAR_SOURCES;
-use dme_core::util::git::GitRepos;
+use crate::preview::proposed_grammars::PROPOSED_GRAMMAR_SOURCES;
+use crate::preview::tree_sitter_grammars::TreeSitterGrammarsManager;
+use crate::util::git::GitRepos;
 
 const MDN_GIT_REPOSITORY: &str = "https://github.com/mdn/content";
 
@@ -20,21 +21,41 @@ pub fn clone_mdn_content() -> PathBuf {
     path.join("content")
 }
 
+const SUBFOLDER: &str = "target/all-grammars";
+pub fn install_all_grammars_in_local_target_folder() -> PathBuf {
+    let grammars_folder = PathBuf::from(SUBFOLDER);
+    if !grammars_folder.exists() {
+        create_dir_all(&grammars_folder).unwrap();
+    }
+    for i in PROPOSED_GRAMMAR_SOURCES.iter() {
+        let mut manager =
+            TreeSitterGrammarsManager::new_with_grammars_folder(grammars_folder.clone()).unwrap();
+        let _ = manager.install(i.1); // ignore failures
+    }
+
+    // Note: I hope this is not flaky again
+    // That's the only way to inject the folder into the Comrak parser for now
+    std::env::set_var(
+        "TREE_SITTER_GRAMMARS_FOLDER",
+        grammars_folder.to_str().unwrap(),
+    );
+    grammars_folder
+}
+
 const CODE_SNIPPETS_REPOS: &str = "https://github.com/TheRenegadeCoder/sample-programs.git";
 const CODE_SNIPPETS_REPOS_DESTINATION: &str = "target/sample-programs";
-const SUBFOLDER: &str = "target/all-grammars";
 const OUTPUT_MD_PREFIX: &str = "target/large-";
 
 /// Generate a big file with tons of snippet snippets in some of the languages listed in PROPOSED_GRAMMAR_SOURCES
 /// that have
 pub fn generate_large_markdown_with_codes(max_number_of_snippets_per_lang: usize) -> String {
-    println!(
-        "\n>> Generating for {} max number of snippets per lang\n",
-        max_number_of_snippets_per_lang
-    );
+    // println!(
+    //     "\n>> Generating for {} max number of snippets per lang\n",
+    //     max_number_of_snippets_per_lang
+    // );
     let repos_folder = PathBuf::from(CODE_SNIPPETS_REPOS_DESTINATION);
     if !repos_folder.exists() {
-        println!("Cloning {} under target/", CODE_SNIPPETS_REPOS);
+        // println!("Cloning {} under target/", CODE_SNIPPETS_REPOS);
         GitRepos::from_clone(
             CODE_SNIPPETS_REPOS,
             &repos_folder.parent().unwrap().to_path_buf(),
@@ -42,11 +63,6 @@ pub fn generate_large_markdown_with_codes(max_number_of_snippets_per_lang: usize
             true,
         )
         .unwrap();
-    }
-
-    let grammars_folder = PathBuf::from(SUBFOLDER);
-    if !grammars_folder.exists() {
-        create_dir_all(grammars_folder).unwrap();
     }
 
     let mut final_output = String::from("# Sample programs in all proposed grammars languages\n");
@@ -66,7 +82,7 @@ pub fn generate_large_markdown_with_codes(max_number_of_snippets_per_lang: usize
             .join(lang);
 
         if !subfolder.exists() {
-            println!("Skipping {} because no snippets.", lang);
+            // println!("Skipping {} because no snippets.", lang);
             continue;
         };
         let mut codes: Vec<PathBuf> = read_dir(subfolder)
@@ -80,7 +96,7 @@ pub fn generate_large_markdown_with_codes(max_number_of_snippets_per_lang: usize
             continue;
         }
 
-        println!("Building sections for {}", lang);
+        // println!("Building sections for {}", lang);
         writeln!(final_output, "## Sample programs in {}", lang).unwrap();
         for code in codes.iter().take(max_number_of_snippets_per_lang) {
             writeln!(
@@ -99,13 +115,13 @@ pub fn generate_large_markdown_with_codes(max_number_of_snippets_per_lang: usize
     let output_md_prefix_full =
         format!("{}{}.md", OUTPUT_MD_PREFIX, max_number_of_snippets_per_lang);
     std::fs::write(&output_md_prefix_full, &final_output).unwrap();
-    println!(
-        "Saved file {} of size {} bytes and {} code snippets in total, with {} different languages.",
-        output_md_prefix_full,
-        final_output.len(),
-        included_snippets_count,
-        snippets_found_count
-    );
+    // println!(
+    //     "Saved file {} of size {} bytes and {} code snippets in total, with {} different languages.",
+    //     output_md_prefix_full,
+    //     final_output.len(),
+    //     included_snippets_count,
+    //     snippets_found_count
+    // );
 
     output_md_prefix_full
 }

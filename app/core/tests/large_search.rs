@@ -6,8 +6,8 @@ use std::fs::{read_to_string, write};
 use std::path::{Path, PathBuf};
 use std::sync::mpsc;
 
-use common::setup::{clone_mdn_content, generate_large_markdown_with_codes};
 use dme_core::markdown_to_highlighted_html;
+use dme_core::util::setup::{clone_mdn_content, generate_large_markdown_with_codes};
 use dme_core::*;
 use regex::Replacer;
 mod common;

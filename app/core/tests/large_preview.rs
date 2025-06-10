@@ -3,8 +3,8 @@ use pretty_assertions::{assert_eq, assert_ne};
 use std::fs::{read_to_string, write};
 use std::path::{Path, PathBuf};
 
-use common::setup::generate_large_markdown_with_codes;
 use dme_core::markdown_to_highlighted_html;
+use dme_core::util::setup::generate_large_markdown_with_codes;
 use dme_core::*;
 use regex::Replacer;
 mod common;
