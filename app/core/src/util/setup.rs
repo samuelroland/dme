@@ -29,12 +29,12 @@ pub fn install_all_grammars_in_local_target_folder() -> PathBuf {
         create_dir_all(&grammars_folder).unwrap();
     }
     for i in PROPOSED_GRAMMAR_SOURCES.iter() {
-        if i.0 == &"bash" {
+        if is_ignored_grammar(i.0) {
             continue;
         }
         let mut manager =
             TreeSitterGrammarsManager::new_with_grammars_folder(grammars_folder.clone()).unwrap();
-        let _ = manager.install(i.1); // ignore failures
+        let _ = manager.install(i.1).unwrap(); // ignore failures
     }
 
     // Note: I hope this is not flaky again
@@ -49,6 +49,11 @@ pub fn install_all_grammars_in_local_target_folder() -> PathBuf {
 const CODE_SNIPPETS_REPOS: &str = "https://github.com/TheRenegadeCoder/sample-programs.git";
 const CODE_SNIPPETS_REPOS_DESTINATION: &str = "target/sample-programs";
 const OUTPUT_MD_PREFIX: &str = "target/large-";
+
+/// Some ignored grammars that do not compile
+fn is_ignored_grammar(lang: &str) -> bool {
+    lang == "bash" || lang == "xml" || lang == "csv" || lang == "typescript" || lang == "php"
+}
 
 /// Generate a big file with tons of snippet snippets in some of the languages listed in PROPOSED_GRAMMAR_SOURCES
 /// that have
@@ -79,7 +84,7 @@ pub fn generate_large_markdown_with_codes(
     let mut lang_included_count = 0;
     let mut included_snippets_count = 0;
     for (lang, link) in grammars {
-        if lang == &"php" || lang == &"typescript" || lang == &"bash" {
+        if is_ignored_grammar(lang) {
             continue;
         } // it generate strange markdown outputs or doesn't support highlighting well
 
