@@ -63,7 +63,7 @@ impl TreeSitterGrammarsManager {
     }
 
     /// Install a new grammar from a given git HTTPS URL
-    pub fn install(&mut self, git_repo_https_url: &str) -> Result<(), String> {
+    pub fn install(&mut self, git_repo_https_url: &str) -> Result<PathBuf, String> {
         // Only clone the repository if it is not already present
         // Note: we consider 2 repositories with the name folder name to be equivalent for now
         let repos_name =
@@ -82,7 +82,7 @@ impl TreeSitterGrammarsManager {
         self.loader.force_rebuild(true);
         self.compile_at_path(repos.path())
             .map_err(|e| e.to_string())?;
-        Ok(())
+        Ok(repos.path().clone())
     }
 
     /// Update the grammar behind the given lang and returns true if the grammar has changed
@@ -219,18 +219,25 @@ mod tests {
         let mut m = TreeSitterGrammarsManager::new_with_grammars_folder(grammars_folder).unwrap();
         assert!(m.list_installed_langs().unwrap().is_empty());
         let result = m.install(&get_test_grammar_repos());
-        result.unwrap();
+        let repos_path = result.unwrap();
         assert_eq!(m.list_installed_langs().unwrap().len(), 1);
+
+        // Make sure the shared library has been created
+        // TODO: fix that, I can't make that happen without running highlight
+        // assert!(repos_path.join(format!("{}.so", TEST_GRAMMAR)).exists());
     }
 
     #[test]
     #[ignore = "Slow and network usage"]
     fn test_can_update_test_grammar() {
         let grammars_folder = get_unique_local_tree_sitter_grammars_folder();
-        let mut m = TreeSitterGrammarsManager::new_with_grammars_folder(grammars_folder).unwrap();
+        let mut m =
+            TreeSitterGrammarsManager::new_with_grammars_folder(grammars_folder.clone()).unwrap();
         m.install(&get_test_grammar_repos()).unwrap();
         let has_been_updated = m.update(TEST_GRAMMAR).unwrap();
         assert!(!has_been_updated);
+
+        GitRepos::from_clone(&get_test_grammar_repos(), &grammars_folder, None, false); // ignore failed git clone if directory already exists
 
         GitRepos::run_git_cmd(
             &vec!["reset", "--hard", "HEAD~2"],
@@ -240,7 +247,7 @@ mod tests {
         assert_eq!(m.list_installed_langs().unwrap().len(), 1);
 
         let has_been_updated = m.update(TEST_GRAMMAR).unwrap();
-        assert!(has_been_updated);
+        assert!(has_been_updated, "Repository has not been updated");
     }
 
     #[test]

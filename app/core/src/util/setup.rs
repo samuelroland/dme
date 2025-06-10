@@ -5,8 +5,11 @@ use std::fmt::Write;
 use std::fs::{create_dir_all, read_dir, read_to_string};
 use std::path::{Path, PathBuf};
 
+use tree_sitter_loader::Loader;
+
 use crate::preview::proposed_grammars::PROPOSED_GRAMMAR_SOURCES;
 use crate::preview::tree_sitter_grammars::TreeSitterGrammarsManager;
+use crate::preview::tree_sitter_highlight::TreeSitterHighlighter;
 use crate::util::git::GitRepos;
 
 const MDN_GIT_REPOSITORY: &str = "https://github.com/mdn/content";
@@ -17,8 +20,10 @@ pub fn clone_mdn_content() -> PathBuf {
     let path = PathBuf::from("target");
     let final_path = PathBuf::from("target/content");
     if !final_path.exists() {
+        println!("reinstall ");
         GitRepos::from_clone(MDN_GIT_REPOSITORY, &path, Some(1), true).unwrap();
     }
+    println!("done ");
     final_path
 }
 
@@ -28,19 +33,32 @@ pub fn install_all_grammars_in_local_target_folder() -> PathBuf {
     if !grammars_folder.exists() {
         create_dir_all(&grammars_folder).unwrap();
     }
-    for i in PROPOSED_GRAMMAR_SOURCES.iter() {
+
+    let mut loader = Loader::new().unwrap();
+    let manager =
+        TreeSitterGrammarsManager::new_with_grammars_folder(grammars_folder.clone()).unwrap();
+    for (lang, link) in PROPOSED_GRAMMAR_SOURCES.iter() {
         if grammars_folder
-            .join(format!("tree-sitter-{}", i.0))
+            .join(format!("tree-sitter-{}", lang))
             .exists()
         {
-            continue;
+            let so_path = grammars_folder.join(format!("tree-sitter-{}/{}.so", lang, lang));
+            if so_path.exists() {
+                let h = TreeSitterHighlighter::new(&mut loader, lang, &manager).unwrap();
+                h.highlight("test"); // highlight anything just to make sure
+                dbg!(&lang);
+                dbg!(&so_path);
+                assert!(so_path.exists());
+            } else {
+                continue;
+            }
         }
-        if is_ignored_grammar(i.0) {
+        if is_ignored_grammar(lang) {
             continue;
         }
         let mut manager =
             TreeSitterGrammarsManager::new_with_grammars_folder(grammars_folder.clone()).unwrap();
-        let _ = manager.install(i.1).unwrap(); // ignore failures
+        let _ = manager.install(link).unwrap(); // ignore failures
     }
 
     // Note: I hope this is not flaky again
