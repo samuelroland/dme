@@ -11,6 +11,15 @@ impl Progress {
     }
 }
 
+/// Some statistics about the index created by the search system
+#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
+pub struct IndexStat {
+    /// the number of headings we have found
+    pub headings_count: usize,
+    /// the number of Markdown paths we have found
+    pub markdown_paths_count: usize,
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
 pub struct ResearchResult {
     pub path: String,
@@ -38,4 +47,6 @@ pub trait Researcher {
         limit: u8,
         sender: Option<Sender<ResearchResult>>,
     ) -> Vec<ResearchResult>;
+
+    fn stats(&self) -> IndexStat;
 }

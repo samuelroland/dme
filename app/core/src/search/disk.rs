@@ -7,9 +7,11 @@ use std::sync::{Arc, Mutex};
 use std::{fs, thread};
 use walkdir::WalkDir;
 
+use super::search::IndexStat;
+
 impl PartialOrd for ResearchResult {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        self.priority.partial_cmp(&other.priority)
+        Some(self.cmp(other))
     }
 }
 impl Ord for ResearchResult {
@@ -260,6 +262,12 @@ impl Researcher for DiskResearcher {
         }
         let final_results = results.lock().unwrap().clone();
         final_results.results(limit as usize)
+    }
+
+    fn stats(&self) -> super::search::IndexStat {
+        IndexStat {
+            headings_count: self.title_map.lock().unwrap().len(),
+            markdown_paths_count: self.markdown_paths_set.lock().unwrap().len(),
     }
 }
 

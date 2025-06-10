@@ -19,9 +19,14 @@ fn test_large_search_on_mdn_content_can_find_multiple_match_for_generic_keyword(
     disk_search.start();
     let search = "abstraction";
     let results = disk_search.search(search, 50, None);
+    let stats = disk_search.stats();
+    dbg!(&stats);
+    disk_search.print_index_stats();
+    assert!(stats.markdown_paths_count > 13750); // as of 2025-06-10
+    assert!(stats.headings_count > 864870); // as of 2025-06-10
     assert!(
         results.len() >= 36,
-        "Results should have only above result, contains\n{results:?}"
+        "Results should have only above result, contains\n"
     );
 }
 
