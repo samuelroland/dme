@@ -15,7 +15,7 @@ use super::{preview::Html, tree_sitter_grammars::TreeSitterGrammarsManager};
 /// the same programming language
 pub struct TreeSitterHighlighter<'a> {
     /// The language identifier
-    lang: &'a str,
+    lang: String,
     /// The highlighting configuration containing highlight queries,
     /// injections queries and local queries.
     highlight_config: &'a HighlightConfiguration,
@@ -28,13 +28,13 @@ impl<'a> TreeSitterHighlighter<'a> {
     /// The manager is used to get the grammar folder for this language
     pub fn new(
         loader: &'a mut Loader,
-        lang: &'a str,
+        lang: &String,
         manager: &TreeSitterGrammarsManager,
     ) -> Result<Self, String> {
-        let lang = Self::normalize_lang(lang);
+        let lang = Self::normalize_lang(&lang).to_string();
 
         // Note: we making the supposition that the lang is in the folder name, for now
-        let repos_path = manager.get_repos_for_lang(lang)?.path().clone();
+        let repos_path = manager.get_repos_for_lang(&lang)?.path().clone();
         if repos_path.exists() {
             // Even if the repos exists, it might not be a valid Tree-Sitter syntax
             let language = loader
@@ -68,8 +68,8 @@ impl<'a> TreeSitterHighlighter<'a> {
     }
 
     /// Just get the language of the highlighter defined via new()
-    pub fn get_lang(&self) -> &'a str {
-        self.lang
+    pub fn get_lang(&self) -> String {
+        self.lang.clone()
     }
 
     /// Special callback passed to HtmlRenderer::render that take a token with a highlight name
@@ -119,7 +119,8 @@ impl<'a> TreeSitterHighlighter<'a> {
 
     /// Normalise code block given lang to a set of known equivalence
     /// like js -> javascript, vuejs -> vue
-    pub fn normalize_lang(given: &'a str) -> &'a str {
+    pub fn normalize_lang(given: &String) -> String {
+        let given = given.as_str();
         match given {
             "bash" | "sh" | "shell" => "bash",
             "js" => "javascript",
@@ -131,8 +132,9 @@ impl<'a> TreeSitterHighlighter<'a> {
             "md" => "markdown",
             "hs" => "haskell",
             "ts" => "typescript",
-            other => other,
+            _ => given,
         }
+        .to_string()
     }
 }
 
@@ -163,7 +165,7 @@ mod tests {
 
         let snippet = "color: blue";
         let mut loader = Loader::new().unwrap();
-        let h = TreeSitterHighlighter::new(&mut loader, TEST_GRAMMAR, &m).unwrap();
+        let h = TreeSitterHighlighter::new(&mut loader, &TEST_GRAMMAR.to_string(), &m).unwrap();
         assert_eq!(h.highlight(snippet), Html("<span class='tag'>color</span><span class='punctuation delimiter'>:</span> <span class='attribute'>blue</span>\n".to_string()));
 
         let snippet = "#form { border: 1px solid #55232; }";
