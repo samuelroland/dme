@@ -15,10 +15,11 @@ const MDN_GIT_REPOSITORY: &str = "https://github.com/mdn/content";
 /// with over 13700 Markdown files (as of 2025-06-10)
 pub fn clone_mdn_content() -> PathBuf {
     let path = PathBuf::from("target");
-    if !path.exists() {
+    let final_path = PathBuf::from("target/content");
+    if !final_path.exists() {
         GitRepos::from_clone(MDN_GIT_REPOSITORY, &path, Some(1), true).unwrap();
     }
-    path.join("content")
+    final_path
 }
 
 const SUBFOLDER: &str = "target/all-grammars";
@@ -28,6 +29,9 @@ pub fn install_all_grammars_in_local_target_folder() -> PathBuf {
         create_dir_all(&grammars_folder).unwrap();
     }
     for i in PROPOSED_GRAMMAR_SOURCES.iter() {
+        if i.0 == &"bash" {
+            continue;
+        }
         let mut manager =
             TreeSitterGrammarsManager::new_with_grammars_folder(grammars_folder.clone()).unwrap();
         let _ = manager.install(i.1); // ignore failures
@@ -48,7 +52,10 @@ const OUTPUT_MD_PREFIX: &str = "target/large-";
 
 /// Generate a big file with tons of snippet snippets in some of the languages listed in PROPOSED_GRAMMAR_SOURCES
 /// that have
-pub fn generate_large_markdown_with_codes(max_number_of_snippets_per_lang: usize) -> String {
+pub fn generate_large_markdown_with_codes(
+    max_number_of_snippets_per_lang: usize,
+    max_lang: usize,
+) -> String {
     // println!(
     //     "\n>> Generating for {} max number of snippets per lang\n",
     //     max_number_of_snippets_per_lang
@@ -69,12 +76,17 @@ pub fn generate_large_markdown_with_codes(max_number_of_snippets_per_lang: usize
     let mut grammars: Vec<(&&str, &&str)> =
         (*PROPOSED_GRAMMAR_SOURCES.iter().collect::<Vec<_>>()).to_vec();
     grammars.sort();
-    let mut snippets_found_count = 0;
+    let mut lang_included_count = 0;
     let mut included_snippets_count = 0;
     for (lang, link) in grammars {
-        if lang == &"php" || lang == &"typescript" {
+        if lang == &"php" || lang == &"typescript" || lang == &"bash" {
             continue;
         } // it generate strange markdown outputs or doesn't support highlighting well
+
+        if lang_included_count >= max_lang {
+            break;
+        }
+
         let first_char = lang.chars().next().unwrap();
         let subfolder = repos_folder
             .join("archive")
@@ -109,7 +121,7 @@ pub fn generate_large_markdown_with_codes(max_number_of_snippets_per_lang: usize
             .unwrap();
             included_snippets_count += 1;
         }
-        snippets_found_count += 1;
+        lang_included_count += 1;
     }
 
     let output_md_prefix_full =

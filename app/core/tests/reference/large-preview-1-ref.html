@@ -49,26 +49,6 @@ code .diff.delta{color:#1e66f5;}
 </style>
 
 <h1>Sample programs in all proposed grammars languages</h1>
-<h2>Sample programs in bash</h2>
-<p>File: <code>baklava.sh</code></p>
-<pre><code class="language-bash"><span class='comment'>#!/bin/bash</span>
-
-<span class='keyword'>for</span> <span class='property'>i</span> <span class='keyword'>in</span> {0..9}; <span class='keyword'>do</span>
-	<span class='function'><span class='label'>printf</span></span> <span class='string'>&quot; %.0s&quot;</span> <span class='embedded'>$(<span class='function'><span class='label'>seq</span></span> 1 $(( 10 - <span class='operator'>$</span><span class='property'>i</span> )))</span>
-	<span class='function'><span class='label'>printf</span></span> <span class='string'>&quot;*%.0s&quot;</span> <span class='embedded'>$(<span class='function'><span class='label'>seq</span></span> 1 $(( <span class='operator'>$</span><span class='property'>i</span> * 2 + 1 )))</span>
-	<span class='function'><span class='label'>echo</span></span>
-<span class='keyword'>done</span>
-
-<span class='function'><span class='label'>printf</span></span> <span class='string'>&quot;*%.0s&quot;</span> {1..21}
-<span class='function'><span class='label'>echo</span></span>
-
-<span class='keyword'>for</span> <span class='property'>i</span> <span class='keyword'>in</span> {9..0}; <span class='keyword'>do</span>
-	<span class='function'><span class='label'>printf</span></span> <span class='string'>&quot; %.0s&quot;</span> <span class='embedded'>$(<span class='function'><span class='label'>seq</span></span> 1 $(( 10 - <span class='operator'>$</span><span class='property'>i</span> )))</span>
-	<span class='function'><span class='label'>printf</span></span> <span class='string'>&quot;*%.0s&quot;</span> <span class='embedded'>$(<span class='function'><span class='label'>seq</span></span> 1 $(( <span class='operator'>$</span><span class='property'>i</span> * 2 + 1 )))</span>
-	<span class='function'><span class='label'>echo</span></span>
-<span class='keyword'>done</span>
-
-</code></pre>
 <h2>Sample programs in c</h2>
 <p>File: <code>baklava.c</code></p>
 <pre><code class="language-c"><span class='keyword'>#include</span> <span class='string'>&quot;stdio.h&quot;</span>
