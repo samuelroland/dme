@@ -1,3 +1,4 @@
+// PROBABLY TOO SLOW, DO NOT USE, 20 iterations at minimum for any function...
 use criterion::{criterion_group, criterion_main, Criterion};
 use dme_core::markdown_to_highlighted_html;
 use dme_core::util::setup::{
@@ -32,7 +33,7 @@ pub fn preview_codes_benchmark(c: &mut Criterion) {
     group.noise_threshold(0.02);
     // for i in [1, 2, 5] {
     let i = 1;
-    let path = generate_large_markdown_with_codes(i);
+    let path = generate_large_markdown_with_codes(i, 2);
     group.bench_function("preview {i}", |b| {
         b.iter(|| markdown_to_highlighted_html(black_box(&path)))
     });
