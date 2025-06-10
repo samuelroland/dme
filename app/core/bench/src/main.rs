@@ -3,6 +3,7 @@ use std::{collections::HashMap, process::Command};
 mod preview;
 mod util;
 
+use colored::Colorize;
 use dme_core::{
     markdown_to_highlighted_html,
     util::setup::{
@@ -12,7 +13,7 @@ use dme_core::{
 };
 use once_cell::sync::Lazy;
 use preview::{preview_code_benchmark, preview_nocode_benchmark, run_preview};
-use util::{run_bench, run_fn};
+use util::run_fn;
 
 fn run_hyperfine(fn_id: &str, program_args: Vec<&str>, runs: usize) {
     let args: Vec<String> = std::env::args().collect();
@@ -28,27 +29,32 @@ fn run_hyperfine(fn_id: &str, program_args: Vec<&str>, runs: usize) {
     handle.unwrap().wait().unwrap();
 }
 
-pub static BENCHES: Lazy<HashMap<&'static str, (&'static str, fn(Vec<String>), fn())>> =
-    Lazy::new(|| {
-        HashMap::from([
-            (
-                "preview_md",
-                (
-                    "Large Markdown file without code snippets",
-                    run_preview as fn(Vec<String>),
-                    preview_nocode_benchmark as fn(),
-                ),
-            ),
-            (
-                "preview_code",
-                (
-                    "Different code snippets numbers in various languages",
-                    run_preview as fn(Vec<String>),
-                    preview_code_benchmark as fn(),
-                ),
-            ),
-        ])
-    });
+pub struct Bench {
+    pub desc: &'static str,
+    pub tested: fn(Vec<String>),
+    pub bench: fn(),
+}
+
+pub static BENCHES: Lazy<HashMap<&'static str, Bench>> = Lazy::new(|| {
+    HashMap::from([
+        (
+            "preview_md",
+            Bench {
+                desc: "Large Markdown file without code snippets",
+                tested: run_preview as fn(Vec<String>),
+                bench: preview_nocode_benchmark as fn(),
+            },
+        ),
+        (
+            "preview_code",
+            Bench {
+                desc: "Different code snippets numbers in various languages",
+                tested: run_preview as fn(Vec<String>),
+                bench: preview_code_benchmark as fn(),
+            },
+        ),
+    ])
+});
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
@@ -57,7 +63,7 @@ fn main() {
     if args.len() == 1 {
         println!("Listing available benchmarks");
         for (id, v) in BENCHES.iter() {
-            println!("- {} : {}", id, v.0);
+            println!("- {} : {}", id, v.desc);
         }
 
         println!("To execute a benchmark run: cargo run --release -- bench <id>")
@@ -72,12 +78,22 @@ fn main() {
         if args.len() >= 2 && args[1] == "bench" {
             if args.len() == 2 {
                 println!("Running all benches");
-                for (id, _) in BENCHES.iter() {
-                    run_bench(id);
+                let mut keys: Vec<&&str> = BENCHES.keys().collect();
+                keys.sort();
+                for key in keys {
+                    println!("Running bench {}", key.green());
+                    (BENCHES
+                        .get(key)
+                        .expect(&format!("No benchmark with name {}", key))
+                        .bench)();
                 }
             } else {
                 // Run a specific bench
-                run_bench(&args[2]);
+                println!("Running bench {}", args[2].green());
+                (BENCHES
+                    .get(args[2].as_str())
+                    .expect(&format!("No benchmark with name {}", &args[2]))
+                    .bench)();
             }
         }
     }

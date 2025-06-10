@@ -32,5 +32,5 @@ pub fn preview_code_benchmark() {
     // TODO: tweak these params to have a not too slow benchmark
     let path = generate_large_markdown_with_codes(1, 3);
 
-    run_hyperfine("preview_codes", vec![&path], 100);
+    run_hyperfine("preview_code", vec![&path], 5);
 }

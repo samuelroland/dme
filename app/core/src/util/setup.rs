@@ -29,6 +29,12 @@ pub fn install_all_grammars_in_local_target_folder() -> PathBuf {
         create_dir_all(&grammars_folder).unwrap();
     }
     for i in PROPOSED_GRAMMAR_SOURCES.iter() {
+        if grammars_folder
+            .join(format!("tree-sitter-{}", i.0))
+            .exists()
+        {
+            continue;
+        }
         if is_ignored_grammar(i.0) {
             continue;
         }
