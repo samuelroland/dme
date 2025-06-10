@@ -1,6 +1,7 @@
 use crate::search::search::{Progress, ResearchResult, Researcher};
 use std::collections::{BinaryHeap, HashMap};
 use std::ffi::OsStr;
+use std::fs::read_to_string;
 use std::path::PathBuf;
 use std::sync::mpsc::Sender;
 use std::sync::{Arc, Mutex};
@@ -64,9 +65,9 @@ pub struct DiskResearcher {
     /// Each heading found will have an entry with a vector of files where it was found.
     title_map: Arc<Mutex<HashMap<String, Vec<String>>>>,
     base_path: PathBuf,
-    nb_threads: usize,
+    max_nb_threads: usize,
+    started_threads_nb: usize,
     has_started: bool,
-    threads: Vec<thread::JoinHandle<()>>,
     progress_counter: Arc<Mutex<usize>>,
 }
 
@@ -76,27 +77,28 @@ impl DiskResearcher {
             markdown_paths_set: Arc::new(Mutex::new(Vec::new())),
             title_map: Arc::new(Mutex::new(HashMap::new())),
             base_path: PathBuf::from(path),
-            nb_threads: num_cpus::get(),
+            max_nb_threads: num_cpus::get(),
+            started_threads_nb: 0,
             has_started: false,
-            threads: Vec::new(),
             progress_counter: Arc::new(Mutex::new(0)),
         }
     }
 
-
-    pub fn set_nb_thread(&mut self, nb_thread: usize) -> Result<(), String> {
+    pub fn set_max_nb_threads(&mut self, nb_thread: usize) -> Result<(), String> {
         if nb_thread == 0 {
             Err("Number of thread must be greater than 0".to_string())
         } else if self.has_started {
             Err("Process has already started, cannot change thread number".to_string())
         } else {
-            Ok(self.nb_threads = nb_thread)
+            self.max_nb_threads = nb_thread;
+            Ok(())
         }
     }
 
-    pub fn extract_markdown_titles(path: &str) -> Vec<String> {
-        let content = fs::read_to_string(path).unwrap_or_default();
-
+    pub fn extract_markdown_titles(content: &str) -> Vec<String> {
+        if content.is_empty() {
+            return vec![];
+        }
         let mut headings = Vec::new();
         let lines = content.lines();
         let mut is_in_code_block = false;
@@ -110,7 +112,7 @@ impl DiskResearcher {
             if line.starts_with('#') {
                 let line_partial = line.trim_start_matches('#');
                 if line_partial.starts_with(" ") {
-                    headings.push(line_partial.trim_start_matches(" ").to_string());
+                    headings.push(line_partial.trim().to_string());
                 }
             }
         }
@@ -121,6 +123,8 @@ impl DiskResearcher {
 impl Researcher for DiskResearcher {
     fn start(&mut self) {
         self.has_started = true;
+
+        let mut threads = Vec::new();
         //Get all paths. We have to accept the directory at first otherwise their content would be ignored
         let markdown_paths: Vec<String> = WalkDir::new(&self.base_path)
             .into_iter()
@@ -146,10 +150,10 @@ impl Researcher for DiskResearcher {
         if all_paths.is_empty() {
             return;
         }
-        let chunk_size = if (all_paths.len()) < self.nb_threads {
+        let chunk_size = if (all_paths.len()) < self.max_nb_threads {
             1 //This means we have more thread than the number of files
         } else {
-            all_paths.len().div_ceil(self.nb_threads)
+            all_paths.len().div_ceil(self.max_nb_threads)
         };
 
         for chunk in all_paths.chunks(chunk_size) {
@@ -162,7 +166,8 @@ impl Researcher for DiskResearcher {
                 //Local counter to avoid locking unlocking every loop.
                 let mut local_counter = 0;
                 for path in chunk {
-                    let titles = DiskResearcher::extract_markdown_titles(&path);
+                    let content = fs::read_to_string(&path).unwrap_or_default();
+                    let titles = DiskResearcher::extract_markdown_titles(&content);
                     let mut map = title_map.lock().unwrap();
                     for title in titles {
                         map.entry(title).or_default().push(path.clone())
@@ -181,7 +186,12 @@ impl Researcher for DiskResearcher {
                     *global_counter += local_counter;
                 }
             });
-            self.threads.push(handle);
+            self.started_threads_nb += 1;
+            threads.push(handle);
+        }
+
+        for thread in threads {
+            thread.join().unwrap();
         }
     }
     /// Ask about the progress, from 0 to 100 percent of research
@@ -194,9 +204,10 @@ impl Researcher for DiskResearcher {
             ((*self.progress_counter.lock().unwrap() as f32 / total as f32) * 100f32).ceil() as u8,
         )
     }
+
     /// The actual research of a raw string returning some matches
     fn search(
-        &self,
+        &mut self,
         raw: &str,
         limit: u8,
         sender: Option<Sender<ResearchResult>>,
@@ -205,30 +216,26 @@ impl Researcher for DiskResearcher {
         let map = self.title_map.lock().unwrap().clone();
 
         let results: Arc<Mutex<OrderedResults>> = Arc::new(Mutex::new(OrderedResults::new(sender)));
-        let vector: Vec<_> = map.into_iter().collect();
+        let headings: Vec<_> = map.into_iter().collect();
 
         let mut threads = Vec::new();
-        let chunk_size = if vector.len() < self.nb_threads {
+        let chunk_size = if headings.len() < self.max_nb_threads {
             1
         } else {
-            vector.len().div_ceil(self.nb_threads)
+            headings.len().div_ceil(self.max_nb_threads)
         };
-        for tuple_chunk in vector.chunks(chunk_size) {
-            let tuple = tuple_chunk.to_vec(); // copy chunk
+
+        // Search in parallel into the headings
+        for tuples_chunk in headings.chunks(chunk_size) {
+            let tuples = tuples_chunk.to_vec(); // copy chunk
             let results = Arc::clone(&results);
             let query = query.to_lowercase();
 
             let handle = thread::spawn(move || {
-                for (title, paths) in tuple {
-                    if results.lock().unwrap().len() >= limit as usize {
-                        return;
-                    }
+                for (title, paths) in tuples {
                     if title.to_lowercase().contains(&query) {
                         for path in paths.iter() {
                             let mut results = results.lock().unwrap();
-                            if results.len() >= limit as usize {
-                                return;
-                            }
                             results.push(ResearchResult {
                                 title: Some(title.clone()),
                                 path: path.clone(),
@@ -236,19 +243,16 @@ impl Researcher for DiskResearcher {
                             });
                         }
                     }
-                    if results.lock().unwrap().len() >= limit as usize {
-                        return;
-                    }
                 }
             });
+
+            self.started_threads_nb += 1;
             threads.push(handle);
         }
 
+        // Search in parallel in the path as well and attibute higher priority
         let file_list = self.markdown_paths_set.lock().unwrap().clone();
         for file in file_list.iter() {
-            if results.lock().unwrap().len() >= limit as usize {
-                break;
-            }
             if file.contains(query.as_str()) {
                 results.lock().unwrap().push(ResearchResult {
                     title: None,
@@ -268,6 +272,7 @@ impl Researcher for DiskResearcher {
         IndexStat {
             headings_count: self.title_map.lock().unwrap().len(),
             markdown_paths_count: self.markdown_paths_set.lock().unwrap().len(),
+        }
     }
 }
 
@@ -296,6 +301,52 @@ fn test_that_progress_is_one_hundred_at_end() {
     search.start();
     thread::sleep(std::time::Duration::from_secs(1));
     assert_eq!(search.progress(), Progress(100));
+}
+
+#[test]
+fn test_heading_extractions() {
+    let content = "
+# heyo  
+some content ** ## yoo 
+## oups \t
+```bash
+# super comment
+echo saasdf
+```
+
+### 4. Open a pull request with your example
+
+# aa";
+
+    assert_eq!(
+        DiskResearcher::extract_markdown_titles(content),
+        vec![
+            "heyo",
+            "oups",
+            "4. Open a pull request with your example",
+            "aa"
+        ]
+    );
+}
+
+#[test]
+fn test_heading_extractions_advanced() {
+    let path = "target/content/files/en-us/web/css/layout_cookbook/contribute_a_recipe/index.md";
+    let expected = vec![
+        "What makes a good recipe?",
+        "Steps to publish a recipe",
+        "1. Build a pattern",
+        "2. Create a live example",
+        "Useful tips",
+        "3. Create a downloadable version",
+        "4. Open a pull request with your example",
+        "5. Create your page",
+        "See also",
+    ];
+    assert_eq!(
+        DiskResearcher::extract_markdown_titles(&read_to_string(path).unwrap()),
+        expected
+    );
 }
 
 #[test]
@@ -391,19 +442,19 @@ fn test_mixed_search() {
 #[test]
 fn test_that_number_of_thread_is_not_higher_than_necessary() {
     let mut search = DiskResearcher::new("test".to_string());
-    search.set_nb_thread(100).unwrap();
+    search.set_max_nb_threads(100).unwrap();
     search.start();
     thread::sleep(std::time::Duration::from_secs(2));
-    assert_eq!(search.threads.len(), 6);
+    assert_eq!(search.started_threads_nb, 6);
 }
 
 #[test]
 fn test_that_number_of_thread_is_not_higher_than_set() {
     let mut search = DiskResearcher::new("test".to_string());
-    search.set_nb_thread(2).unwrap();
+    search.set_max_nb_threads(2).unwrap();
     search.start();
     thread::sleep(std::time::Duration::from_secs(2));
-    assert_eq!(search.threads.len(), 2);
+    assert_eq!(search.started_threads_nb, 2);
 }
 #[test]
 fn test_that_empty_directory_cause_no_issue() {

@@ -42,7 +42,7 @@ pub trait Researcher {
     /// The actual research of a raw string returning some matches
     /// Giving a SyncSender allows to receive result live (unsorted, unlimited)
     fn search(
-        &self,
+        &mut self,
         raw: &str,
         limit: u8,
         sender: Option<Sender<ResearchResult>>,
