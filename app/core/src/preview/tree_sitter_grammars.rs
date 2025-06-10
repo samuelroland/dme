@@ -71,7 +71,12 @@ impl TreeSitterGrammarsManager {
         let repos =
             match GitRepos::from_existing_folder(&self.final_grammars_folder.join(&repos_name)) {
                 Ok(repos) => repos,
-                Err(_) => GitRepos::from_clone(git_repo_https_url, &self.final_grammars_folder)?,
+                Err(_) => GitRepos::from_clone(
+                    git_repo_https_url,
+                    &self.final_grammars_folder,
+                    None,
+                    false,
+                )?,
             };
 
         self.loader.force_rebuild(true);
