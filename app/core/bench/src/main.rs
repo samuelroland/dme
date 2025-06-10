@@ -1,5 +1,12 @@
 // This is our benchmark, driven by a hyperfine wrapper
-use std::{collections::HashMap, process::Command};
+use chrono::Local;
+use std::{
+    collections::HashMap,
+    fmt::format,
+    fs::{File, create_dir_all},
+    path::PathBuf,
+    process::Command,
+};
 mod preview;
 mod util;
 
@@ -15,8 +22,28 @@ use once_cell::sync::Lazy;
 use preview::{preview_code_benchmark, preview_nocode_benchmark, run_preview};
 use util::run_fn;
 
+use serde::Deserialize;
+use std::io::BufReader;
+
+#[derive(Deserialize)]
+struct ResultItem {
+    mean: f64,
+}
+
+#[derive(Deserialize)]
+struct Results {
+    results: Vec<ResultItem>,
+}
+
 fn run_hyperfine(fn_id: &str, program_args: Vec<&str>, runs: usize) {
     let args: Vec<String> = std::env::args().collect();
+    let now = Local::now();
+    let time_str = &now.format("%H-%M-%S").to_string();
+    let output_results_path = PathBuf::from("target/hyperfine/");
+    if !output_results_path.exists() {
+        create_dir_all(&output_results_path).unwrap();
+    }
+    let output_json = output_results_path.join(format!("{}.json", time_str));
     let handle = Command::new("hyperfine")
         .args(vec![
             "-N",
@@ -24,9 +51,21 @@ fn run_hyperfine(fn_id: &str, program_args: Vec<&str>, runs: usize) {
             &runs.to_string(),
             // Benchmark the same binary as the current one but with other args
             &format!("{} fn {} {}", args[0], fn_id, program_args.join(" ")),
+            "--export-json",
+            output_json.to_str().unwrap(),
         ])
         .spawn();
+
     handle.unwrap().wait().unwrap();
+
+    let file = File::open(output_json).unwrap();
+    let reader = BufReader::new(file);
+    let results: Results = serde_json::from_reader(reader).unwrap();
+    if let Some(item) = results.results.first() {
+        println!("{}", format!("Mean: {:.4}\n", item.mean).blue());
+    } else {
+        println!("No results found.");
+    }
 }
 
 pub struct Bench {
