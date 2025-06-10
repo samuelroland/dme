@@ -1,0 +1,978 @@
+<style>pre {background-color:#eff1f5;}
+code {color:#4c4f69;}
+code .attribute{color:#df8e1d;}
+code .type{color:#df8e1d;}
+code .type.enum.variant{color:#179299;}
+code .constructor{color:#209fb5;}
+code .constant{color:#fe640b;}
+code .constant.character{color:#179299;}
+code .constant.character.escape{color:#ea76cb;}
+code .string{color:#40a02b;}
+code .string.regexp{color:#ea76cb;}
+code .string.special{color:#1e66f5;}
+code .string.special.symbol{color:#d20f39;}
+code .comment{color:#7c7f93;font-style:italic;}
+code .variable{color:#4c4f69;}
+code .variable.builtin{color:#d20f39;}
+code .variable.parameter{color:#e64553;font-style:italic;}
+code .variable.other.member{color:#1e66f5;}
+code .label{color:#209fb5;}
+code .punctuation{color:#7c7f93;}
+code .punctuation.special{color:#04a5e5;}
+code .keyword{color:#8839ef;}
+code .keyword.control.conditional{color:#8839ef;font-style:italic;}
+code .operator{color:#04a5e5;}
+code .function{color:#1e66f5;}
+code .function.macro{color:#dc8a78;}
+code .tag{color:#1e66f5;}
+code .namespace{color:#df8e1d;font-style:italic;}
+code .special{color:#1e66f5;}
+code .markup.heading.1{color:#d20f39;}
+code .markup.heading.2{color:#fe640b;}
+code .markup.heading.3{color:#df8e1d;}
+code .markup.heading.4{color:#40a02b;}
+code .markup.heading.5{color:#209fb5;}
+code .markup.heading.6{color:#7287fd;}
+code .markup.list{color:#179299;}
+code .markup.list.checked{color:#40a02b;}
+code .markup.list.unchecked{color:#7c7f93;}
+code .markup.bold{color:#d20f39;font-weight:bold;}
+code .markup.italic{color:#d20f39;font-style:italic;}
+code .markup.link.url{color:#1e66f5;font-style:italic;}
+code .markup.link.label{color:#209fb5;}
+code .markup.link.text{color:#7287fd;}
+code .markup.quote{color:#ea76cb;}
+code .markup.raw{color:#40a02b;}
+code .diff.plus{color:#40a02b;}
+code .diff.minus{color:#d20f39;}
+code .diff.delta{color:#1e66f5;}
+</style>
+
+<h1>Sample programs in all proposed grammars languages</h1>
+<h2>Sample programs in bash</h2>
+<p>File: <code>baklava.sh</code></p>
+<pre><code class="language-bash"><span class='comment'>#!/bin/bash</span>
+
+<span class='keyword'>for</span> <span class='property'>i</span> <span class='keyword'>in</span> {0..9}; <span class='keyword'>do</span>
+	<span class='function'><span class='label'>printf</span></span> <span class='string'>&quot; %.0s&quot;</span> <span class='embedded'>$(<span class='function'><span class='label'>seq</span></span> 1 $(( 10 - <span class='operator'>$</span><span class='property'>i</span> )))</span>
+	<span class='function'><span class='label'>printf</span></span> <span class='string'>&quot;*%.0s&quot;</span> <span class='embedded'>$(<span class='function'><span class='label'>seq</span></span> 1 $(( <span class='operator'>$</span><span class='property'>i</span> * 2 + 1 )))</span>
+	<span class='function'><span class='label'>echo</span></span>
+<span class='keyword'>done</span>
+
+<span class='function'><span class='label'>printf</span></span> <span class='string'>&quot;*%.0s&quot;</span> {1..21}
+<span class='function'><span class='label'>echo</span></span>
+
+<span class='keyword'>for</span> <span class='property'>i</span> <span class='keyword'>in</span> {9..0}; <span class='keyword'>do</span>
+	<span class='function'><span class='label'>printf</span></span> <span class='string'>&quot; %.0s&quot;</span> <span class='embedded'>$(<span class='function'><span class='label'>seq</span></span> 1 $(( 10 - <span class='operator'>$</span><span class='property'>i</span> )))</span>
+	<span class='function'><span class='label'>printf</span></span> <span class='string'>&quot;*%.0s&quot;</span> <span class='embedded'>$(<span class='function'><span class='label'>seq</span></span> 1 $(( <span class='operator'>$</span><span class='property'>i</span> * 2 + 1 )))</span>
+	<span class='function'><span class='label'>echo</span></span>
+<span class='keyword'>done</span>
+
+</code></pre>
+<p>File: <code>base64-encode-decode.sh</code></p>
+<pre><code class="language-bash"><span class='comment'>#!/bin/bash</span>
+
+<span class='comment'># References:</span>
+<span class='comment'># - Convert character to ASCII code, and ASCII code to character:</span>
+<span class='comment'>#   https://unix.stackexchange.com/questions/92447/bash-script-to-get-ascii-values-for-alphabet</span>
+
+<span class='property'>BASE64_CHARS</span>=<span class='string'>&quot;ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/&quot;</span>
+
+<span class='keyword'>function</span> <span class='function'>usage</span>() {
+    <span class='function'><span class='label'>echo</span></span> <span class='string'>&quot;Usage: please provide a mode and a string to encode/decode&quot;</span>
+    <span class='function'><span class='label'>exit</span></span> 1
+}
+
+<span class='comment'># Base64 encode string</span>
+<span class='comment'>#</span>
+<span class='comment'># Input:</span>
+<span class='comment'># - $1 = string to encode</span>
+<span class='comment'># Output: Base64 encoded string</span>
+<span class='keyword'>function</span> <span class='function'>base64_encode</span>() {
+    local <span class='property'>result</span>=<span class='string'>&quot;&quot;</span>
+    local <span class='property'>len</span>=<span class='embedded'>${#<span class='property'>1</span>}</span>
+    <span class='keyword'>for</span> ((<span class='property'>n</span>=0; <span class='label'>n</span><span class='operator'>&lt;</span><span class='embedded'>${<span class='property'>len</span>}</span>; <span class='label'>n</span>+=3))
+    <span class='keyword'>do</span>
+        <span class='comment'># Convert 3-character chunk into 24-bit value</span>
+        local <span class='property'>n1</span>=<span class='embedded'>$(<span class='function'><span class='label'>ord</span></span> <span class='string'>&quot;<span class='embedded'>${<span class='property'>1</span>:<span class='embedded'>${<span class='property'>n</span>}</span>:1}</span>&quot;</span>)</span>
+        local <span class='property'>n2</span>=<span class='embedded'>$(<span class='function'><span class='label'>ord</span></span> <span class='string'>&quot;<span class='embedded'>${<span class='property'>1</span>:$((<span class='embedded'>${<span class='property'>n</span>}</span>+1)):1}</span>&quot;</span>)</span>
+        local <span class='property'>n3</span>=<span class='embedded'>$(<span class='function'><span class='label'>ord</span></span> <span class='string'>&quot;<span class='embedded'>${<span class='property'>1</span>:$((<span class='embedded'>${<span class='property'>n</span>}</span>+2)):1}</span>&quot;</span>)</span>
+        local <span class='property'>u</span>=$(( (<span class='embedded'>${<span class='property'>n1</span>}</span>&lt;&lt;16)<span class='operator'>|</span>(<span class='embedded'>${<span class='property'>n2</span>}</span>&lt;&lt;8)<span class='operator'>|</span><span class='embedded'>${<span class='property'>n3</span>}</span> ))
+
+        <span class='comment'># Convert 24-bit value to 4 Base64 characters</span>
+        <span class='property'>c1</span>=<span class='string'>&quot;<span class='embedded'>$(<span class='function'><span class='label'>base64_encode_char</span></span> <span class='embedded'>${<span class='property'>u</span>}</span> 18 <span class='embedded'>${<span class='property'>n</span>}</span> 0 <span class='embedded'>${<span class='property'>len</span>}</span>)</span>&quot;</span>
+        <span class='property'>c2</span>=<span class='string'>&quot;<span class='embedded'>$(<span class='function'><span class='label'>base64_encode_char</span></span> <span class='embedded'>${<span class='property'>u</span>}</span> 12 <span class='embedded'>${<span class='property'>n</span>}</span> 0 <span class='embedded'>${<span class='property'>len</span>}</span>)</span>&quot;</span>
+        <span class='property'>c3</span>=<span class='string'>&quot;<span class='embedded'>$(<span class='function'><span class='label'>base64_encode_char</span></span> <span class='embedded'>${<span class='property'>u</span>}</span> 6 <span class='embedded'>${<span class='property'>n</span>}</span> 1 <span class='embedded'>${<span class='property'>len</span>}</span>)</span>&quot;</span>
+        <span class='property'>c4</span>=<span class='string'>&quot;<span class='embedded'>$(<span class='function'><span class='label'>base64_encode_char</span></span> <span class='embedded'>${<span class='property'>u</span>}</span> 0 <span class='embedded'>${<span class='property'>n</span>}</span> 2 <span class='embedded'>${<span class='property'>len</span>}</span>)</span>&quot;</span>
+        <span class='property'>result</span>=<span class='string'>&quot;<span class='embedded'>${<span class='property'>result</span>}</span><span class='embedded'>${<span class='property'>c1</span>}</span><span class='embedded'>${<span class='property'>c2</span>}</span><span class='embedded'>${<span class='property'>c3</span>}</span><span class='embedded'>${<span class='property'>c4</span>}</span>&quot;</span>
+    <span class='keyword'>done</span>
+
+    <span class='function'><span class='label'>echo</span></span> <span class='string'>&quot;<span class='embedded'>${<span class='property'>result</span>}</span>&quot;</span>
+}
+
+<span class='comment'># Base64 encode character</span>
+<span class='comment'>#</span>
+<span class='comment'># Inputs:</span>
+<span class='comment'># - $1 = 24-bit value</span>
+<span class='comment'># - $2 = number of shifts</span>
+<span class='comment'># - $3 = string index</span>
+<span class='comment'># - $4 = string index offset (0 - 2)</span>
+<span class='comment'># - $5 = length of string</span>
+<span class='comment'># Output: Base64 encoded character</span>
+<span class='keyword'>function</span> <span class='function'>base64_encode_char</span>() {
+    local <span class='property'>u</span>=<span class='embedded'>${<span class='property'>1</span>}</span>
+    local <span class='property'>shifts</span>=<span class='embedded'>${<span class='property'>2</span>}</span>
+    local <span class='property'>index</span>=$((<span class='embedded'>${<span class='property'>3</span>}</span>+<span class='embedded'>${<span class='property'>4</span>}</span>))
+    local <span class='property'>len</span>=<span class='embedded'>${<span class='property'>5</span>}</span>
+    local <span class='property'>result</span>=<span class='string'>&quot;=&quot;</span>
+    <span class='keyword'>if</span> [[ <span class='embedded'>${<span class='property'>index</span>}</span> -lt <span class='embedded'>${<span class='property'>len</span>}</span> ]]
+    <span class='keyword'>then</span>
+        <span class='property'>result</span>=<span class='string'>&quot;<span class='embedded'>${<span class='property'>BASE64_CHARS</span>:$(( (<span class='embedded'>${<span class='property'>u</span>}</span><span class='operator'>&gt;&gt;</span><span class='embedded'>${<span class='property'>shifts</span>}</span>)&amp;<span class='property'>0x3f</span> )):1}</span>&quot;</span>
+    <span class='keyword'>fi</span>
+
+    <span class='function'><span class='label'>echo</span></span> <span class='string'>&quot;<span class='embedded'>${<span class='property'>result</span>}</span>&quot;</span>
+}
+
+<span class='comment'># Base64 decode string</span>
+<span class='comment'>#</span>
+<span class='comment'># Input:</span>
+<span class='comment'># - $1 = Base64 string to decode</span>
+<span class='comment'># Output: Base64 decoded string</span>
+<span class='comment'># Exits if invalid Base64 string is invalid</span>
+<span class='keyword'>function</span> <span class='function'>base64_decode</span>() {
+    <span class='comment'># Error if string not a multiple of 4</span>
+    local <span class='property'>s</span>=<span class='string'>&quot;<span class='embedded'>${<span class='property'>1</span>}</span>&quot;</span>
+    local <span class='property'>len</span>=<span class='embedded'>${#<span class='property'>s</span>}</span>
+    <span class='keyword'>if</span> [[ $((<span class='embedded'>${<span class='property'>len</span>}</span>%4)) -ne 0 ]]
+    <span class='keyword'>then</span>
+        <span class='function'><span class='label'>usage</span></span>
+    <span class='keyword'>fi</span>
+
+    <span class='comment'># Trim trailing pad characters</span>
+    local <span class='property'>pads</span>=0
+    <span class='keyword'>while</span> [[ <span class='embedded'>${<span class='property'>len</span>}</span> -gt 0 ]] <span class='operator'>&amp;&amp;</span> [ <span class='string'>&quot;<span class='embedded'>${<span class='property'>s</span>:$((<span class='embedded'>${<span class='property'>len</span>}</span>-1)):1}</span>&quot;</span> = <span class='string'>&quot;=&quot;</span> ]
+    <span class='keyword'>do</span>
+        <span class='property'>len</span>=$((<span class='embedded'>${<span class='property'>len</span>}</span>-1))
+        <span class='property'>pads</span>=$((<span class='embedded'>${<span class='property'>pads</span>}</span>+1))
+    <span class='keyword'>done</span>
+    <span class='property'>s</span>=<span class='string'>&quot;<span class='embedded'>${<span class='property'>s</span>:0:<span class='embedded'>${<span class='property'>len</span>}</span>}</span>&quot;</span>
+
+    <span class='comment'># Error if too many pad characters</span>
+    <span class='keyword'>if</span> [[ <span class='embedded'>${<span class='property'>pads</span>}</span> -gt 2 ]]
+    <span class='keyword'>then</span>
+        <span class='function'><span class='label'>usage</span></span>
+    <span class='keyword'>fi</span>
+
+    local <span class='property'>result</span>=<span class='string'>&quot;&quot;</span>
+    <span class='keyword'>for</span> ((<span class='property'>n</span>=0; <span class='label'>n</span><span class='operator'>&lt;</span><span class='embedded'>${<span class='property'>len</span>}</span>; <span class='label'>n</span>+=4))
+    <span class='keyword'>do</span>
+        <span class='comment'># Convert 4-character chunk into indices</span>
+        local <span class='property'>n1</span>=<span class='embedded'>$(<span class='function'><span class='label'>base64_decode_index</span></span> <span class='string'>&quot;<span class='embedded'>${<span class='property'>s</span>:<span class='embedded'>${<span class='property'>n</span>}</span>:1}</span>&quot;</span>)</span>
+        local <span class='property'>n2</span>=<span class='embedded'>$(<span class='function'><span class='label'>base64_decode_index</span></span> <span class='string'>&quot;<span class='embedded'>${<span class='property'>s</span>:$((<span class='embedded'>${<span class='property'>n</span>}</span>+1)):1}</span>&quot;</span>)</span>
+        local <span class='property'>n3</span>=<span class='embedded'>$(<span class='function'><span class='label'>base64_decode_index</span></span> <span class='string'>&quot;<span class='embedded'>${<span class='property'>s</span>:$((<span class='embedded'>${<span class='property'>n</span>}</span>+2)):1}</span>&quot;</span>)</span>
+        local <span class='property'>n4</span>=<span class='embedded'>$(<span class='function'><span class='label'>base64_decode_index</span></span> <span class='string'>&quot;<span class='embedded'>${<span class='property'>s</span>:$((<span class='embedded'>${<span class='property'>n</span>}</span>+3)):1}</span>&quot;</span>)</span>
+
+        <span class='comment'># Exit if any invalid Base64 characters</span>
+        <span class='keyword'>if</span> [[ <span class='embedded'>${<span class='property'>n1</span>}</span> -lt 0 ]] || [[ <span class='embedded'>${<span class='property'>n2</span>}</span> -lt 0 ]] || [[ <span class='embedded'>${<span class='property'>n3</span>}</span> -lt 0 ]] || [[ <span class='embedded'>${<span class='property'>n4</span>}</span> -lt 0 ]]
+        <span class='keyword'>then</span>
+            <span class='function'><span class='label'>usage</span></span>
+        <span class='keyword'>fi</span>
+
+        <span class='comment'># Convert indices to 24-bit value</span>
+        local <span class='property'>u</span>=$(( (<span class='embedded'>${<span class='property'>n1</span>}</span>&lt;&lt;18)<span class='operator'>|</span>(<span class='embedded'>${<span class='property'>n2</span>}</span>&lt;&lt;12)<span class='operator'>|</span>(<span class='embedded'>${<span class='property'>n3</span>}</span>&lt;&lt;6)<span class='operator'>|</span><span class='embedded'>${<span class='property'>n4</span>}</span> ))
+
+        <span class='comment'># Convert 24-bit value to Base64 decoded characters</span>
+        <span class='property'>c1</span>=<span class='string'>&quot;<span class='embedded'>$(<span class='function'><span class='label'>base64_decode_char</span></span> <span class='embedded'>${<span class='property'>u</span>}</span> 16 <span class='embedded'>${<span class='property'>n</span>}</span> 0 <span class='embedded'>${<span class='property'>len</span>}</span>)</span>&quot;</span>
+        <span class='property'>c2</span>=<span class='string'>&quot;<span class='embedded'>$(<span class='function'><span class='label'>base64_decode_char</span></span> <span class='embedded'>${<span class='property'>u</span>}</span> 8 <span class='embedded'>${<span class='property'>n</span>}</span> 2 <span class='embedded'>${<span class='property'>len</span>}</span>)</span>&quot;</span>
+        <span class='property'>c3</span>=<span class='string'>&quot;<span class='embedded'>$(<span class='function'><span class='label'>base64_decode_char</span></span> <span class='embedded'>${<span class='property'>u</span>}</span> 0 <span class='embedded'>${<span class='property'>n</span>}</span> 3 <span class='embedded'>${<span class='property'>len</span>}</span>)</span>&quot;</span>
+        <span class='property'>result</span>=<span class='string'>&quot;<span class='embedded'>${<span class='property'>result</span>}</span><span class='embedded'>${<span class='property'>c1</span>}</span><span class='embedded'>${<span class='property'>c2</span>}</span><span class='embedded'>${<span class='property'>c3</span>}</span>&quot;</span>
+    <span class='keyword'>done</span>
+
+    <span class='function'><span class='label'>echo</span></span> <span class='string'>&quot;<span class='embedded'>${<span class='property'>result</span>}</span>&quot;</span>
+}
+
+<span class='comment'># Convert character to Base64 decode index</span>
+<span class='comment'>#</span>
+<span class='comment'># Input:</span>
+<span class='comment'># - $1 = character</span>
+<span class='comment'># Output:</span>
+<span class='comment'># - Base64 decode index if character is a valid Base64 character,</span>
+<span class='comment'>#   0 if empty string, -1 otherwise</span>
+<span class='keyword'>function</span> <span class='function'>base64_decode_index</span>() {
+    <span class='property'>result</span>=<span class='embedded'>$(<span class='function'><span class='label'>ord</span></span> <span class='string'>&quot;<span class='embedded'>${<span class='property'>1</span>}</span>&quot;</span>)</span>
+    <span class='keyword'>case</span> <span class='string'>&quot;<span class='embedded'>${<span class='property'>1</span>}</span>&quot;</span> <span class='keyword'>in</span>
+        <span class='string'>&quot;&quot;</span>)
+            <span class='property'>result</span>=0
+            ;;
+        [A-Z])
+            <span class='comment'># result = ord(char) - ord(&quot;A&quot;)</span>
+            <span class='property'>result</span>=$((<span class='embedded'>${<span class='property'>result</span>}</span>-65))
+            ;;
+        [a-z])
+            <span class='comment'># result = ord(char) - ord(&quot;a&quot;) + 26</span>
+            <span class='property'>result</span>=$((<span class='embedded'>${<span class='property'>result</span>}</span>-97+26))
+            ;;
+        [0-9])
+            <span class='comment'># result = ord(char) - ord(&quot;0&quot;) + 52</span>
+            <span class='property'>result</span>=$((<span class='embedded'>${<span class='property'>result</span>}</span>-48+52))
+            ;;
+        +)
+            <span class='property'>result</span>=62
+            ;;
+        <span class='label'>/</span>)
+            <span class='property'>result</span>=63
+            ;;
+        *)
+            <span class='property'>result</span>=-1
+            ;;
+    <span class='keyword'>esac</span>
+
+    <span class='function'><span class='label'>echo</span></span> <span class='embedded'>${<span class='property'>result</span>}</span>
+}
+
+<span class='comment'># Base64 decode character</span>
+<span class='comment'>#</span>
+<span class='comment'># Inputs:</span>
+<span class='comment'># - $1 = 24-bit value</span>
+<span class='comment'># - $2 = number of shifts</span>
+<span class='comment'># - $3 = string index</span>
+<span class='comment'># - $4 = string index offset (0 - 3)</span>
+<span class='comment'># - $5 = length of string</span>
+<span class='comment'># Output: Base64 decoded character</span>
+<span class='keyword'>function</span> <span class='function'>base64_decode_char</span>() {
+    local <span class='property'>u</span>=<span class='embedded'>${<span class='property'>1</span>}</span>
+    local <span class='property'>shifts</span>=<span class='embedded'>${<span class='property'>2</span>}</span>
+    local <span class='property'>index</span>=$((<span class='embedded'>${<span class='property'>3</span>}</span>+<span class='embedded'>${<span class='property'>4</span>}</span>))
+    local <span class='property'>len</span>=<span class='embedded'>${<span class='property'>5</span>}</span>
+    local <span class='property'>result</span>=<span class='string'>&quot;&quot;</span>
+    <span class='keyword'>if</span> [[ <span class='embedded'>${<span class='property'>index</span>}</span> -lt <span class='embedded'>${<span class='property'>len</span>}</span> ]]
+    <span class='keyword'>then</span>
+        <span class='property'>result</span>=<span class='string'>&quot;<span class='embedded'>$(<span class='function'><span class='label'>chr</span></span> $(( (<span class='embedded'>${<span class='property'>u</span>}</span><span class='operator'>&gt;&gt;</span><span class='embedded'>${<span class='property'>shifts</span>}</span>)&amp;<span class='property'>0xff</span> )) )</span>&quot;</span>
+    <span class='keyword'>fi</span>
+
+    <span class='function'><span class='label'>echo</span></span> <span class='string'>&quot;<span class='embedded'>${<span class='property'>result</span>}</span>&quot;</span>
+}
+
+<span class='comment'># Convert ASCII code to character</span>
+<span class='comment'>#</span>
+<span class='comment'># Input:</span>
+<span class='comment'># - $1 = ASCII code</span>
+<span class='comment'># Output: character</span>
+<span class='keyword'>function</span> <span class='function'>chr</span>() {
+    <span class='function'><span class='label'>printf</span></span> <span class='string'>&quot;\\<span class='embedded'>$(<span class='function'><span class='label'>printf</span></span> <span class='string'>&#39;%03o&#39;</span> <span class='string'>&quot;<span class='embedded'>${<span class='property'>1</span>}</span>&quot;</span>)</span>&quot;</span>
+}
+
+<span class='comment'># Convert character to ASCII code</span>
+<span class='comment'>#</span>
+<span class='comment'># Input:</span>
+<span class='comment'># - $1 = character</span>
+<span class='comment'># Output:</span>
+<span class='comment'># - ASCII code if character is not empty, 0 otherwise</span>
+<span class='keyword'>function</span> <span class='function'>ord</span>() {
+    <span class='property'>LC_CTYPE</span>=<span class='label'>C</span> <span class='function'><span class='label'>printf</span></span> <span class='string'>&#39;%d&#39;</span> <span class='string'>&quot;&#39;<span class='embedded'>${<span class='property'>1</span>}</span>&quot;</span>
+}
+
+<span class='comment'># Error if string</span>
+<span class='keyword'>if</span> [ -z <span class='string'>&quot;<span class='operator'>$</span><span class='property'>2</span>&quot;</span> ]
+<span class='keyword'>then</span>
+    <span class='function'><span class='label'>usage</span></span>
+<span class='keyword'>fi</span>
+
+<span class='comment'># Base64 encode/decode string if valid mode, error otherwise</span>
+<span class='keyword'>case</span> <span class='string'>&quot;<span class='operator'>$</span><span class='property'>1</span>&quot;</span> <span class='keyword'>in</span>
+    <span class='label'>encode</span>)
+        <span class='function'><span class='label'>base64_encode</span></span> <span class='string'>&quot;<span class='operator'>$</span><span class='property'>2</span>&quot;</span>
+        ;;
+
+    <span class='label'>decode</span>)
+        <span class='function'><span class='label'>base64_decode</span></span> <span class='string'>&quot;<span class='operator'>$</span><span class='property'>2</span>&quot;</span>
+        ;;
+
+    *)
+        <span class='function'><span class='label'>usage</span></span>
+        ;;
+<span class='keyword'>esac</span>
+
+</code></pre>
+<h2>Sample programs in c</h2>
+<p>File: <code>baklava.c</code></p>
+<pre><code class="language-c"><span class='keyword'>#include</span> <span class='string'>&quot;stdio.h&quot;</span>
+
+<span class='type'>int</span> <span class='function'>main</span> (<span class='type'>void</span>)
+{
+
+  <span class='keyword'>for</span> (<span class='type'>int</span> <span class='variable'>i</span> <span class='operator'>=</span> <span class='number'>0</span><span class='delimiter'>;</span> <span class='variable'>i</span> <span class='operator'>&lt;</span> <span class='number'>10</span><span class='delimiter'>;</span> <span class='variable'>i</span><span class='operator'>++</span>)
+  {
+    <span class='function'>printf</span> (<span class='string'>&quot;%.*s&quot;</span>, (<span class='number'>10</span> <span class='operator'>-</span> <span class='variable'>i</span>), <span class='string'>&quot;                                 &quot;</span>)<span class='delimiter'>;</span>
+    <span class='function'>printf</span> (<span class='string'>&quot;%.*s&quot;</span>, (<span class='variable'>i</span> <span class='operator'>*</span> <span class='number'>2</span> <span class='operator'>+</span> <span class='number'>1</span>), <span class='string'>&quot;******************************&quot;</span>)<span class='delimiter'>;</span>
+    <span class='function'>printf</span> (<span class='string'>&quot;\n&quot;</span>)<span class='delimiter'>;</span>
+  }
+
+  <span class='keyword'>for</span> (<span class='type'>int</span> <span class='variable'>i</span> <span class='operator'>=</span> <span class='number'>10</span><span class='delimiter'>;</span> <span class='number'>-1</span> <span class='operator'>&lt;</span> <span class='variable'>i</span><span class='delimiter'>;</span> <span class='variable'>i</span><span class='operator'>--</span>)
+  {
+    <span class='function'>printf</span> (<span class='string'>&quot;%.*s&quot;</span>, (<span class='number'>10</span> <span class='operator'>-</span> <span class='variable'>i</span>), <span class='string'>&quot;                                 &quot;</span>)<span class='delimiter'>;</span>
+    <span class='function'>printf</span> (<span class='string'>&quot;%.*s&quot;</span>, (<span class='variable'>i</span> <span class='operator'>*</span> <span class='number'>2</span> <span class='operator'>+</span> <span class='number'>1</span>), <span class='string'>&quot;******************************&quot;</span>)<span class='delimiter'>;</span>
+    <span class='function'>printf</span> (<span class='string'>&quot;\n&quot;</span>)<span class='delimiter'>;</span>
+  }
+
+  <span class='keyword'>return</span> <span class='number'>0</span><span class='delimiter'>;</span>
+
+}
+
+</code></pre>
+<p>File: <code>binary-search.c</code></p>
+<pre><code class="language-c"><span class='keyword'>#include</span> <span class='string'>&lt;stdio.h&gt;</span>
+<span class='keyword'>#include</span> <span class='string'>&lt;stdlib.h&gt;</span>
+<span class='keyword'>#include</span> <span class='string'>&lt;string.h&gt;</span>
+<span class='keyword'>#include</span> <span class='string'>&lt;ctype.h&gt;</span>
+
+<span class='comment'>// Function prototypes</span>
+<span class='type'>int</span> <span class='function'>binarySearch</span>(<span class='keyword'>const</span> <span class='type'>int</span> <span class='variable'>arr</span>[], <span class='type'>int</span> <span class='variable'>size</span>, <span class='type'>int</span> <span class='variable'>target</span>)<span class='delimiter'>;</span>
+<span class='type'>int</span> <span class='function'>isSorted</span>(<span class='keyword'>const</span> <span class='type'>int</span> <span class='variable'>arr</span>[], <span class='type'>int</span> <span class='variable'>size</span>)<span class='delimiter'>;</span>
+<span class='type'>int</span> <span class='function'>isValidNumber</span>(<span class='keyword'>const</span> <span class='type'>char</span> <span class='operator'>*</span><span class='variable'>str</span>)<span class='delimiter'>;</span>
+<span class='type'>char</span><span class='operator'>*</span> <span class='function'>trimWhitespace</span>(<span class='type'>char</span> <span class='operator'>*</span><span class='variable'>str</span>)<span class='delimiter'>;</span>
+<span class='type'>int</span> <span class='function'>parseInput</span>(<span class='keyword'>const</span> <span class='type'>char</span> <span class='operator'>*</span><span class='variable'>input</span>, <span class='type'>int</span> <span class='operator'>*</span><span class='operator'>*</span><span class='variable'>arr</span>, <span class='type'>int</span> <span class='operator'>*</span><span class='variable'>size</span>)<span class='delimiter'>;</span>
+<span class='type'>void</span> <span class='function'>freeMemory</span>(<span class='type'>int</span> <span class='operator'>*</span><span class='variable'>arr</span>)<span class='delimiter'>;</span>
+<span class='type'>void</span> <span class='function'>printErrorAndExit</span>(<span class='keyword'>const</span> <span class='type'>char</span> <span class='operator'>*</span><span class='variable'>message</span>, <span class='type'>int</span> <span class='operator'>*</span><span class='variable'>arr</span>)<span class='delimiter'>;</span>
+
+<span class='type'>int</span> <span class='function'>main</span>(<span class='type'>int</span> <span class='variable'>argc</span>, <span class='type'>char</span> <span class='operator'>*</span><span class='variable'>argv</span>[]) {
+    <span class='keyword'>if</span> (<span class='variable'>argc</span> <span class='operator'>!=</span> <span class='number'>3</span>) {
+        <span class='function'>printErrorAndExit</span>(<span class='string'>&quot;Usage: please provide a list of sorted integers (\&quot;1, 4, 5, 11, 12\&quot;) and the integer to find (\&quot;11\&quot;)\n&quot;</span>, <span class='constant'>NULL</span>)<span class='delimiter'>;</span>
+    }
+
+    <span class='type'>int</span> <span class='operator'>*</span><span class='variable'>arr</span> <span class='operator'>=</span> <span class='constant'>NULL</span><span class='delimiter'>;</span>
+    <span class='type'>int</span> <span class='variable'>size</span> <span class='operator'>=</span> <span class='number'>0</span><span class='delimiter'>;</span>
+
+    <span class='comment'>// Parse the input array from the first argument</span>
+    <span class='keyword'>if</span> (<span class='function'>parseInput</span>(<span class='variable'>argv</span>[<span class='number'>1</span>], <span class='operator'>&amp;</span><span class='variable'>arr</span>, <span class='operator'>&amp;</span><span class='variable'>size</span>) <span class='operator'>!=</span> <span class='number'>0</span> <span class='operator'>||</span> <span class='variable'>size</span> <span class='operator'>&lt;</span> <span class='number'>1</span> <span class='operator'>||</span> !<span class='function'>isSorted</span>(<span class='variable'>arr</span>, <span class='variable'>size</span>)) {
+        <span class='function'>printErrorAndExit</span>(<span class='string'>&quot;Usage: please provide a list of sorted integers (\&quot;1, 4, 5, 11, 12\&quot;) and the integer to find (\&quot;11\&quot;)\n&quot;</span>, <span class='variable'>arr</span>)<span class='delimiter'>;</span>
+    }
+
+    <span class='comment'>// Get target value from the second argument</span>
+    <span class='keyword'>if</span> (!<span class='function'>isValidNumber</span>(<span class='variable'>argv</span>[<span class='number'>2</span>])) {
+        <span class='function'>printErrorAndExit</span>(<span class='string'>&quot;Usage: please provide a list of sorted integers (\&quot;1, 4, 5, 11, 12\&quot;) and the integer to find (\&quot;11\&quot;)\n&quot;</span>, <span class='variable'>arr</span>)<span class='delimiter'>;</span>
+    }
+
+    <span class='type'>int</span> <span class='variable'>target</span> <span class='operator'>=</span> <span class='function'>atoi</span>(<span class='variable'>argv</span>[<span class='number'>2</span>])<span class='delimiter'>;</span>
+
+    <span class='comment'>// Perform binary search</span>
+    <span class='type'>int</span> <span class='variable'>result</span> <span class='operator'>=</span> <span class='function'>binarySearch</span>(<span class='variable'>arr</span>, <span class='variable'>size</span>, <span class='variable'>target</span>)<span class='delimiter'>;</span>
+    <span class='function'>printf</span>(<span class='variable'>result</span> <span class='operator'>!=</span> <span class='number'>-1</span> ? <span class='string'>&quot;true\n&quot;</span> : <span class='string'>&quot;false\n&quot;</span>)<span class='delimiter'>;</span>
+
+    <span class='comment'>// Free allocated memory</span>
+    <span class='function'>freeMemory</span>(<span class='variable'>arr</span>)<span class='delimiter'>;</span>
+    <span class='keyword'>return</span> <span class='number'>0</span><span class='delimiter'>;</span>
+}
+
+<span class='comment'>// Function to perform binary search</span>
+<span class='type'>int</span> <span class='function'>binarySearch</span>(<span class='keyword'>const</span> <span class='type'>int</span> <span class='variable'>arr</span>[], <span class='type'>int</span> <span class='variable'>size</span>, <span class='type'>int</span> <span class='variable'>target</span>) {
+    <span class='type'>int</span> <span class='variable'>left</span> <span class='operator'>=</span> <span class='number'>0</span><span class='delimiter'>;</span>
+    <span class='type'>int</span> <span class='variable'>right</span> <span class='operator'>=</span> <span class='variable'>size</span> <span class='operator'>-</span> <span class='number'>1</span><span class='delimiter'>;</span>
+
+    <span class='keyword'>while</span> (<span class='variable'>left</span> &lt;= <span class='variable'>right</span>) {
+        <span class='type'>int</span> <span class='variable'>mid</span> <span class='operator'>=</span> <span class='variable'>left</span> <span class='operator'>+</span> (<span class='variable'>right</span> <span class='operator'>-</span> <span class='variable'>left</span>) / <span class='number'>2</span><span class='delimiter'>;</span>
+
+        <span class='keyword'>if</span> (<span class='variable'>arr</span>[<span class='variable'>mid</span>] <span class='operator'>==</span> <span class='variable'>target</span>) {
+            <span class='keyword'>return</span> <span class='variable'>mid</span><span class='delimiter'>;</span> <span class='comment'>// Target found</span>
+        }
+
+        <span class='keyword'>if</span> (<span class='variable'>arr</span>[<span class='variable'>mid</span>] <span class='operator'>&lt;</span> <span class='variable'>target</span>) {
+            <span class='variable'>left</span> <span class='operator'>=</span> <span class='variable'>mid</span> <span class='operator'>+</span> <span class='number'>1</span><span class='delimiter'>;</span> <span class='comment'>// Move right</span>
+        } <span class='keyword'>else</span> {
+            <span class='variable'>right</span> <span class='operator'>=</span> <span class='variable'>mid</span> <span class='operator'>-</span> <span class='number'>1</span><span class='delimiter'>;</span> <span class='comment'>// Move left</span>
+        }
+    }
+
+    <span class='keyword'>return</span> <span class='number'>-1</span><span class='delimiter'>;</span> <span class='comment'>// Target not found</span>
+}
+
+<span class='comment'>// Function to parse input string and populate the array</span>
+<span class='type'>int</span> <span class='function'>parseInput</span>(<span class='keyword'>const</span> <span class='type'>char</span> <span class='operator'>*</span><span class='variable'>input</span>, <span class='type'>int</span> <span class='operator'>*</span><span class='operator'>*</span><span class='variable'>arr</span>, <span class='type'>int</span> <span class='operator'>*</span><span class='variable'>size</span>) {
+    <span class='type'>char</span> <span class='operator'>*</span><span class='variable'>token</span><span class='delimiter'>;</span>
+    <span class='type'>int</span> <span class='variable'>capacity</span> <span class='operator'>=</span> <span class='number'>10</span><span class='delimiter'>;</span> <span class='comment'>// Initial capacity</span>
+    <span class='operator'>*</span><span class='variable'>arr</span> <span class='operator'>=</span> <span class='function'>malloc</span>(<span class='variable'>capacity</span> <span class='operator'>*</span> <span class='keyword'>sizeof</span>(<span class='type'>int</span>))<span class='delimiter'>;</span>
+    <span class='keyword'>if</span> (<span class='operator'>*</span><span class='variable'>arr</span> <span class='operator'>==</span> <span class='constant'>NULL</span>) {
+        <span class='function'>printf</span>(<span class='string'>&quot;Memory allocation failed. Exiting.\n&quot;</span>)<span class='delimiter'>;</span>
+        <span class='keyword'>return</span> <span class='number'>1</span><span class='delimiter'>;</span>
+    }
+
+    <span class='comment'>// Tokenize the input string based on commas</span>
+    <span class='type'>char</span> <span class='operator'>*</span><span class='variable'>inputCopy</span> <span class='operator'>=</span> <span class='function'>strdup</span>(<span class='variable'>input</span>)<span class='delimiter'>;</span>
+    <span class='variable'>token</span> <span class='operator'>=</span> <span class='function'>strtok</span>(<span class='variable'>inputCopy</span>, <span class='string'>&quot;,&quot;</span>)<span class='delimiter'>;</span>
+    <span class='operator'>*</span><span class='variable'>size</span> <span class='operator'>=</span> <span class='number'>0</span><span class='delimiter'>;</span>
+    <span class='keyword'>while</span> (<span class='variable'>token</span>) {
+        <span class='function'>trimWhitespace</span>(<span class='variable'>token</span>)<span class='delimiter'>;</span> <span class='comment'>// Trim whitespace around token</span>
+        <span class='keyword'>if</span> (!<span class='function'>isValidNumber</span>(<span class='variable'>token</span>)) {
+            <span class='function'>printf</span>(<span class='string'>&quot;Invalid number detected: &#39;%s&#39;. Exiting.\n&quot;</span>, <span class='variable'>token</span>)<span class='delimiter'>;</span>
+            <span class='function'>freeMemory</span>(<span class='operator'>*</span><span class='variable'>arr</span>)<span class='delimiter'>;</span>
+            <span class='function'>free</span>(<span class='variable'>inputCopy</span>)<span class='delimiter'>;</span>
+            <span class='keyword'>return</span> <span class='number'>1</span><span class='delimiter'>;</span> <span class='comment'>// Exit if a number is invalid</span>
+        }
+
+        <span class='keyword'>if</span> (<span class='operator'>*</span><span class='variable'>size</span> &gt;= <span class='variable'>capacity</span>) {
+            <span class='variable'>capacity</span> *= <span class='number'>2</span><span class='delimiter'>;</span>
+            <span class='operator'>*</span><span class='variable'>arr</span> <span class='operator'>=</span> <span class='function'>realloc</span>(<span class='operator'>*</span><span class='variable'>arr</span>, <span class='variable'>capacity</span> <span class='operator'>*</span> <span class='keyword'>sizeof</span>(<span class='type'>int</span>))<span class='delimiter'>;</span>
+            <span class='keyword'>if</span> (<span class='operator'>*</span><span class='variable'>arr</span> <span class='operator'>==</span> <span class='constant'>NULL</span>) {
+                <span class='function'>printf</span>(<span class='string'>&quot;Memory reallocation failed. Exiting.\n&quot;</span>)<span class='delimiter'>;</span>
+                <span class='function'>free</span>(<span class='variable'>inputCopy</span>)<span class='delimiter'>;</span>
+                <span class='keyword'>return</span> <span class='number'>1</span><span class='delimiter'>;</span>
+            }
+        }
+        (<span class='operator'>*</span><span class='variable'>arr</span>)[(<span class='operator'>*</span><span class='variable'>size</span>)<span class='operator'>++</span>] <span class='operator'>=</span> <span class='function'>atoi</span>(<span class='variable'>token</span>)<span class='delimiter'>;</span>
+        <span class='variable'>token</span> <span class='operator'>=</span> <span class='function'>strtok</span>(<span class='constant'>NULL</span>, <span class='string'>&quot;,&quot;</span>)<span class='delimiter'>;</span>
+    }
+
+    <span class='comment'>// Resize the array to the actual size</span>
+    <span class='operator'>*</span><span class='variable'>arr</span> <span class='operator'>=</span> <span class='function'>realloc</span>(<span class='operator'>*</span><span class='variable'>arr</span>, <span class='operator'>*</span><span class='variable'>size</span> <span class='operator'>*</span> <span class='keyword'>sizeof</span>(<span class='type'>int</span>))<span class='delimiter'>;</span>
+    <span class='function'>free</span>(<span class='variable'>inputCopy</span>)<span class='delimiter'>;</span> <span class='comment'>// Free the input copy</span>
+    <span class='keyword'>return</span> <span class='number'>0</span><span class='delimiter'>;</span> <span class='comment'>// Successful parsing</span>
+}
+
+<span class='comment'>// Function to free allocated memory</span>
+<span class='type'>void</span> <span class='function'>freeMemory</span>(<span class='type'>int</span> <span class='operator'>*</span><span class='variable'>arr</span>) {
+    <span class='function'>free</span>(<span class='variable'>arr</span>)<span class='delimiter'>;</span>
+}
+
+<span class='comment'>// Function to print error message and exit</span>
+<span class='type'>void</span> <span class='function'>printErrorAndExit</span>(<span class='keyword'>const</span> <span class='type'>char</span> <span class='operator'>*</span><span class='variable'>message</span>, <span class='type'>int</span> <span class='operator'>*</span><span class='variable'>arr</span>) {
+    <span class='keyword'>if</span> (<span class='variable'>arr</span> <span class='operator'>!=</span> <span class='constant'>NULL</span>) {
+        <span class='function'>freeMemory</span>(<span class='variable'>arr</span>)<span class='delimiter'>;</span>
+    }
+    <span class='function'>printf</span>(<span class='string'>&quot;%s&quot;</span>, <span class='variable'>message</span>)<span class='delimiter'>;</span>
+    <span class='function'>exit</span>(<span class='number'>1</span>)<span class='delimiter'>;</span>
+}
+
+<span class='comment'>// Function to check if the array is sorted</span>
+<span class='type'>int</span> <span class='function'>isSorted</span>(<span class='keyword'>const</span> <span class='type'>int</span> <span class='variable'>arr</span>[], <span class='type'>int</span> <span class='variable'>size</span>) {
+    <span class='keyword'>for</span> (<span class='type'>int</span> <span class='variable'>i</span> <span class='operator'>=</span> <span class='number'>1</span><span class='delimiter'>;</span> <span class='variable'>i</span> <span class='operator'>&lt;</span> <span class='variable'>size</span><span class='delimiter'>;</span> <span class='variable'>i</span><span class='operator'>++</span>) {
+        <span class='keyword'>if</span> (<span class='variable'>arr</span>[<span class='variable'>i</span>] <span class='operator'>&lt;</span> <span class='variable'>arr</span>[<span class='variable'>i</span> <span class='operator'>-</span> <span class='number'>1</span>]) {
+            <span class='keyword'>return</span> <span class='number'>0</span><span class='delimiter'>;</span> <span class='comment'>// Array is not sorted</span>
+        }
+    }
+    <span class='keyword'>return</span> <span class='number'>1</span><span class='delimiter'>;</span> <span class='comment'>// Array is sorted</span>
+}
+
+<span class='comment'>// Function to check if a string is a valid number</span>
+<span class='type'>int</span> <span class='function'>isValidNumber</span>(<span class='keyword'>const</span> <span class='type'>char</span> <span class='operator'>*</span><span class='variable'>str</span>) {
+    <span class='type'>char</span> <span class='operator'>*</span><span class='variable'>end</span><span class='delimiter'>;</span>
+    <span class='function'>strtol</span>(<span class='variable'>str</span>, <span class='operator'>&amp;</span><span class='variable'>end</span>, <span class='number'>10</span>)<span class='delimiter'>;</span> <span class='comment'>// Convert string to long</span>
+    <span class='keyword'>return</span> (<span class='operator'>*</span><span class='variable'>end</span> <span class='operator'>==</span> <span class='number'>&#39;\0&#39;</span> <span class='operator'>||</span> <span class='operator'>*</span><span class='variable'>end</span> <span class='operator'>==</span> <span class='number'>&#39;\n&#39;</span>)<span class='delimiter'>;</span> <span class='comment'>// Check if the entire string was valid</span>
+}
+
+<span class='comment'>// Function to trim whitespace from a string</span>
+<span class='type'>char</span><span class='operator'>*</span> <span class='function'>trimWhitespace</span>(<span class='type'>char</span> <span class='operator'>*</span><span class='variable'>str</span>) {
+    <span class='comment'>// Trim leading whitespace</span>
+    <span class='keyword'>while</span> (<span class='function'>isspace</span>((<span class='type'>unsigned <span class='type'>char</span></span>)<span class='operator'>*</span><span class='variable'>str</span>)) <span class='variable'>str</span><span class='operator'>++</span><span class='delimiter'>;</span>
+    <span class='comment'>// Trim trailing whitespace</span>
+    <span class='type'>char</span> <span class='operator'>*</span><span class='variable'>end</span> <span class='operator'>=</span> <span class='variable'>str</span> <span class='operator'>+</span> <span class='function'>strlen</span>(<span class='variable'>str</span>) <span class='operator'>-</span> <span class='number'>1</span><span class='delimiter'>;</span>
+    <span class='keyword'>while</span> (<span class='variable'>end</span> <span class='operator'>&gt;</span> <span class='variable'>str</span> <span class='operator'>&amp;&amp;</span> <span class='function'>isspace</span>((<span class='type'>unsigned <span class='type'>char</span></span>)<span class='operator'>*</span><span class='variable'>end</span>)) <span class='variable'>end</span><span class='operator'>--</span><span class='delimiter'>;</span>
+    <span class='operator'>*</span>(<span class='variable'>end</span> <span class='operator'>+</span> <span class='number'>1</span>) <span class='operator'>=</span> <span class='number'>&#39;\0&#39;</span><span class='delimiter'>;</span> <span class='comment'>// Null terminate after the last non-space character</span>
+    <span class='keyword'>return</span> <span class='variable'>str</span><span class='delimiter'>;</span>
+}
+
+</code></pre>
+<h2>Sample programs in go</h2>
+<p>File: <code>baklava.go</code></p>
+<pre><code class="language-go"><span class='keyword'>package</span> main
+
+<span class='keyword'>import</span> (
+	<span class='string'>&quot;fmt&quot;</span>
+	<span class='string'>&quot;strings&quot;</span>
+)
+
+<span class='keyword'>func</span> <span class='variable'>main</span>() {
+	<span class='keyword'>for</span> <span class='variable'>i</span> <span class='operator'>:=</span> <span class='number'>0</span>; <span class='variable'>i</span> <span class='operator'>&lt;</span> <span class='number'>10</span>; <span class='variable'>i</span><span class='operator'>++</span> {
+		<span class='variable'>fmt</span>.<span class='property'>Println</span>(<span class='variable'>strings</span>.<span class='property'>Repeat</span>(<span class='string'>&quot; &quot;</span>, (<span class='number'>10</span><span class='operator'>-</span><span class='variable'>i</span>)) <span class='operator'>+</span> <span class='variable'>strings</span>.<span class='property'>Repeat</span>(<span class='string'>&quot;*&quot;</span>, (<span class='variable'>i</span><span class='operator'>*</span><span class='number'>2</span><span class='operator'>+</span><span class='number'>1</span>)))
+	}
+
+	<span class='keyword'>for</span> <span class='variable'>i</span> <span class='operator'>:=</span> <span class='number'>10</span>; <span class='operator'>-</span><span class='number'>1</span> <span class='operator'>&lt;</span> <span class='variable'>i</span>; <span class='variable'>i</span><span class='operator'>--</span> {
+		<span class='variable'>fmt</span>.<span class='property'>Println</span>(<span class='variable'>strings</span>.<span class='property'>Repeat</span>(<span class='string'>&quot; &quot;</span>, (<span class='number'>10</span><span class='operator'>-</span><span class='variable'>i</span>)) <span class='operator'>+</span> <span class='variable'>strings</span>.<span class='property'>Repeat</span>(<span class='string'>&quot;*&quot;</span>, (<span class='variable'>i</span><span class='operator'>*</span><span class='number'>2</span><span class='operator'>+</span><span class='number'>1</span>)))
+	}
+}
+
+</code></pre>
+<p>File: <code>base64-encode-decode.go</code></p>
+<pre><code class="language-go"><span class='keyword'>package</span> main
+
+<span class='keyword'>import</span> (
+	<span class='string'>&quot;encoding/base64&quot;</span>
+	<span class='string'>&quot;fmt&quot;</span>
+	<span class='string'>&quot;os&quot;</span>
+)
+
+<span class='keyword'>func</span> <span class='variable'>die</span>() {
+	<span class='variable'>fmt</span>.<span class='property'>Println</span>(<span class='string'>&quot;Usage: please provide a mode and a string to encode/decode&quot;</span>)
+	<span class='variable'>os</span>.<span class='property'>Exit</span>(<span class='number'>1</span>)
+}
+
+<span class='keyword'>func</span> <span class='variable'>main</span>() {
+	<span class='keyword'>if</span> <span class='variable'>len</span>(<span class='variable'>os</span>.<span class='property'>Args</span>) <span class='operator'>&lt;</span> <span class='number'>3</span> {
+		<span class='variable'>die</span>()
+	}
+
+	<span class='variable'>enc</span> <span class='operator'>:=</span> <span class='variable'>base64</span>.<span class='property'>StdEncoding</span>
+
+	<span class='keyword'>if</span> <span class='variable'>len</span>(<span class='variable'>os</span>.<span class='property'>Args</span>[<span class='number'>2</span>]) <span class='operator'>==</span> <span class='number'>0</span> {
+		<span class='variable'>die</span>()
+	}
+
+	<span class='keyword'>switch</span> <span class='variable'>os</span>.<span class='property'>Args</span>[<span class='number'>1</span>] {
+	<span class='keyword'>case</span> <span class='string'>&quot;encode&quot;</span>:
+		<span class='variable'>fmt</span>.<span class='property'>Println</span>(<span class='variable'>enc</span>.<span class='property'>EncodeToString</span>([]<span class='type'>byte</span>(<span class='variable'>os</span>.<span class='property'>Args</span>[<span class='number'>2</span>])))
+		<span class='keyword'>return</span>
+	<span class='keyword'>case</span> <span class='string'>&quot;decode&quot;</span>:
+		<span class='variable'>s</span>, <span class='variable'>err</span> <span class='operator'>:=</span> <span class='variable'>enc</span>.<span class='property'>DecodeString</span>(<span class='variable'>os</span>.<span class='property'>Args</span>[<span class='number'>2</span>])
+		<span class='keyword'>if</span> <span class='variable'>err</span> <span class='operator'>!=</span> <span class='constant builtin'>nil</span> {
+			<span class='variable'>die</span>()
+		}
+
+		<span class='variable'>fmt</span>.<span class='property'>Println</span>(<span class='variable'>string</span>(<span class='variable'>s</span>))
+	<span class='keyword'>default</span>:
+		<span class='variable'>die</span>()
+	}
+}
+
+</code></pre>
+<h2>Sample programs in haskell</h2>
+<p>File: <code>baklava.hs</code></p>
+<pre><code class="language-haskell"><span class='keyword import'>module</span> <span class='module'>Main</span> <span class='keyword'>where</span>
+
+<span class='type'>main</span> <span class='operator'>::</span> <span class='type'>IO</span> <span class='string special symbol'><span class='punctuation bracket'>(</span><span class='punctuation bracket'>)</span></span>
+<span class='type'>main</span> <span class='operator'>=</span> <span class='type'>putStrLn</span> <span class='type'>baklava</span>
+
+<span class='spell'>-- Create baklava where the top has 10 spaces and then 1 asterisk</span>
+<span class='type'>baklava</span> <span class='operator'>::</span>  <span class='type'>String</span>
+<span class='type'>baklava</span> <span class='operator'>=</span> <span class='type'>baklavaGrow</span> <span class='number'>10</span> <span class='number'>1</span>
+
+<span class='spell'>-- Recursively grow the baklava until spaces &lt;= zero</span>
+<span class='function'><span class='function'><span class='type'>baklavaGrow</span> <span class='operator'>::</span> <span class='type'>Int</span> <span class='operator'>-&gt;</span> <span class='type'>Int</span> <span class='operator'>-&gt;</span> <span class='type'>String</span></span></span>
+<span class='type'>baklavaGrow</span> <span class='type'>space</span> <span class='type'>asterisk</span>
+  <span class='operator'>|</span> <span class='type'>space</span> <span class='operator'>&lt;=</span> <span class='number'>0</span> <span class='operator'>=</span> <span class='type'>line</span> <span class='number'>0</span>     <span class='type'>asterisk</span> <span class='operator'>++</span> <span class='string'>&quot;\n&quot;</span> <span class='operator'>++</span> <span class='type'>baklavaShrink</span> <span class='number'>1</span>          <span class='punctuation bracket'>(</span><span class='type'>asterisk</span> <span class='operator'>-</span> <span class='number'>2</span><span class='punctuation bracket'>)</span>
+  <span class='operator'>|</span> <span class='boolean'>otherwise</span>  <span class='operator'>=</span> <span class='type'>line</span> <span class='type'>space</span> <span class='type'>asterisk</span> <span class='operator'>++</span> <span class='string'>&quot;\n&quot;</span> <span class='operator'>++</span> <span class='type'>baklavaGrow</span>   <span class='punctuation bracket'>(</span><span class='type'>space</span> <span class='operator'>-</span> <span class='number'>1</span><span class='punctuation bracket'>)</span> <span class='punctuation bracket'>(</span><span class='type'>asterisk</span> <span class='operator'>+</span> <span class='number'>2</span><span class='punctuation bracket'>)</span>
+
+<span class='spell'>-- Recursively shrink the baklava until asterisks &lt;= zero</span>
+<span class='function'><span class='function'><span class='type'>baklavaShrink</span> <span class='operator'>::</span> <span class='type'>Int</span> <span class='operator'>-&gt;</span> <span class='type'>Int</span> <span class='operator'>-&gt;</span> <span class='type'>String</span></span></span>
+<span class='type'>baklavaShrink</span> <span class='type'>space</span> <span class='type'>asterisk</span>
+  <span class='operator'>|</span> <span class='type'>asterisk</span> <span class='operator'>&lt;=</span> <span class='number'>1</span> <span class='operator'>=</span> <span class='type'>line</span> <span class='type'>space</span> <span class='number'>1</span>
+  <span class='operator'>|</span> <span class='boolean'>otherwise</span>     <span class='operator'>=</span> <span class='type'>line</span> <span class='type'>space</span> <span class='type'>asterisk</span> <span class='operator'>++</span> <span class='string'>&quot;\n&quot;</span> <span class='operator'>++</span> <span class='type'>baklavaShrink</span> <span class='punctuation bracket'>(</span><span class='type'>space</span> <span class='operator'>+</span> <span class='number'>1</span><span class='punctuation bracket'>)</span> <span class='punctuation bracket'>(</span><span class='type'>asterisk</span> <span class='operator'>-</span> <span class='number'>2</span><span class='punctuation bracket'>)</span>
+
+<span class='spell'>-- Return a single line of the baklava</span>
+<span class='type'>line</span> <span class='type'>space</span> <span class='type'>asterisk</span> <span class='operator'>=</span> <span class='type'>replicate</span> <span class='type'>space</span> <span class='character'>&#39; &#39;</span> <span class='operator'>++</span> <span class='type'>replicate</span> <span class='type'>asterisk</span> <span class='character'>&#39;*&#39;</span>
+
+</code></pre>
+<p>File: <code>bubble-sort.hs</code></p>
+<pre><code class="language-haskell"><span class='keyword import'>module</span> <span class='module'>Main</span> <span class='keyword'>where</span>
+
+<span class='keyword import'>import</span> <span class='module'>Text</span><span class='operator'>.</span><span class='module'>Read</span>
+<span class='keyword import'>import</span> <span class='module'>System</span><span class='operator'>.</span><span class='module'>Environment</span>
+<span class='keyword import'>import</span> <span class='module'>System</span><span class='operator'>.</span><span class='module'>Exit</span> <span class='punctuation bracket'>(</span><span class='type'>exitWith</span><span class='punctuation delimiter'>,</span> <span class='type'>ExitCode</span><span class='punctuation bracket'>(</span><span class='constructor'>ExitFailure</span><span class='punctuation bracket'>)</span><span class='punctuation bracket'>)</span>
+<span class='keyword import'>import</span> <span class='module'>Data</span><span class='operator'>.</span><span class='module'>List</span> <span class='punctuation bracket'>(</span><span class='type'>intercalate</span><span class='punctuation bracket'>)</span>
+
+
+<span class='function'><span class='function'><span class='type'>bubble</span> <span class='operator'>::</span> <span class='type'>Ord</span> <span class='type'>a</span> <span class='operator'>=&gt;</span> <span class='punctuation bracket'>[</span><span class='type'>a</span><span class='punctuation bracket'>]</span> <span class='operator'>-&gt;</span> <span class='punctuation bracket'>[</span><span class='type'>a</span><span class='punctuation bracket'>]</span></span></span>
+<span class='type'>bubble</span> <span class='type'>xs</span> <span class='operator'>=</span> <span class='type'>foldl</span> <span class='punctuation bracket'>(</span><span class='operator'>\</span><span class='variable'><span class='variable parameter'><span class='type'>acc</span> <span class='operator'>_</span></span></span> <span class='operator'>-&gt;</span> <span class='type'>pass</span> <span class='variable'>acc</span><span class='punctuation bracket'>)</span> <span class='type'>xs</span> <span class='type'>xs</span>
+  <span class='keyword'>where</span> <span class='type'>pass</span> <span class='variable parameter'><span class='punctuation bracket'>[</span><span class='type'>x</span><span class='punctuation bracket'>]</span></span> <span class='operator'>=</span> <span class='punctuation bracket'>[</span><span class='type'>x</span><span class='punctuation bracket'>]</span>
+        <span class='type'>pass</span> <span class='variable parameter'><span class='punctuation bracket'>(</span><span class='type'>x1</span><span class='operator'>:</span><span class='type'>x2</span><span class='operator'>:</span><span class='type'>xs</span><span class='punctuation bracket'>)</span></span>
+          <span class='operator'>|</span> <span class='type'>x1</span> <span class='operator'>&gt;</span> <span class='type'>x2</span>   <span class='operator'>=</span> <span class='type'>x2</span><span class='operator'>:</span><span class='punctuation bracket'>(</span><span class='type'>pass</span> <span class='punctuation bracket'>(</span><span class='type'>x1</span><span class='operator'>:</span><span class='type'>xs</span><span class='punctuation bracket'>)</span><span class='punctuation bracket'>)</span>
+          <span class='operator'>|</span> <span class='boolean'>otherwise</span> <span class='operator'>=</span> <span class='type'>x1</span><span class='operator'>:</span><span class='punctuation bracket'>(</span><span class='type'>pass</span> <span class='punctuation bracket'>(</span><span class='type'>x2</span><span class='operator'>:</span><span class='type'>xs</span><span class='punctuation bracket'>)</span><span class='punctuation bracket'>)</span>
+
+
+<span class='function'><span class='function'><span class='type'>headMaybe</span> <span class='operator'>::</span> <span class='punctuation bracket'>[</span><span class='type'>a</span><span class='punctuation bracket'>]</span> <span class='operator'>-&gt;</span> <span class='type'>Maybe</span> <span class='type'>a</span></span></span>
+<span class='type'>headMaybe</span> <span class='variable parameter'><span class='punctuation bracket'>[</span><span class='punctuation bracket'>]</span></span>     <span class='operator'>=</span> <span class='constructor'>Nothing</span>
+<span class='type'>headMaybe</span> <span class='variable parameter'><span class='punctuation bracket'>(</span><span class='type'>x</span><span class='operator'>:</span><span class='type'>xs</span><span class='punctuation bracket'>)</span></span> <span class='operator'>=</span> <span class='constructor'>Just</span> <span class='type'>x</span>
+
+<span class='spell'>-- Converts string in format &quot;1, 2, 3&quot; to a Maybe list of int</span>
+<span class='function'><span class='function'><span class='type'>stringToListMaybe</span> <span class='operator'>::</span> <span class='type'>String</span> <span class='operator'>-&gt;</span> <span class='type'>Maybe</span> <span class='punctuation bracket'>[</span><span class='type'>Int</span><span class='punctuation bracket'>]</span></span></span>
+<span class='type'>stringToListMaybe</span> <span class='type'>str</span> <span class='operator'>=</span> <span class='type'>readMaybe</span> <span class='operator'>$</span> <span class='string'>&quot;[&quot;</span> <span class='operator'>++</span> <span class='type'>str</span> <span class='operator'>++</span> <span class='string'>&quot;]&quot;</span> <span class='operator'>::</span> <span class='type'>Maybe</span> <span class='punctuation bracket'>[</span><span class='type'>Int</span><span class='punctuation bracket'>]</span>
+
+<span class='spell'>-- Ensure that a list contains at least two elements</span>
+<span class='function'><span class='function'><span class='type'>verifyListLength</span> <span class='operator'>::</span> <span class='type'>Ord</span> <span class='type'>a</span> <span class='operator'>=&gt;</span> <span class='punctuation bracket'>[</span><span class='type'>a</span><span class='punctuation bracket'>]</span> <span class='operator'>-&gt;</span> <span class='type'>Maybe</span> <span class='punctuation bracket'>[</span><span class='type'>a</span><span class='punctuation bracket'>]</span></span></span>
+<span class='type'>verifyListLength</span> <span class='variable parameter'><span class='punctuation bracket'>[</span><span class='punctuation bracket'>]</span></span>     <span class='operator'>=</span> <span class='constructor'>Nothing</span>
+<span class='type'>verifyListLength</span> <span class='variable parameter'><span class='punctuation bracket'>[</span><span class='type'>x</span><span class='punctuation bracket'>]</span></span>    <span class='operator'>=</span> <span class='constructor'>Nothing</span>
+<span class='type'>verifyListLength</span> <span class='variable parameter'><span class='punctuation bracket'>(</span><span class='type'>x</span><span class='operator'>:</span><span class='type'>xs</span><span class='punctuation bracket'>)</span></span> <span class='operator'>=</span> <span class='constructor'>Just</span> <span class='punctuation bracket'>(</span><span class='type'>x</span><span class='operator'>:</span><span class='type'>xs</span><span class='punctuation bracket'>)</span>
+
+<span class='type'>listToString</span> <span class='operator'>::</span> <span class='punctuation bracket'>[</span><span class='type'>Int</span><span class='punctuation bracket'>]</span> <span class='operator'>-&gt;</span> <span class='type'>String</span>
+<span class='type'>listToString</span> <span class='operator'>=</span> <span class='type'>intercalate</span> <span class='string'>&quot;, &quot;</span> <span class='operator'>.</span> <span class='type'>map</span> <span class='type'>show</span>
+
+
+<span class='type'>main</span> <span class='operator'>::</span> <span class='type'>IO</span> <span class='string special symbol'><span class='punctuation bracket'>(</span><span class='punctuation bracket'>)</span></span>
+<span class='type'>main</span> <span class='operator'>=</span> <span class='keyword'>do</span>
+  <span class='type'>args</span> <span class='operator'>&lt;-</span> <span class='type'>getArgs</span>
+  <span class='keyword'>let</span> <span class='type'>xs</span> <span class='operator'>=</span> <span class='type'>headMaybe</span> <span class='type'>args</span> <span class='operator'>&gt;&gt;=</span> <span class='type'>stringToListMaybe</span> <span class='operator'>&gt;&gt;=</span> <span class='type'>verifyListLength</span>
+  <span class='keyword conditional'>case</span> <span class='type'>xs</span> <span class='keyword conditional'>of</span>
+    <span class='constructor'>Nothing</span> <span class='operator'>-&gt;</span> <span class='keyword'>do</span>
+      <span class='type'>putStrLn</span> <span class='string'>&quot;Usage: please provide a list of at least two integers to sort in the format \&quot;1, 2, 3, 4, 5\&quot;&quot;</span>
+      <span class='type'>exitWith</span> <span class='operator'>$</span> <span class='constructor'>ExitFailure</span> <span class='number'>1</span>
+    <span class='constructor'>Just</span> <span class='type'>xs</span>  <span class='operator'>-&gt;</span> <span class='type'>putStrLn</span> <span class='operator'>$</span> <span class='type'>listToString</span> <span class='operator'>$</span> <span class='type'>bubble</span> <span class='type'>xs</span>
+
+
+</code></pre>
+<h2>Sample programs in java</h2>
+<p>File: <code>Baklava.java</code></p>
+<pre><code class="language-java"><span class='keyword'>public</span> <span class='keyword'>class</span> <span class='type'>Baklava</span> {
+    <span class='keyword'>public</span> <span class='keyword'>static</span> <span class='type builtin'>void</span> <span class='function method'>up</span>() {
+        <span class='keyword'>for</span> (<span class='type builtin'>int</span> <span class='variable'>i</span> = <span class='number'>0</span>; <span class='variable'>i</span> &lt; <span class='number'>10</span>; <span class='variable'>i</span>++)
+            <span class='function method'>printRow</span>(<span class='variable'>i</span>);
+    }
+
+    <span class='keyword'>public</span> <span class='keyword'>static</span> <span class='type builtin'>void</span> <span class='function method'>down</span>() {
+        <span class='keyword'>for</span> (<span class='type builtin'>int</span> <span class='variable'>i</span> = <span class='number'>10</span>; <span class='variable'>i</span> &gt;= <span class='number'>0</span>; <span class='variable'>i</span>--)
+            <span class='function method'>printRow</span>(<span class='variable'>i</span>);
+    }
+
+    <span class='keyword'>public</span> <span class='keyword'>static</span> <span class='type builtin'>void</span> <span class='function method'>printRow</span>(<span class='type builtin'>int</span> <span class='variable'>rowNum</span>) {
+        <span class='keyword'>for</span> (<span class='type builtin'>int</span> <span class='variable'>j</span> = <span class='number'>10</span> - <span class='variable'>rowNum</span>; <span class='variable'>j</span> &gt; <span class='number'>0</span>; <span class='variable'>j</span>--)
+            <span class='type'>System</span>.<span class='variable'>out</span>.<span class='function method'>print</span>(<span class='string'>&quot; &quot;</span>);
+        <span class='keyword'>for</span> (<span class='type builtin'>int</span> <span class='variable'>j</span> = <span class='number'>0</span>; <span class='variable'>j</span> &lt;= <span class='variable'>rowNum</span> * <span class='number'>2</span>; <span class='variable'>j</span>++)
+            <span class='type'>System</span>.<span class='variable'>out</span>.<span class='function method'>print</span>(<span class='string'>&quot;*&quot;</span>);
+        <span class='type'>System</span>.<span class='variable'>out</span>.<span class='function method'>println</span>();
+    }
+
+    <span class='keyword'>public</span> <span class='keyword'>static</span> <span class='type builtin'>void</span> <span class='function method'>main</span>(<span class='type'>String</span>[] <span class='variable'>args</span>) {
+        <span class='function method'>up</span>();
+        <span class='function method'>down</span>();
+    }
+}
+
+</code></pre>
+<p>File: <code>BinarySearch.java</code></p>
+<pre><code class="language-java"><span class='keyword'>import</span> <span class='variable'>java</span>.<span class='variable'>util</span>.*;
+
+<span class='keyword'>public</span> <span class='keyword'>class</span> <span class='type'>BinarySearch</span> {
+    <span class='keyword'>public</span> <span class='keyword'>static</span> <span class='type builtin'>void</span> <span class='function method'>binarySearch</span>(<span class='type'>ArrayList</span>&lt;<span class='type'>Integer</span>&gt; <span class='variable'>arr</span>, <span class='type builtin'>int</span> <span class='variable'>first</span>, <span class='type builtin'>int</span> <span class='variable'>last</span>, <span class='type builtin'>int</span> <span class='variable'>key</span>) {
+        <span class='type builtin'>int</span> <span class='variable'>mid</span> = (<span class='variable'>first</span> + <span class='variable'>last</span>) / <span class='number'>2</span>;
+        <span class='keyword'>while</span> (<span class='variable'>first</span> &lt;= <span class='variable'>last</span>) {
+            <span class='keyword'>if</span> (<span class='variable'>arr</span>.<span class='function method'>get</span>(<span class='variable'>mid</span>) &lt; <span class='variable'>key</span>) {
+                <span class='variable'>first</span> = <span class='variable'>mid</span> + <span class='number'>1</span>;
+            } <span class='keyword'>else</span> <span class='keyword'>if</span> (<span class='variable'>arr</span>.<span class='function method'>get</span>(<span class='variable'>mid</span>) == <span class='variable'>key</span>) {
+                <span class='type'>System</span>.<span class='variable'>out</span>.<span class='function method'>println</span>(<span class='string'>&quot;True&quot;</span>);
+                <span class='keyword'>break</span>;
+            } <span class='keyword'>else</span> {
+                <span class='variable'>last</span> = <span class='variable'>mid</span> - <span class='number'>1</span>;
+            }
+            <span class='variable'>mid</span> = (<span class='variable'>first</span> + <span class='variable'>last</span>) / <span class='number'>2</span>;
+        }
+        <span class='keyword'>if</span> (<span class='variable'>first</span> &gt; <span class='variable'>last</span>) {
+            <span class='type'>System</span>.<span class='variable'>out</span>.<span class='function method'>println</span>(<span class='string'>&quot;False&quot;</span>);
+        }
+    }
+
+    <span class='keyword'>public</span> <span class='keyword'>static</span> <span class='type builtin'>void</span> <span class='function method'>main</span>(<span class='type'>String</span> <span class='variable'>args</span>[]) {
+        <span class='keyword'>try</span> {
+            <span class='type'>ArrayList</span>&lt;<span class='type'>Integer</span>&gt; <span class='variable'>listOfNumbers</span> = <span class='keyword'>new</span> <span class='type'>ArrayList</span>&lt;&gt;();
+            <span class='type'>String</span>[] <span class='variable'>NumberArray</span> = <span class='variable'>args</span>[<span class='number'>0</span>].<span class='function method'>split</span>(<span class='string'>&quot;,&quot;</span>);
+            <span class='keyword'>for</span> (<span class='type'>String</span> <span class='variable'>Number</span> : <span class='variable'>NumberArray</span>) {
+                <span class='variable'>listOfNumbers</span>.<span class='function method'>add</span>(<span class='type'>Integer</span>.<span class='function method'>parseInt</span>(<span class='type'>Number</span>.<span class='function method'>trim</span>()));
+            }
+            <span class='type builtin'>int</span> <span class='variable'>key</span> = <span class='type'>Integer</span>.<span class='function method'>parseInt</span>(<span class='variable'>args</span>[<span class='number'>1</span>].<span class='function method'>trim</span>());
+            <span class='type builtin'>int</span> <span class='variable'>last</span> = <span class='variable'>listOfNumbers</span>.<span class='function method'>size</span>() - <span class='number'>1</span>;
+            <span class='keyword'>for</span> (<span class='type builtin'>int</span> <span class='variable'>i</span> = <span class='number'>0</span>; <span class='variable'>i</span> &lt; <span class='variable'>last</span> - <span class='number'>1</span>; <span class='variable'>i</span>++) {
+                <span class='keyword'>if</span> (<span class='variable'>listOfNumbers</span>.<span class='function method'>get</span>(<span class='variable'>i</span>) &gt; <span class='variable'>listOfNumbers</span>.<span class='function method'>get</span>(<span class='variable'>i</span> + <span class='number'>1</span>)) {
+                    <span class='type'>System</span>.<span class='variable'>out</span>.<span class='function method'>println</span>(
+                            <span class='string'>&quot;Usage: please provide a list of sorted integers (<span class='string escape'>\&quot;</span>1, 4, 5, 11, 12<span class='string escape'>\&quot;</span>) and the integer to find (<span class='string escape'>\&quot;</span>11<span class='string escape'>\&quot;</span>)&quot;</span>);
+                    <span class='type'>System</span>.<span class='function method'>exit</span>(<span class='number'>1</span>);
+                }
+            }
+            <span class='function method'>binarySearch</span>(<span class='variable'>listOfNumbers</span>, <span class='number'>0</span>, <span class='variable'>last</span>, <span class='variable'>key</span>);
+        } <span class='keyword'>catch</span> (<span class='type'>Exception</span> <span class='variable'>e</span>) {
+            <span class='type'>System</span>.<span class='variable'>out</span>.<span class='function method'>println</span>(
+                    <span class='string'>&quot;Usage: please provide a list of sorted integers (<span class='string escape'>\&quot;</span>1, 4, 5, 11, 12<span class='string escape'>\&quot;</span>) and the integer to find (<span class='string escape'>\&quot;</span>11<span class='string escape'>\&quot;</span>)&quot;</span>);
+        }
+    }
+}
+</code></pre>
+<h2>Sample programs in javascript</h2>
+<p>File: <code>baklava.js</code></p>
+<pre><code class="language-javascript"><span class='keyword'>for</span> <span class='punctuation bracket'>(</span><span class='keyword'>var</span> <span class='variable'>i</span> <span class='operator'>=</span> <span class='number'>0</span><span class='punctuation delimiter'>;</span> <span class='variable'>i</span> <span class='operator'>&lt;</span> <span class='number'>10</span><span class='punctuation delimiter'>;</span> <span class='variable'>i</span><span class='operator'>++</span><span class='punctuation bracket'>)</span>
+    <span class='variable builtin'>console</span><span class='punctuation delimiter'>.</span><span class='function method'>log</span> <span class='punctuation bracket'>(</span>
+        <span class='string'>&quot; &quot;</span><span class='punctuation delimiter'>.</span><span class='function method'>repeat</span> <span class='punctuation bracket'>(</span><span class='number'>10</span> <span class='operator'>-</span> <span class='variable'>i</span><span class='punctuation bracket'>)</span> <span class='operator'>+</span> <span class='string'>&quot;*&quot;</span><span class='punctuation delimiter'>.</span><span class='function method'>repeat</span> <span class='punctuation bracket'>(</span><span class='variable'>i</span> <span class='operator'>*</span> <span class='number'>2</span> <span class='operator'>+</span> <span class='number'>1</span><span class='punctuation bracket'>)</span>
+    <span class='punctuation bracket'>)</span><span class='punctuation delimiter'>;</span>
+
+<span class='keyword'>for</span> <span class='punctuation bracket'>(</span><span class='keyword'>var</span> <span class='variable'>i</span> <span class='operator'>=</span> <span class='number'>10</span><span class='punctuation delimiter'>;</span> <span class='operator'>-</span><span class='number'>1</span> <span class='operator'>&lt;</span> <span class='variable'>i</span><span class='punctuation delimiter'>;</span> <span class='variable'>i</span><span class='operator'>--</span><span class='punctuation bracket'>)</span>
+    <span class='variable builtin'>console</span><span class='punctuation delimiter'>.</span><span class='function method'>log</span> <span class='punctuation bracket'>(</span>
+        <span class='string'>&quot; &quot;</span><span class='punctuation delimiter'>.</span><span class='function method'>repeat</span> <span class='punctuation bracket'>(</span><span class='number'>10</span> <span class='operator'>-</span> <span class='variable'>i</span><span class='punctuation bracket'>)</span> <span class='operator'>+</span> <span class='string'>&quot;*&quot;</span><span class='punctuation delimiter'>.</span><span class='function method'>repeat</span> <span class='punctuation bracket'>(</span><span class='variable'>i</span> <span class='operator'>*</span> <span class='number'>2</span> <span class='operator'>+</span> <span class='number'>1</span><span class='punctuation bracket'>)</span>
+    <span class='punctuation bracket'>)</span><span class='punctuation delimiter'>;</span>
+
+</code></pre>
+<p>File: <code>binary-search.js</code></p>
+<pre><code class="language-javascript"><span class='keyword'>const</span> <span class='punctuation bracket'>[</span><span class='punctuation delimiter'>,</span> <span class='punctuation delimiter'>,</span> <span class='variable'>array</span><span class='punctuation delimiter'>,</span> <span class='variable'>target</span><span class='punctuation bracket'>]</span> <span class='operator'>=</span> <span class='variable'>process</span><span class='punctuation delimiter'>.</span><span class='property'>argv</span><span class='punctuation delimiter'>;</span>
+<span class='keyword'>const</span> <span class='variable'>error</span> <span class='operator'>=</span> <span class='string'>&#39;Usage: please provide a list of sorted integers (&quot;1, 4, 5, 11, 12&quot;) and the integer to find (&quot;11&quot;)&#39;</span><span class='punctuation delimiter'>;</span>
+
+<span class='keyword'>const</span> <span class='function'>binarySearch</span> <span class='operator'>=</span> <span class='punctuation bracket'>(</span><span class='variable parameter'>array</span><span class='punctuation delimiter'>,</span> <span class='variable parameter'>target</span><span class='punctuation delimiter'>,</span> <span class='variable'>start</span> <span class='operator'>=</span> <span class='number'>0</span><span class='punctuation delimiter'>,</span> <span class='variable'>end</span> <span class='operator'>=</span> <span class='variable parameter'>array</span><span class='punctuation delimiter'>.</span><span class='property'>length</span> <span class='operator'>-</span> <span class='number'>1</span><span class='punctuation bracket'>)</span> <span class='operator'>=&gt;</span> <span class='punctuation bracket'>{</span>
+
+  <span class='keyword'>const</span> <span class='variable'>isOrdered</span> <span class='operator'>=</span> <span class='variable parameter'>array</span><span class='punctuation delimiter'>.</span><span class='function method'>every</span><span class='punctuation bracket'>(</span><span class='punctuation bracket'>(</span><span class='variable parameter'>num</span><span class='punctuation delimiter'>,</span> <span class='variable parameter'>i</span><span class='punctuation delimiter'>,</span> <span class='variable parameter'>arr</span><span class='punctuation bracket'>)</span> <span class='operator'>=&gt;</span> <span class='operator'>!</span><span class='variable parameter'>i</span> <span class='operator'>||</span> <span class='variable parameter'>num</span> <span class='operator'>&gt;=</span> <span class='variable parameter'>arr</span><span class='punctuation bracket'>[</span><span class='variable parameter'>i</span> <span class='operator'>-</span> <span class='number'>1</span><span class='punctuation bracket'>]</span><span class='punctuation bracket'>)</span><span class='punctuation delimiter'>;</span>
+  <span class='keyword'>if</span> <span class='punctuation bracket'>(</span><span class='operator'>!</span><span class='variable'>isOrdered</span><span class='punctuation bracket'>)</span> <span class='keyword'>return</span> <span class='variable'>error</span><span class='punctuation delimiter'>;</span>
+
+  <span class='keyword'>const</span> <span class='variable'>middleIndex</span> <span class='operator'>=</span> <span class='constructor'>Math</span><span class='punctuation delimiter'>.</span><span class='function method'>floor</span><span class='punctuation bracket'>(</span><span class='punctuation bracket'>(</span><span class='variable'>start</span> <span class='operator'>+</span> <span class='variable'>end</span><span class='punctuation bracket'>)</span> <span class='operator'>/</span> <span class='number'>2</span><span class='punctuation bracket'>)</span><span class='punctuation delimiter'>;</span>
+  <span class='keyword'>const</span> <span class='variable'>middleValue</span> <span class='operator'>=</span> <span class='variable parameter'>array</span><span class='punctuation bracket'>[</span><span class='variable'>middleIndex</span><span class='punctuation bracket'>]</span><span class='punctuation delimiter'>;</span>
+  <span class='keyword'>const</span> <span class='variable'>newIndexes</span> <span class='operator'>=</span>
+    <span class='variable parameter'>target</span> <span class='operator'>&lt;</span> <span class='variable'>middleValue</span> ? <span class='punctuation bracket'>[</span><span class='variable'>start</span><span class='punctuation delimiter'>,</span> <span class='variable'>middleIndex</span> <span class='operator'>-</span> <span class='number'>1</span><span class='punctuation bracket'>]</span> : <span class='punctuation bracket'>[</span><span class='variable'>middleIndex</span> <span class='operator'>+</span> <span class='number'>1</span><span class='punctuation delimiter'>,</span> <span class='variable'>end</span><span class='punctuation bracket'>]</span><span class='punctuation delimiter'>;</span>
+
+  <span class='keyword'>return</span> <span class='variable'>middleValue</span> <span class='operator'>===</span> <span class='variable parameter'>target</span>
+    ? <span class='constant builtin'>true</span>
+    : <span class='variable'>start</span> <span class='operator'>&gt;=</span> <span class='variable'>end</span>
+        ? <span class='constant builtin'>false</span>
+        : <span class='function'>binarySearch</span><span class='punctuation bracket'>(</span><span class='variable parameter'>array</span><span class='punctuation delimiter'>,</span> <span class='variable parameter'>target</span><span class='punctuation delimiter'>,</span> ...<span class='variable'>newIndexes</span><span class='punctuation bracket'>)</span><span class='punctuation delimiter'>;</span>
+<span class='punctuation bracket'>}</span><span class='punctuation delimiter'>;</span>
+
+<span class='variable builtin'>console</span><span class='punctuation delimiter'>.</span><span class='function method'>log</span><span class='punctuation bracket'>(</span><span class='variable'>array</span> <span class='operator'>&amp;&amp;</span> <span class='variable'>target</span> ? <span class='function'>binarySearch</span><span class='punctuation bracket'>(</span><span class='variable'>array</span><span class='punctuation delimiter'>.</span><span class='function method'>split</span><span class='punctuation bracket'>(</span><span class='string'>&#39;, &#39;</span><span class='punctuation bracket'>)</span><span class='punctuation delimiter'>,</span> <span class='variable'>target</span><span class='punctuation bracket'>)</span> : <span class='variable'>error</span><span class='punctuation bracket'>)</span><span class='punctuation delimiter'>;</span>
+
+</code></pre>
+<h2>Sample programs in lua</h2>
+<p>File: <code>baklava.lua</code></p>
+<pre><code class="language-lua"><span class='keyword function'>function</span> <span class='function'>diamondStarPattern</span><span class='punctuation bracket'>(</span><span class='parameter'>height</span><span class='punctuation bracket'>)</span>
+  <span class='repeat'>for</span> <span class='variable'>i</span> <span class='operator'>=</span> <span class='number'>1</span><span class='punctuation delimiter'>,</span> <span class='parameter'>height</span> <span class='repeat'>do</span> <span class='comment'>-- loop for printing the upper half of the baklava</span>
+    <span class='repeat'>for</span> <span class='variable'>j</span> <span class='operator'>=</span> <span class='variable'>i</span><span class='punctuation delimiter'>,</span> <span class='parameter'>height</span> <span class='operator'>-</span> <span class='number'>1</span> <span class='repeat'>do</span> <span class='variable'>io</span><span class='punctuation delimiter'>.</span><span class='function call'>write</span><span class='punctuation bracket'>(</span><span class='string'>&quot; &quot;</span><span class='punctuation bracket'>)</span> <span class='repeat'>end</span> <span class='comment'>--to print the leading spaces</span>
+    <span class='repeat'>for</span> <span class='variable'>j</span> <span class='operator'>=</span> <span class='number'>1</span><span class='punctuation delimiter'>,</span> <span class='punctuation bracket'>(</span><span class='number'>2</span><span class='operator'>*</span><span class='variable'>i</span><span class='operator'>-</span><span class='number'>1</span><span class='punctuation bracket'>)</span> <span class='repeat'>do</span> <span class='variable'>io</span><span class='punctuation delimiter'>.</span><span class='function call'>write</span><span class='punctuation bracket'>(</span><span class='string'>&quot;*&quot;</span><span class='punctuation bracket'>)</span> <span class='repeat'>end</span> <span class='comment'>-- to print the * for the upper half</span>
+    <span class='variable'>io</span><span class='punctuation delimiter'>.</span><span class='function call'>write</span><span class='punctuation bracket'>(</span><span class='string'>&quot;<span class='string escape'>\n</span>&quot;</span><span class='punctuation bracket'>)</span> <span class='comment'>-- to move pointer to next line</span>
+  <span class='repeat'>end</span>
+  <span class='repeat'>for</span> <span class='variable'>i</span> <span class='operator'>=</span> <span class='parameter'>height</span> <span class='operator'>-</span> <span class='number'>1</span><span class='punctuation delimiter'>,</span><span class='number'>1</span><span class='punctuation delimiter'>,</span><span class='operator'>-</span><span class='number'>1</span> <span class='repeat'>do</span> <span class='comment'>-- loop for printing the lower half of the baklava</span>
+    <span class='repeat'>for</span> <span class='variable'>j</span> <span class='operator'>=</span> <span class='variable'>i</span><span class='punctuation delimiter'>,</span> <span class='parameter'>height</span> <span class='operator'>-</span> <span class='number'>1</span> <span class='repeat'>do</span> <span class='variable'>io</span><span class='punctuation delimiter'>.</span><span class='function call'>write</span><span class='punctuation bracket'>(</span><span class='string'>&quot; &quot;</span><span class='punctuation bracket'>)</span> <span class='repeat'>end</span> <span class='comment'>-- to print the spaces</span>
+    <span class='repeat'>for</span> <span class='variable'>j</span> <span class='operator'>=</span> <span class='number'>1</span><span class='punctuation delimiter'>,</span> <span class='punctuation bracket'>(</span><span class='number'>2</span><span class='operator'>*</span><span class='variable'>i</span><span class='operator'>-</span><span class='number'>1</span><span class='punctuation bracket'>)</span> <span class='repeat'>do</span> <span class='variable'>io</span><span class='punctuation delimiter'>.</span><span class='function call'>write</span><span class='punctuation bracket'>(</span><span class='string'>&quot;*&quot;</span><span class='punctuation bracket'>)</span> <span class='repeat'>end</span> <span class='comment'>--  to print the * for the lower half</span>
+    <span class='variable'>io</span><span class='punctuation delimiter'>.</span><span class='function call'>write</span><span class='punctuation bracket'>(</span><span class='string'>&quot;<span class='string escape'>\n</span>&quot;</span><span class='punctuation bracket'>)</span> <span class='comment'>-- to move pointer to next line</span>
+  <span class='repeat'>end</span>  
+<span class='keyword function'>end</span>
+
+<span class='function call'>diamondStarPattern</span><span class='punctuation bracket'>(</span><span class='number'>11</span><span class='punctuation bracket'>)</span>
+
+</code></pre>
+<p>File: <code>bubble-sort.lua</code></p>
+<pre><code class="language-lua"><span class='comment'>-- Initialize table</span>
+<span class='variable'>nums</span> <span class='operator'>=</span> <span class='constructor'>{</span><span class='constructor'>}</span>
+
+<span class='comment'>-- Exit if no list is entered or list is empty</span>
+<span class='conditional'>if</span> <span class='variable'>arg</span><span class='punctuation bracket'>[</span><span class='number'>1</span><span class='punctuation bracket'>]</span> <span class='operator'>==</span> <span class='constant builtin'>nil</span> <span class='keyword operator'>or</span> <span class='operator'>#</span><span class='variable'>arg</span><span class='punctuation bracket'>[</span><span class='number'>1</span><span class='punctuation bracket'>]</span> <span class='operator'>==</span> <span class='number'>0</span> <span class='conditional'>then</span>
+    <span class='function builtin'>print</span><span class='punctuation bracket'>(</span><span class='string'>&#39;Usage: please provide a list of at least two integers to sort in the format &quot;1, 2, 3, 4, 5&quot;&#39;</span><span class='punctuation bracket'>)</span>
+    <span class='keyword return'>return</span>
+<span class='conditional'>end</span>
+
+<span class='comment'>-- Exit if list has a single entry or is not formatted with commas</span>
+<span class='conditional'>if</span> <span class='punctuation bracket'>(</span><span class='keyword operator'>not</span> <span class='variable'>string</span><span class='punctuation delimiter'>.</span><span class='function call'>match</span><span class='punctuation bracket'>(</span><span class='variable'>arg</span><span class='punctuation bracket'>[</span><span class='number'>1</span><span class='punctuation bracket'>]</span><span class='punctuation delimiter'>,</span> <span class='string'>&quot; &quot;</span><span class='punctuation bracket'>)</span><span class='punctuation bracket'>)</span> <span class='keyword operator'>or</span> <span class='punctuation bracket'>(</span><span class='keyword operator'>not</span> <span class='variable'>string</span><span class='punctuation delimiter'>.</span><span class='function call'>match</span><span class='punctuation bracket'>(</span><span class='variable'>arg</span><span class='punctuation bracket'>[</span><span class='number'>1</span><span class='punctuation bracket'>]</span><span class='punctuation delimiter'>,</span> <span class='string'>&quot;,&quot;</span><span class='punctuation bracket'>)</span><span class='punctuation bracket'>)</span> <span class='conditional'>then</span>
+    <span class='function builtin'>print</span><span class='punctuation bracket'>(</span><span class='string'>&#39;Usage: please provide a list of at least two integers to sort in the format &quot;1, 2, 3, 4, 5&quot;&#39;</span><span class='punctuation bracket'>)</span>
+    <span class='keyword return'>return</span>
+<span class='conditional'>end</span>
+
+<span class='comment'>-- Read input list into a table</span>
+<span class='repeat'>for</span> <span class='variable'>i</span><span class='operator'>=</span><span class='number'>1</span><span class='punctuation delimiter'>,</span> <span class='operator'>#</span><span class='variable'>arg</span><span class='punctuation bracket'>[</span><span class='number'>1</span><span class='punctuation bracket'>]</span> <span class='repeat'>do</span>
+    <span class='variable'>char</span> <span class='operator'>=</span> <span class='variable'>string</span><span class='punctuation delimiter'>.</span><span class='function call'>sub</span><span class='punctuation bracket'>(</span><span class='variable'>arg</span><span class='punctuation bracket'>[</span><span class='number'>1</span><span class='punctuation bracket'>]</span><span class='punctuation delimiter'>,</span> <span class='variable'>i</span><span class='punctuation delimiter'>,</span> <span class='variable'>i</span><span class='punctuation bracket'>)</span>
+    <span class='conditional'>if</span> <span class='function builtin'>tonumber</span><span class='punctuation bracket'>(</span><span class='variable'>char</span><span class='punctuation bracket'>)</span> <span class='conditional'>then</span>
+        <span class='variable'>table</span><span class='punctuation delimiter'>.</span><span class='function call'>insert</span><span class='punctuation bracket'>(</span><span class='variable'>nums</span><span class='punctuation delimiter'>,</span> <span class='variable'>char</span><span class='punctuation bracket'>)</span>
+    <span class='conditional'>end</span>
+<span class='repeat'>end</span>
+
+<span class='comment'>-- Loop through entire table</span>
+<span class='repeat'>for</span> <span class='variable'>i</span><span class='operator'>=</span><span class='number'>1</span><span class='punctuation delimiter'>,</span> <span class='operator'>#</span><span class='variable'>nums</span> <span class='repeat'>do</span>
+    <span class='comment'>-- Loop through entire table</span>
+    <span class='repeat'>for</span> <span class='variable'>index</span><span class='punctuation delimiter'>,</span><span class='variable'>value</span> <span class='keyword'>in</span> <span class='function builtin'>pairs</span><span class='punctuation bracket'>(</span><span class='variable'>nums</span><span class='punctuation bracket'>)</span> <span class='repeat'>do</span>
+        <span class='comment'>-- If current number is larger than next number, swap them</span>
+        <span class='conditional'>if</span> <span class='variable'>nums</span><span class='punctuation bracket'>[</span><span class='variable'>index</span><span class='operator'>+</span><span class='number'>1</span><span class='punctuation bracket'>]</span> <span class='operator'>~=</span> <span class='constant builtin'>nil</span> <span class='keyword operator'>and</span> <span class='variable'>value</span> <span class='operator'>&gt;</span> <span class='variable'>nums</span><span class='punctuation bracket'>[</span><span class='variable'>index</span><span class='operator'>+</span><span class='number'>1</span><span class='punctuation bracket'>]</span> <span class='conditional'>then</span>
+            <span class='variable'>nums</span><span class='punctuation bracket'>[</span><span class='variable'>index</span><span class='punctuation bracket'>]</span> <span class='operator'>=</span> <span class='variable'>nums</span><span class='punctuation bracket'>[</span><span class='variable'>index</span><span class='operator'>+</span><span class='number'>1</span><span class='punctuation bracket'>]</span>
+            <span class='variable'>nums</span><span class='punctuation bracket'>[</span><span class='variable'>index</span><span class='operator'>+</span><span class='number'>1</span><span class='punctuation bracket'>]</span> <span class='operator'>=</span> <span class='variable'>value</span>
+        <span class='conditional'>end</span>
+    <span class='repeat'>end</span>
+<span class='repeat'>end</span>
+
+<span class='comment'>-- Print sorted list</span>
+<span class='repeat'>for</span> <span class='variable'>k</span><span class='punctuation delimiter'>,</span><span class='variable'>v</span> <span class='keyword'>in</span> <span class='function builtin'>pairs</span><span class='punctuation bracket'>(</span><span class='variable'>nums</span><span class='punctuation bracket'>)</span> <span class='repeat'>do</span>
+    <span class='variable'>io</span><span class='punctuation delimiter'>.</span><span class='function call'>write</span><span class='punctuation bracket'>(</span><span class='variable'>v</span><span class='punctuation bracket'>)</span>
+
+    <span class='comment'>-- Comma formatting</span>
+    <span class='conditional'>if</span> <span class='variable'>nums</span><span class='punctuation bracket'>[</span><span class='variable'>k</span><span class='operator'>+</span><span class='number'>1</span><span class='punctuation bracket'>]</span> <span class='operator'>~=</span> <span class='constant builtin'>nil</span> <span class='conditional'>then</span>
+        <span class='variable'>io</span><span class='punctuation delimiter'>.</span><span class='function call'>write</span><span class='punctuation bracket'>(</span><span class='string'>&#39;, &#39;</span><span class='punctuation bracket'>)</span>
+    <span class='conditional'>end</span>
+<span class='repeat'>end</span>
+
+<span class='variable'>io</span><span class='punctuation delimiter'>.</span><span class='function call'>write</span><span class='punctuation bracket'>(</span><span class='string'>&quot;<span class='string escape'>\n</span>&quot;</span><span class='punctuation bracket'>)</span>
+
+</code></pre>
+<h2>Sample programs in rust</h2>
+<p>File: <code>baklava.rs</code></p>
+<pre><code class="language-rust"><span class='keyword'>fn</span> <span class='function'>main</span><span class='punctuation bracket'>(</span><span class='punctuation bracket'>)</span> <span class='punctuation bracket'>{</span>
+    <span class='keyword'>for</span> i <span class='keyword'>in</span> -<span class='constant builtin'>10i32</span>..<span class='constant builtin'>11i32</span> <span class='punctuation bracket'>{</span>
+        <span class='keyword'>let</span> num_spaces<span class='punctuation delimiter'>:</span> <span class='type builtin'>usize</span> = i<span class='punctuation delimiter'>.</span><span class='function method'>abs</span><span class='punctuation bracket'>(</span><span class='punctuation bracket'>)</span> <span class='keyword'>as</span> <span class='type builtin'>usize</span><span class='punctuation delimiter'>;</span>
+        <span class='function macro'>println</span><span class='function macro'>!</span><span class='punctuation bracket'>(</span><span class='string'>&quot;{}{}&quot;</span><span class='punctuation delimiter'>,</span> <span class='string'>&quot; &quot;</span><span class='punctuation delimiter'>.</span>repeat<span class='punctuation bracket'>(</span>num_spaces<span class='punctuation bracket'>)</span><span class='punctuation delimiter'>,</span> <span class='string'>&quot;*&quot;</span><span class='punctuation delimiter'>.</span>repeat<span class='punctuation bracket'>(</span><span class='constant builtin'>21</span> - <span class='constant builtin'>2</span> <span class='operator'>*</span> num_spaces<span class='punctuation bracket'>)</span><span class='punctuation bracket'>)</span><span class='punctuation delimiter'>;</span>
+    <span class='punctuation bracket'>}</span>
+<span class='punctuation bracket'>}</span>
+
+</code></pre>
+<p>File: <code>base64-encode-decode.rs</code></p>
+<pre><code class="language-rust"><span class='keyword'>use</span> std<span class='punctuation delimiter'>::</span>env<span class='punctuation delimiter'>::</span>args<span class='punctuation delimiter'>;</span>
+<span class='keyword'>use</span> std<span class='punctuation delimiter'>::</span>process<span class='punctuation delimiter'>::</span>exit<span class='punctuation delimiter'>;</span>
+
+<span class='keyword'>const</span> <span class='constructor'>BASE64_CHARS</span><span class='punctuation delimiter'>:</span> <span class='punctuation bracket'>[</span><span class='type builtin'>char</span><span class='punctuation delimiter'>;</span> <span class='constant builtin'>64</span><span class='punctuation bracket'>]</span> = <span class='punctuation bracket'>[</span>
+    <span class='string'>&#39;A&#39;</span><span class='punctuation delimiter'>,</span> <span class='string'>&#39;B&#39;</span><span class='punctuation delimiter'>,</span> <span class='string'>&#39;C&#39;</span><span class='punctuation delimiter'>,</span> <span class='string'>&#39;D&#39;</span><span class='punctuation delimiter'>,</span> <span class='string'>&#39;E&#39;</span><span class='punctuation delimiter'>,</span> <span class='string'>&#39;F&#39;</span><span class='punctuation delimiter'>,</span> <span class='string'>&#39;G&#39;</span><span class='punctuation delimiter'>,</span> <span class='string'>&#39;H&#39;</span><span class='punctuation delimiter'>,</span> <span class='string'>&#39;I&#39;</span><span class='punctuation delimiter'>,</span> <span class='string'>&#39;J&#39;</span><span class='punctuation delimiter'>,</span> <span class='string'>&#39;K&#39;</span><span class='punctuation delimiter'>,</span> <span class='string'>&#39;L&#39;</span><span class='punctuation delimiter'>,</span> <span class='string'>&#39;M&#39;</span><span class='punctuation delimiter'>,</span> <span class='comment'>//</span>
+    <span class='string'>&#39;N&#39;</span><span class='punctuation delimiter'>,</span> <span class='string'>&#39;O&#39;</span><span class='punctuation delimiter'>,</span> <span class='string'>&#39;P&#39;</span><span class='punctuation delimiter'>,</span> <span class='string'>&#39;Q&#39;</span><span class='punctuation delimiter'>,</span> <span class='string'>&#39;R&#39;</span><span class='punctuation delimiter'>,</span> <span class='string'>&#39;S&#39;</span><span class='punctuation delimiter'>,</span> <span class='string'>&#39;T&#39;</span><span class='punctuation delimiter'>,</span> <span class='string'>&#39;U&#39;</span><span class='punctuation delimiter'>,</span> <span class='string'>&#39;V&#39;</span><span class='punctuation delimiter'>,</span> <span class='string'>&#39;W&#39;</span><span class='punctuation delimiter'>,</span> <span class='string'>&#39;X&#39;</span><span class='punctuation delimiter'>,</span> <span class='string'>&#39;Y&#39;</span><span class='punctuation delimiter'>,</span> <span class='string'>&#39;Z&#39;</span><span class='punctuation delimiter'>,</span> <span class='comment'>//</span>
+    <span class='string'>&#39;a&#39;</span><span class='punctuation delimiter'>,</span> <span class='string'>&#39;b&#39;</span><span class='punctuation delimiter'>,</span> <span class='string'>&#39;c&#39;</span><span class='punctuation delimiter'>,</span> <span class='string'>&#39;d&#39;</span><span class='punctuation delimiter'>,</span> <span class='string'>&#39;e&#39;</span><span class='punctuation delimiter'>,</span> <span class='string'>&#39;f&#39;</span><span class='punctuation delimiter'>,</span> <span class='string'>&#39;g&#39;</span><span class='punctuation delimiter'>,</span> <span class='string'>&#39;h&#39;</span><span class='punctuation delimiter'>,</span> <span class='string'>&#39;i&#39;</span><span class='punctuation delimiter'>,</span> <span class='string'>&#39;j&#39;</span><span class='punctuation delimiter'>,</span> <span class='string'>&#39;k&#39;</span><span class='punctuation delimiter'>,</span> <span class='string'>&#39;l&#39;</span><span class='punctuation delimiter'>,</span> <span class='string'>&#39;m&#39;</span><span class='punctuation delimiter'>,</span> <span class='comment'>//</span>
+    <span class='string'>&#39;n&#39;</span><span class='punctuation delimiter'>,</span> <span class='string'>&#39;o&#39;</span><span class='punctuation delimiter'>,</span> <span class='string'>&#39;p&#39;</span><span class='punctuation delimiter'>,</span> <span class='string'>&#39;q&#39;</span><span class='punctuation delimiter'>,</span> <span class='string'>&#39;r&#39;</span><span class='punctuation delimiter'>,</span> <span class='string'>&#39;s&#39;</span><span class='punctuation delimiter'>,</span> <span class='string'>&#39;t&#39;</span><span class='punctuation delimiter'>,</span> <span class='string'>&#39;u&#39;</span><span class='punctuation delimiter'>,</span> <span class='string'>&#39;v&#39;</span><span class='punctuation delimiter'>,</span> <span class='string'>&#39;w&#39;</span><span class='punctuation delimiter'>,</span> <span class='string'>&#39;x&#39;</span><span class='punctuation delimiter'>,</span> <span class='string'>&#39;y&#39;</span><span class='punctuation delimiter'>,</span> <span class='string'>&#39;z&#39;</span><span class='punctuation delimiter'>,</span> <span class='comment'>//</span>
+    <span class='string'>&#39;0&#39;</span><span class='punctuation delimiter'>,</span> <span class='string'>&#39;1&#39;</span><span class='punctuation delimiter'>,</span> <span class='string'>&#39;2&#39;</span><span class='punctuation delimiter'>,</span> <span class='string'>&#39;3&#39;</span><span class='punctuation delimiter'>,</span> <span class='string'>&#39;4&#39;</span><span class='punctuation delimiter'>,</span> <span class='string'>&#39;5&#39;</span><span class='punctuation delimiter'>,</span> <span class='string'>&#39;6&#39;</span><span class='punctuation delimiter'>,</span> <span class='string'>&#39;7&#39;</span><span class='punctuation delimiter'>,</span> <span class='string'>&#39;8&#39;</span><span class='punctuation delimiter'>,</span> <span class='string'>&#39;9&#39;</span><span class='punctuation delimiter'>,</span> <span class='string'>&#39;+&#39;</span><span class='punctuation delimiter'>,</span> <span class='string'>&#39;/&#39;</span><span class='punctuation delimiter'>,</span> <span class='comment'>//</span>
+<span class='punctuation bracket'>]</span><span class='punctuation delimiter'>;</span>
+
+<span class='comment'>// Each tuple contains string index and number of shifts</span>
+<span class='keyword'>const</span> <span class='constructor'>BASE64_ENCODE_TABLE</span><span class='punctuation delimiter'>:</span> <span class='punctuation bracket'>[</span><span class='punctuation bracket'>(</span><span class='type builtin'>usize</span><span class='punctuation delimiter'>,</span> <span class='type builtin'>u32</span><span class='punctuation bracket'>)</span><span class='punctuation delimiter'>;</span> <span class='constant builtin'>4</span><span class='punctuation bracket'>]</span> =
+    <span class='punctuation bracket'>[</span><span class='punctuation bracket'>(</span><span class='constant builtin'>0usize</span><span class='punctuation delimiter'>,</span> <span class='constant builtin'>18</span><span class='punctuation bracket'>)</span><span class='punctuation delimiter'>,</span> <span class='punctuation bracket'>(</span><span class='constant builtin'>0usize</span><span class='punctuation delimiter'>,</span> <span class='constant builtin'>12</span><span class='punctuation bracket'>)</span><span class='punctuation delimiter'>,</span> <span class='punctuation bracket'>(</span><span class='constant builtin'>1usize</span><span class='punctuation delimiter'>,</span> <span class='constant builtin'>6</span><span class='punctuation bracket'>)</span><span class='punctuation delimiter'>,</span> <span class='punctuation bracket'>(</span><span class='constant builtin'>2usize</span><span class='punctuation delimiter'>,</span> <span class='constant builtin'>0</span><span class='punctuation bracket'>)</span><span class='punctuation bracket'>]</span><span class='punctuation delimiter'>;</span>
+<span class='keyword'>const</span> <span class='constructor'>BASE64_DECODE_TABLE</span><span class='punctuation delimiter'>:</span> <span class='punctuation bracket'>[</span><span class='punctuation bracket'>(</span><span class='type builtin'>usize</span><span class='punctuation delimiter'>,</span> <span class='type builtin'>u32</span><span class='punctuation bracket'>)</span><span class='punctuation delimiter'>;</span> <span class='constant builtin'>3</span><span class='punctuation bracket'>]</span> = <span class='punctuation bracket'>[</span><span class='punctuation bracket'>(</span><span class='constant builtin'>0usize</span><span class='punctuation delimiter'>,</span> <span class='constant builtin'>16</span><span class='punctuation bracket'>)</span><span class='punctuation delimiter'>,</span> <span class='punctuation bracket'>(</span><span class='constant builtin'>2usize</span><span class='punctuation delimiter'>,</span> <span class='constant builtin'>8</span><span class='punctuation bracket'>)</span><span class='punctuation delimiter'>,</span> <span class='punctuation bracket'>(</span><span class='constant builtin'>3usize</span><span class='punctuation delimiter'>,</span> <span class='constant builtin'>0</span><span class='punctuation bracket'>)</span><span class='punctuation bracket'>]</span><span class='punctuation delimiter'>;</span>
+
+<span class='keyword'>fn</span> <span class='function'>usage</span><span class='punctuation bracket'>(</span><span class='punctuation bracket'>)</span> -&gt; ! <span class='punctuation bracket'>{</span>
+    <span class='function macro'>println</span><span class='function macro'>!</span><span class='punctuation bracket'>(</span><span class='string'>&quot;Usage: please provide a mode and a string to encode/decode&quot;</span><span class='punctuation bracket'>)</span><span class='punctuation delimiter'>;</span>
+    <span class='function'>exit</span><span class='punctuation bracket'>(</span><span class='constant builtin'>0</span><span class='punctuation bracket'>)</span><span class='punctuation delimiter'>;</span>
+<span class='punctuation bracket'>}</span>
+
+<span class='keyword'>fn</span> <span class='function'>base64_encode</span><span class='punctuation bracket'>(</span><span class='variable parameter'>s</span><span class='punctuation delimiter'>:</span> <span class='operator'>&amp;</span><span class='type builtin'>str</span><span class='punctuation bracket'>)</span> -&gt; <span class='type'>String</span> <span class='punctuation bracket'>{</span>
+    <span class='comment'>// Break up string into 3-byte chunks, Base64 encode each chunk, and concatenate</span>
+    s<span class='punctuation delimiter'>.</span><span class='function method'>as_bytes</span><span class='punctuation bracket'>(</span><span class='punctuation bracket'>)</span><span class='punctuation delimiter'>.</span><span class='function method'>chunks</span><span class='punctuation bracket'>(</span><span class='constant builtin'>3</span><span class='punctuation bracket'>)</span><span class='punctuation delimiter'>.</span><span class='function method'>map</span><span class='punctuation bracket'>(</span>base64_encode_chunk<span class='punctuation bracket'>)</span><span class='punctuation delimiter'>.</span><span class='function method'>collect</span><span class='punctuation bracket'>(</span><span class='punctuation bracket'>)</span>
+<span class='punctuation bracket'>}</span>
+
+<span class='keyword'>fn</span> <span class='function'>base64_encode_chunk</span><span class='punctuation bracket'>(</span><span class='variable parameter'>s</span><span class='punctuation delimiter'>:</span> <span class='operator'>&amp;</span><span class='punctuation bracket'>[</span><span class='type builtin'>u8</span><span class='punctuation bracket'>]</span><span class='punctuation bracket'>)</span> -&gt; <span class='type'>String</span> <span class='punctuation bracket'>{</span>
+    <span class='comment'>// Base64 encode a chunk of 3 bytes, pad with &quot;=&quot; if shorter than 3 bytes</span>
+    <span class='keyword'>let</span> s_len = s<span class='punctuation delimiter'>.</span><span class='function method'>len</span><span class='punctuation bracket'>(</span><span class='punctuation bracket'>)</span><span class='punctuation delimiter'>;</span>
+    <span class='keyword'>let</span> u = s<span class='punctuation delimiter'>.</span><span class='function method'>iter</span><span class='punctuation bracket'>(</span><span class='punctuation bracket'>)</span><span class='punctuation delimiter'>.</span><span class='function method'>fold</span><span class='punctuation bracket'>(</span><span class='constant builtin'>0u32</span><span class='punctuation delimiter'>,</span> |acc<span class='punctuation delimiter'>,</span> <span class='operator'>&amp;</span>c| <span class='punctuation bracket'>(</span>acc &lt;&lt; <span class='constant builtin'>8</span><span class='punctuation bracket'>)</span> | <span class='punctuation bracket'>(</span>c <span class='keyword'>as</span> <span class='type builtin'>u32</span><span class='punctuation bracket'>)</span><span class='punctuation bracket'>)</span> &lt;&lt; <span class='punctuation bracket'>(</span><span class='constant builtin'>24</span> - <span class='constant builtin'>8</span> <span class='operator'>*</span> s_len<span class='punctuation bracket'>)</span><span class='punctuation delimiter'>;</span>
+    <span class='constructor'>BASE64_ENCODE_TABLE</span>
+        <span class='punctuation delimiter'>.</span><span class='function method'>iter</span><span class='punctuation bracket'>(</span><span class='punctuation bracket'>)</span>
+        <span class='punctuation delimiter'>.</span><span class='function method'>map</span><span class='punctuation bracket'>(</span>|<span class='punctuation bracket'>(</span>n<span class='punctuation delimiter'>,</span> shifts<span class='punctuation bracket'>)</span>| <span class='keyword'>match</span> n &lt; <span class='operator'>&amp;</span>s_len <span class='punctuation bracket'>{</span>
+            <span class='constant builtin'>true</span> =&gt; <span class='constructor'>BASE64_CHARS</span><span class='punctuation bracket'>[</span><span class='punctuation bracket'>(</span><span class='punctuation bracket'>(</span>u &gt;&gt; shifts<span class='punctuation bracket'>)</span> <span class='operator'>&amp;</span> <span class='constant builtin'>0x3f</span><span class='punctuation bracket'>)</span> <span class='keyword'>as</span> <span class='type builtin'>usize</span><span class='punctuation bracket'>]</span><span class='punctuation delimiter'>,</span>
+            <span class='constant builtin'>false</span> =&gt; <span class='string'>&#39;=&#39;</span><span class='punctuation delimiter'>,</span>
+        <span class='punctuation bracket'>}</span><span class='punctuation bracket'>)</span>
+        <span class='punctuation delimiter'>.</span><span class='function method'>collect</span><span class='punctuation bracket'>(</span><span class='punctuation bracket'>)</span>
+<span class='punctuation bracket'>}</span>
+
+<span class='keyword'>fn</span> <span class='function'>base64_decode</span><span class='punctuation bracket'>(</span><span class='variable parameter'>s</span><span class='punctuation delimiter'>:</span> <span class='operator'>&amp;</span><span class='type builtin'>str</span><span class='punctuation bracket'>)</span> -&gt; <span class='type'>Option</span><span class='punctuation bracket'>&lt;</span><span class='type'>String</span><span class='punctuation bracket'>&gt;</span> <span class='punctuation bracket'>{</span>
+    <span class='comment'>// Return None if length is not a multiple of 4 or pad length is more than 2</span>
+    <span class='keyword'>let</span> s_len = s<span class='punctuation delimiter'>.</span><span class='function method'>len</span><span class='punctuation bracket'>(</span><span class='punctuation bracket'>)</span><span class='punctuation delimiter'>;</span>
+    <span class='keyword'>let</span> pad_len = s_len - s<span class='punctuation delimiter'>.</span><span class='function method'>trim_end_matches</span><span class='punctuation bracket'>(</span><span class='string'>&#39;=&#39;</span><span class='punctuation bracket'>)</span><span class='punctuation delimiter'>.</span><span class='function method'>len</span><span class='punctuation bracket'>(</span><span class='punctuation bracket'>)</span><span class='punctuation delimiter'>;</span>
+    <span class='keyword'>if</span> s_len % <span class='constant builtin'>4</span> != <span class='constant builtin'>0</span> || pad_len &gt; <span class='constant builtin'>2</span> <span class='punctuation bracket'>{</span>
+        <span class='keyword'>return</span> <span class='constructor'>None</span><span class='punctuation delimiter'>;</span>
+    <span class='punctuation bracket'>}</span>
+
+    <span class='comment'>// Break string (excluding pad characters) into chunks of 4 bytes, Base64</span>
+    <span class='comment'>// decode each chunk, and concatenate. Return None if any in invalid</span>
+    <span class='comment'>// Base64 characters</span>
+    <span class='keyword'>let</span> <span class='keyword'>mut</span> result = <span class='type'>String</span><span class='punctuation delimiter'>::</span><span class='function'>from</span><span class='punctuation bracket'>(</span><span class='string'>&quot;&quot;</span><span class='punctuation bracket'>)</span><span class='punctuation delimiter'>;</span>
+    <span class='keyword'>for</span> chunk <span class='keyword'>in</span> s<span class='punctuation bracket'>[</span>..<span class='punctuation bracket'>(</span>s_len - pad_len<span class='punctuation bracket'>)</span><span class='punctuation bracket'>]</span><span class='punctuation delimiter'>.</span><span class='function method'>as_bytes</span><span class='punctuation bracket'>(</span><span class='punctuation bracket'>)</span><span class='punctuation delimiter'>.</span><span class='function method'>chunks</span><span class='punctuation bracket'>(</span><span class='constant builtin'>4</span><span class='punctuation bracket'>)</span> <span class='punctuation bracket'>{</span>
+        result += <span class='function'>base64_decode_chunk</span><span class='punctuation bracket'>(</span>chunk<span class='punctuation bracket'>)</span>?<span class='punctuation delimiter'>.</span><span class='function method'>as_str</span><span class='punctuation bracket'>(</span><span class='punctuation bracket'>)</span><span class='punctuation delimiter'>;</span>
+    <span class='punctuation bracket'>}</span>
+
+    <span class='function'>Some</span><span class='punctuation bracket'>(</span>result<span class='punctuation bracket'>)</span>
+<span class='punctuation bracket'>}</span>
+
+<span class='keyword'>fn</span> <span class='function'>base64_decode_chunk</span><span class='punctuation bracket'>(</span><span class='variable parameter'>s</span><span class='punctuation delimiter'>:</span> <span class='operator'>&amp;</span><span class='punctuation bracket'>[</span><span class='type builtin'>u8</span><span class='punctuation bracket'>]</span><span class='punctuation bracket'>)</span> -&gt; <span class='type'>Option</span><span class='punctuation bracket'>&lt;</span><span class='type'>String</span><span class='punctuation bracket'>&gt;</span> <span class='punctuation bracket'>{</span>
+    <span class='comment'>// Convert chunk into Base64 indices. Return None if any invalid Base64</span>
+    <span class='comment'>// characters</span>
+    <span class='keyword'>let</span> indices = s<span class='punctuation delimiter'>.</span><span class='function method'>iter</span><span class='punctuation bracket'>(</span><span class='punctuation bracket'>)</span><span class='punctuation delimiter'>.</span><span class='function method'>map</span><span class='punctuation bracket'>(</span>base64_index<span class='punctuation bracket'>)</span><span class='punctuation delimiter'>.</span><span class='function method'>collect</span><span class='punctuation delimiter'>::</span><span class='punctuation bracket'>&lt;</span><span class='type'>Vec</span><span class='punctuation bracket'>&lt;</span><span class='type'>_</span><span class='punctuation bracket'>&gt;</span><span class='punctuation bracket'>&gt;</span><span class='punctuation bracket'>(</span><span class='punctuation bracket'>)</span><span class='punctuation delimiter'>;</span>
+    <span class='keyword'>if</span> indices<span class='punctuation delimiter'>.</span><span class='function method'>iter</span><span class='punctuation bracket'>(</span><span class='punctuation bracket'>)</span><span class='punctuation delimiter'>.</span><span class='function method'>any</span><span class='punctuation bracket'>(</span>|<span class='operator'>&amp;</span>n| n<span class='punctuation delimiter'>.</span><span class='function method'>is_none</span><span class='punctuation bracket'>(</span><span class='punctuation bracket'>)</span><span class='punctuation bracket'>)</span> <span class='punctuation bracket'>{</span>
+        <span class='keyword'>return</span> <span class='constructor'>None</span><span class='punctuation delimiter'>;</span>
+    <span class='punctuation bracket'>}</span>
+
+    <span class='comment'>// Base64 decode chunk</span>
+    <span class='keyword'>let</span> s_len = s<span class='punctuation delimiter'>.</span><span class='function method'>len</span><span class='punctuation bracket'>(</span><span class='punctuation bracket'>)</span><span class='punctuation delimiter'>;</span>
+    <span class='keyword'>let</span> u = indices
+        <span class='punctuation delimiter'>.</span><span class='function method'>iter</span><span class='punctuation bracket'>(</span><span class='punctuation bracket'>)</span>
+        <span class='punctuation delimiter'>.</span><span class='function method'>fold</span><span class='punctuation bracket'>(</span><span class='constant builtin'>0u32</span><span class='punctuation delimiter'>,</span> |acc<span class='punctuation delimiter'>,</span> x| <span class='punctuation bracket'>(</span>acc &lt;&lt; <span class='constant builtin'>6</span><span class='punctuation bracket'>)</span> | <span class='punctuation bracket'>(</span>x<span class='punctuation delimiter'>.</span><span class='function method'>unwrap</span><span class='punctuation bracket'>(</span><span class='punctuation bracket'>)</span> <span class='keyword'>as</span> <span class='type builtin'>u32</span><span class='punctuation bracket'>)</span><span class='punctuation bracket'>)</span>
+        &lt;&lt; <span class='punctuation bracket'>(</span><span class='constant builtin'>24</span> - <span class='constant builtin'>6</span> <span class='operator'>*</span> s_len<span class='punctuation bracket'>)</span><span class='punctuation delimiter'>;</span>
+    <span class='function'>Some</span><span class='punctuation bracket'>(</span>
+        <span class='constructor'>BASE64_DECODE_TABLE</span>
+            <span class='punctuation delimiter'>.</span><span class='function method'>iter</span><span class='punctuation bracket'>(</span><span class='punctuation bracket'>)</span>
+            <span class='punctuation delimiter'>.</span><span class='function method'>filter</span><span class='punctuation bracket'>(</span>|<span class='punctuation bracket'>(</span>n<span class='punctuation delimiter'>,</span> _<span class='punctuation bracket'>)</span>| n &lt; <span class='operator'>&amp;</span>s_len<span class='punctuation bracket'>)</span>
+            <span class='punctuation delimiter'>.</span><span class='function method'>map</span><span class='punctuation bracket'>(</span>|<span class='punctuation bracket'>(</span>n<span class='punctuation delimiter'>,</span> shifts<span class='punctuation bracket'>)</span>| <span class='punctuation bracket'>(</span><span class='punctuation bracket'>(</span><span class='punctuation bracket'>(</span>u &gt;&gt; shifts<span class='punctuation bracket'>)</span> <span class='operator'>&amp;</span> <span class='constant builtin'>0xff</span><span class='punctuation bracket'>)</span> <span class='keyword'>as</span> <span class='type builtin'>u8</span><span class='punctuation bracket'>)</span> <span class='keyword'>as</span> <span class='type builtin'>char</span><span class='punctuation bracket'>)</span>
+            <span class='punctuation delimiter'>.</span><span class='function method'>collect</span><span class='punctuation bracket'>(</span><span class='punctuation bracket'>)</span><span class='punctuation delimiter'>,</span>
+    <span class='punctuation bracket'>)</span>
+<span class='punctuation bracket'>}</span>
+
+<span class='keyword'>fn</span> <span class='function'>base64_index</span><span class='punctuation bracket'>(</span><span class='variable parameter'>c</span><span class='punctuation delimiter'>:</span> <span class='operator'>&amp;</span><span class='type builtin'>u8</span><span class='punctuation bracket'>)</span> -&gt; <span class='type'>Option</span><span class='punctuation bracket'>&lt;</span><span class='type builtin'>u8</span><span class='punctuation bracket'>&gt;</span> <span class='punctuation bracket'>{</span>
+    <span class='comment'>// Convert byte to Base64 index. None is returned when there is an invalid byte</span>
+    <span class='keyword'>match</span> c <span class='punctuation bracket'>{</span>
+        <span class='string'>b&#39;A&#39;</span>..=<span class='string'>b&#39;Z&#39;</span> =&gt; <span class='function'>Some</span><span class='punctuation bracket'>(</span>c - <span class='string'>b&#39;A&#39;</span><span class='punctuation bracket'>)</span><span class='punctuation delimiter'>,</span>
+        <span class='string'>b&#39;a&#39;</span>..=<span class='string'>b&#39;z&#39;</span> =&gt; <span class='function'>Some</span><span class='punctuation bracket'>(</span>c - <span class='string'>b&#39;a&#39;</span> + <span class='constant builtin'>26</span><span class='punctuation bracket'>)</span><span class='punctuation delimiter'>,</span>
+        <span class='string'>b&#39;0&#39;</span>..=<span class='string'>b&#39;9&#39;</span> =&gt; <span class='function'>Some</span><span class='punctuation bracket'>(</span>c - <span class='string'>b&#39;0&#39;</span> + <span class='constant builtin'>52</span><span class='punctuation bracket'>)</span><span class='punctuation delimiter'>,</span>
+        <span class='string'>b&#39;+&#39;</span> =&gt; <span class='function'>Some</span><span class='punctuation bracket'>(</span><span class='constant builtin'>62</span><span class='punctuation bracket'>)</span><span class='punctuation delimiter'>,</span>
+        <span class='string'>b&#39;/&#39;</span> =&gt; <span class='function'>Some</span><span class='punctuation bracket'>(</span><span class='constant builtin'>63</span><span class='punctuation bracket'>)</span><span class='punctuation delimiter'>,</span>
+        _ =&gt; <span class='constructor'>None</span><span class='punctuation delimiter'>,</span>
+    <span class='punctuation bracket'>}</span>
+<span class='punctuation bracket'>}</span>
+
+<span class='keyword'>fn</span> <span class='function'>main</span><span class='punctuation bracket'>(</span><span class='punctuation bracket'>)</span> <span class='punctuation bracket'>{</span>
+    <span class='keyword'>let</span> <span class='keyword'>mut</span> args = <span class='function'>args</span><span class='punctuation bracket'>(</span><span class='punctuation bracket'>)</span><span class='punctuation delimiter'>.</span><span class='function method'>skip</span><span class='punctuation bracket'>(</span><span class='constant builtin'>1</span><span class='punctuation bracket'>)</span><span class='punctuation delimiter'>;</span>
+
+    <span class='comment'>// Get mode and string to encode/decode</span>
+    <span class='keyword'>let</span> mode = args<span class='punctuation delimiter'>.</span><span class='function method'>next</span><span class='punctuation bracket'>(</span><span class='punctuation bracket'>)</span><span class='punctuation delimiter'>.</span><span class='function method'>unwrap_or_else</span><span class='punctuation bracket'>(</span>|| <span class='function'>usage</span><span class='punctuation bracket'>(</span><span class='punctuation bracket'>)</span><span class='punctuation bracket'>)</span><span class='punctuation delimiter'>;</span>
+    <span class='keyword'>let</span> s = args
+        <span class='punctuation delimiter'>.</span><span class='function method'>next</span><span class='punctuation bracket'>(</span><span class='punctuation bracket'>)</span>
+        <span class='punctuation delimiter'>.</span><span class='function method'>and_then</span><span class='punctuation bracket'>(</span>|s| <span class='keyword'>if</span> s<span class='punctuation delimiter'>.</span><span class='function method'>len</span><span class='punctuation bracket'>(</span><span class='punctuation bracket'>)</span> &gt; <span class='constant builtin'>0</span> <span class='punctuation bracket'>{</span> <span class='function'>Some</span><span class='punctuation bracket'>(</span>s<span class='punctuation bracket'>)</span> <span class='punctuation bracket'>}</span> <span class='keyword'>else</span> <span class='punctuation bracket'>{</span> <span class='constructor'>None</span> <span class='punctuation bracket'>}</span><span class='punctuation bracket'>)</span>
+        <span class='punctuation delimiter'>.</span><span class='function method'>unwrap_or_else</span><span class='punctuation bracket'>(</span>|| <span class='function'>usage</span><span class='punctuation bracket'>(</span><span class='punctuation bracket'>)</span><span class='punctuation bracket'>)</span><span class='punctuation delimiter'>;</span>
+
+    <span class='comment'>// Encode or decode string</span>
+    <span class='keyword'>let</span> result = <span class='keyword'>match</span> mode<span class='punctuation delimiter'>.</span><span class='function method'>as_str</span><span class='punctuation bracket'>(</span><span class='punctuation bracket'>)</span> <span class='punctuation bracket'>{</span>
+        <span class='string'>&quot;encode&quot;</span> =&gt; <span class='function'>base64_encode</span><span class='punctuation bracket'>(</span><span class='operator'>&amp;</span>s<span class='punctuation bracket'>)</span><span class='punctuation delimiter'>,</span>
+        <span class='string'>&quot;decode&quot;</span> =&gt; <span class='function'>base64_decode</span><span class='punctuation bracket'>(</span><span class='operator'>&amp;</span>s<span class='punctuation bracket'>)</span><span class='punctuation delimiter'>.</span><span class='function method'>unwrap_or_else</span><span class='punctuation bracket'>(</span>|| <span class='function'>usage</span><span class='punctuation bracket'>(</span><span class='punctuation bracket'>)</span><span class='punctuation bracket'>)</span><span class='punctuation delimiter'>,</span>
+        _ =&gt; <span class='function'>usage</span><span class='punctuation bracket'>(</span><span class='punctuation bracket'>)</span><span class='punctuation delimiter'>,</span>
+    <span class='punctuation bracket'>}</span><span class='punctuation delimiter'>;</span>
+    <span class='function macro'>println</span><span class='function macro'>!</span><span class='punctuation bracket'>(</span><span class='string'>&quot;{result}&quot;</span><span class='punctuation bracket'>)</span><span class='punctuation delimiter'>;</span>
+<span class='punctuation bracket'>}</span>
+
+</code></pre>
+<h2>Sample programs in scala</h2>
+<p>File: <code>Baklava.scala</code></p>
+<pre><code class="language-scala"><span class='include'>import</span> <span class='namespace'>scala</span><span class='punctuation delimiter'>.</span>math<span class='punctuation delimiter'>.</span>abs
+
+<span class='keyword'>object</span> <span class='type'>Baklava</span> <span class='punctuation bracket'>{</span>
+  <span class='keyword function'>def</span> <span class='method'>main</span><span class='punctuation bracket'>(</span><span class='parameter'>args</span>: <span class='type'>Array</span><span class='punctuation bracket'>[</span><span class='type'>String</span><span class='punctuation bracket'>]</span><span class='punctuation bracket'>)</span>: <span class='type'>Unit</span> = <span class='punctuation bracket'>{</span>
+    <span class='repeat'>for</span> <span class='punctuation bracket'>(</span>i <span class='operator'>&lt;-</span> <span class='number'>-10</span><span class='punctuation delimiter'>.</span><span class='method call'>until</span><span class='punctuation bracket'>(</span><span class='number'>11</span><span class='punctuation bracket'>)</span><span class='punctuation bracket'>)</span> <span class='punctuation bracket'>{</span>
+        <span class='keyword'>var</span> <span class='variable'>numSpaces</span> = <span class='function call'>abs</span><span class='punctuation bracket'>(</span>i<span class='punctuation bracket'>)</span>
+        <span class='function call'>println</span><span class='punctuation bracket'>(</span><span class='string'>&quot; &quot;</span> <span class='operator'>*</span> numSpaces <span class='operator'>+</span> <span class='string'>&quot;*&quot;</span> <span class='operator'>*</span> <span class='punctuation bracket'>(</span><span class='number'>21</span> <span class='operator'>-</span> <span class='number'>2</span> <span class='operator'>*</span> numSpaces<span class='punctuation bracket'>)</span><span class='punctuation bracket'>)</span>
+    <span class='punctuation bracket'>}</span>
+  <span class='punctuation bracket'>}</span>
+<span class='punctuation bracket'>}</span>
+
+</code></pre>
+<p>File: <code>BubbleSort.scala</code></p>
+<pre><code class="language-scala"><span class='include'>import</span> <span class='namespace'>scala</span><span class='punctuation delimiter'>.</span>reflect<span class='punctuation delimiter'>.</span><span class='type'>ClassTag</span>
+
+<span class='keyword'>object</span> <span class='type'>BubbleSort</span> <span class='punctuation bracket'>{</span>
+  <span class='keyword function'>def</span> <span class='method'>main</span><span class='punctuation bracket'>(</span><span class='parameter'>args</span>: <span class='type'>Array</span><span class='punctuation bracket'>[</span><span class='type'>String</span><span class='punctuation bracket'>]</span><span class='punctuation bracket'>)</span> <span class='punctuation bracket'>{</span>
+    <span class='comment'>// verify inputs are being provided</span>
+    <span class='function call'>parseInput</span><span class='punctuation bracket'>(</span>args<span class='punctuation bracket'>)</span> <span class='conditional'>match</span> <span class='punctuation bracket'>{</span>
+      <span class='conditional'>case</span> <span class='type'>None</span> <span class='operator'>=&gt;</span> <span class='function call'>println</span><span class='punctuation bracket'>(</span><span class='string'>&quot;Usage: please provide a list of at least two integers to sort in the format \&quot;1, 2, 3, 4, 5\&quot;&quot;</span><span class='punctuation bracket'>)</span>
+      <span class='conditional'>case</span> <span class='type'>Some</span><span class='punctuation bracket'>(</span>inputArr<span class='punctuation bracket'>)</span> <span class='operator'>=&gt;</span> <span class='punctuation bracket'>{</span>
+        <span class='conditional'>if</span> <span class='punctuation bracket'>(</span>inputArr<span class='punctuation delimiter'>.</span><span class='property'>length</span> <span class='operator'>&lt;</span> <span class='number'>2</span><span class='punctuation bracket'>)</span> <span class='punctuation bracket'>{</span>
+          <span class='function call'>println</span><span class='punctuation bracket'>(</span><span class='string'>&quot;Usage: please provide a list of at least two integers to sort in the format \&quot;1, 2, 3, 4, 5\&quot;&quot;</span><span class='punctuation bracket'>)</span>
+        <span class='punctuation bracket'>}</span>
+        <span class='conditional'>else</span> <span class='punctuation bracket'>{</span>
+          <span class='keyword'>val</span> <span class='variable'>output</span> = <span class='function call'>bubbleSort</span><span class='punctuation bracket'>(</span>inputArr<span class='punctuation bracket'>)</span><span class='punctuation delimiter'>.</span><span class='method call'>mkString</span><span class='punctuation bracket'>(</span><span class='string'>&quot;, &quot;</span><span class='punctuation bracket'>)</span>
+          <span class='function call'>println</span><span class='punctuation bracket'>(</span>output<span class='punctuation bracket'>)</span>
+        <span class='punctuation bracket'>}</span>
+      <span class='punctuation bracket'>}</span>
+    <span class='punctuation bracket'>}</span>
+  <span class='punctuation bracket'>}</span>
+
+  <span class='keyword function'>def</span> <span class='method'>parseInput</span><span class='punctuation bracket'>(</span><span class='parameter'>args</span>: <span class='type'>Array</span><span class='punctuation bracket'>[</span><span class='type'>String</span><span class='punctuation bracket'>]</span><span class='punctuation bracket'>)</span>: <span class='type'>Option</span><span class='punctuation bracket'>[</span><span class='type'>Array</span><span class='punctuation bracket'>[</span><span class='type'>Int</span><span class='punctuation bracket'>]</span><span class='punctuation bracket'>]</span> = args<span class='punctuation delimiter'>.</span><span class='property'>length</span> <span class='conditional'>match</span> <span class='punctuation bracket'>{</span>
+    <span class='conditional'>case</span> <span class='number'>0</span> <span class='operator'>=&gt;</span> <span class='type'>None</span>
+    <span class='conditional'>case</span> <span class='parameter'>_</span> <span class='operator'>=&gt;</span> <span class='exception'>try</span> <span class='punctuation bracket'>{</span>
+      <span class='type'>Some</span><span class='punctuation bracket'>(</span><span class='parameter'>args</span><span class='punctuation bracket'>(</span><span class='number'>0</span><span class='punctuation bracket'>)</span><span class='punctuation delimiter'>.</span><span class='method call'>split</span><span class='punctuation bracket'>(</span><span class='string'>&quot;,&quot;</span><span class='punctuation bracket'>)</span><span class='punctuation delimiter'>.</span><span class='method call'>map</span><span class='punctuation bracket'>(</span><span class='parameter'>_</span><span class='punctuation delimiter'>.</span><span class='property'>trim</span><span class='punctuation bracket'>)</span><span class='punctuation delimiter'>.</span><span class='method call'>map</span><span class='punctuation bracket'>(</span><span class='parameter'>_</span><span class='punctuation delimiter'>.</span><span class='property'>toInt</span><span class='punctuation bracket'>)</span><span class='punctuation bracket'>)</span>
+    <span class='punctuation bracket'>}</span> <span class='exception'>catch</span> <span class='punctuation bracket'>{</span>
+      <span class='conditional'>case</span> e: <span class='type'>Throwable</span> <span class='operator'>=&gt;</span> <span class='type'>None</span>
+    <span class='punctuation bracket'>}</span>
+  <span class='punctuation bracket'>}</span>
+
+  <span class='comment'>// bubble the current element</span>
+
+  <span class='comment'>// bubble sort increasing elements</span>
+  <span class='comment'>// note on signature:</span>
+  <span class='comment'>// ClassTag elements help construct Array quen using ++ (instead of falling back to ArraySeq)</span>
+  <span class='comment'>// Elements of array implement Ordered, so we can compare 2 instances of T using ==, &lt;, &gt;, etc.</span>
+  <span class='keyword function'>def</span> <span class='method'>bubbleSort</span><span class='punctuation bracket'>[</span><span class='type'>T</span> &lt;% <span class='type'>Ordered</span><span class='punctuation bracket'>[</span><span class='type'>T</span><span class='punctuation bracket'>]</span>: <span class='type'>ClassTag</span><span class='punctuation bracket'>]</span><span class='punctuation bracket'>(</span><span class='parameter'>arr</span>: <span class='type'>Array</span><span class='punctuation bracket'>[</span><span class='type'>T</span><span class='punctuation bracket'>]</span><span class='punctuation bracket'>)</span>: <span class='type'>Array</span><span class='punctuation bracket'>[</span><span class='type'>T</span><span class='punctuation bracket'>]</span> = <span class='punctuation bracket'>{</span>
+    <span class='keyword function'>def</span> <span class='method'>bubble</span><span class='punctuation bracket'>(</span><span class='parameter'>a</span>: <span class='type'>Array</span><span class='punctuation bracket'>[</span><span class='type'>T</span><span class='punctuation bracket'>]</span><span class='punctuation bracket'>)</span>: <span class='type'>Array</span><span class='punctuation bracket'>[</span><span class='type'>T</span><span class='punctuation bracket'>]</span> = a<span class='punctuation delimiter'>.</span><span class='property'>length</span> <span class='conditional'>match</span> <span class='punctuation bracket'>{</span>
+      <span class='conditional'>case</span> <span class='number'>0</span> <span class='operator'>=&gt;</span> a
+      <span class='conditional'>case</span> <span class='number'>1</span> <span class='operator'>=&gt;</span> a
+      <span class='conditional'>case</span> <span class='parameter'>_</span> <span class='operator'>=&gt;</span> <span class='punctuation bracket'>{</span>
+        <span class='conditional'>if</span> <span class='punctuation bracket'>(</span><span class='parameter'>a</span><span class='punctuation bracket'>(</span><span class='number'>0</span><span class='punctuation bracket'>)</span> <span class='operator'>&gt;</span> <span class='parameter'>a</span><span class='punctuation bracket'>(</span><span class='number'>1</span><span class='punctuation bracket'>)</span><span class='punctuation bracket'>)</span> <span class='punctuation bracket'>{</span>
+          a<span class='punctuation delimiter'>.</span><span class='method call'>slice</span><span class='punctuation bracket'>(</span><span class='number'>1</span><span class='punctuation delimiter'>,</span> <span class='number'>2</span><span class='punctuation bracket'>)</span> <span class='operator'>++</span> <span class='method'>bubble</span><span class='punctuation bracket'>(</span>a<span class='punctuation delimiter'>.</span><span class='method call'>slice</span><span class='punctuation bracket'>(</span><span class='number'>0</span><span class='punctuation delimiter'>,</span> <span class='number'>1</span><span class='punctuation bracket'>)</span> <span class='operator'>++</span> a<span class='punctuation delimiter'>.</span><span class='method call'>slice</span><span class='punctuation bracket'>(</span><span class='number'>2</span><span class='punctuation delimiter'>,</span> a<span class='punctuation delimiter'>.</span><span class='property'>length</span><span class='punctuation bracket'>)</span><span class='punctuation bracket'>)</span>
+        <span class='punctuation bracket'>}</span>
+        <span class='conditional'>else</span> <span class='punctuation bracket'>{</span>
+          a<span class='punctuation delimiter'>.</span><span class='method call'>slice</span><span class='punctuation bracket'>(</span><span class='number'>0</span><span class='punctuation delimiter'>,</span> <span class='number'>1</span><span class='punctuation bracket'>)</span> <span class='operator'>++</span> <span class='method'>bubble</span><span class='punctuation bracket'>(</span>a<span class='punctuation delimiter'>.</span><span class='method call'>slice</span><span class='punctuation bracket'>(</span><span class='number'>1</span><span class='punctuation delimiter'>,</span> a<span class='punctuation delimiter'>.</span><span class='property'>length</span><span class='punctuation bracket'>)</span><span class='punctuation bracket'>)</span>
+        <span class='punctuation bracket'>}</span>
+      <span class='punctuation bracket'>}</span>
+    <span class='punctuation bracket'>}</span>
+    arr<span class='punctuation delimiter'>.</span><span class='method call'>foldLeft</span><span class='punctuation bracket'>(</span>arr<span class='punctuation bracket'>)</span><span class='punctuation bracket'>(</span><span class='punctuation bracket'>(</span><span class='parameter'>xs</span>: <span class='type'>Array</span><span class='punctuation bracket'>[</span><span class='type'>T</span><span class='punctuation bracket'>]</span><span class='punctuation delimiter'>,</span> <span class='parameter'>cur</span>: <span class='type'>T</span><span class='punctuation bracket'>)</span> <span class='operator'>=&gt;</span> <span class='method'>bubble</span><span class='punctuation bracket'>(</span>xs<span class='punctuation bracket'>)</span><span class='punctuation bracket'>)</span>
+  <span class='punctuation bracket'>}</span>
+<span class='punctuation bracket'>}</span>
+
+</code></pre>
