@@ -35,9 +35,15 @@
   caption: [Code snippet in C highlighted with Tree-Sitter and colored with Catpuccin Latte theme],
 ) <fig-code-snippet>
 
+// TODO: description du projet
+// TODO: description de la topo des systèmes de tests
+// TODO: description de la stratégie de benchmarking (mentionner essais ratés)
+
 == Baseline
 
 == Optimisation de la colorisation syntaxique
+
+Le projet DME utilise Tree-Sitter pour la colorisation syntaxique.
 
 === Comment ça fonctionne actuellement ?
 TODO Aubry
