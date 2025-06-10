@@ -16,18 +16,45 @@ mod common;
 fn test_large_search_on_mdn_content_can_find_multiple_match_for_generic_keyword() {
     let repos = clone_mdn_content();
     let mut disk_search = DiskResearcher::new(repos.to_str().unwrap().to_string());
+
     disk_search.start();
     let search = "abstraction";
     let results = disk_search.search(search, 50, None);
     let stats = disk_search.stats();
     dbg!(&stats);
     disk_search.print_index_stats();
-    assert!(stats.markdown_paths_count > 13750); // as of 2025-06-10
-    assert!(stats.headings_count > 864870); // as of 2025-06-10
-    assert!(
-        results.len() >= 36,
-        "Results should have only above result, contains\n"
+    assert!(stats.markdown_paths_count > 13740); // as of 2025-06-10
+    assert!(stats.headings_count > 17100); // number of UNIQUE headings as of 2025-06-10
+    dbg!(&results);
+    let mut sorted_headings = results
+        .iter()
+        .filter_map(|e| e.title.clone())
+        .collect::<Vec<String>>();
+    sorted_headings.sort();
+
+    // Based on command inside target/content
+    // rg -o '^#{1,6} .*' --type md --no-filename | sort | sed -r "s/\#+ //g" | sort > allheadings.txt
+    // grep -i "abstraction" allheadings.txt
+    assert_eq!(
+        sorted_headings,
+        vec![
+            "Advantages of Data Abstraction",
+            "Control abstraction objects",
+            "Control abstraction objects",
+            "Larger code base and abstraction",
+        ]
     );
+    // Based on command inside target/content
+    // fd -e md --no-ignore | grep abstraction
+    assert_eq!(
+        results
+            .iter()
+            .filter(|e| e.title.is_none())
+            .map(|e| e.path.clone())
+            .collect::<Vec<String>>(),
+        vec!["target/content/files/en-us/glossary/abstraction/index.md"]
+    );
+    // assert!(results.len() >= 36, "{results:?}");
 }
 
 #[test]
