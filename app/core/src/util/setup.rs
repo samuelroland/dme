@@ -47,16 +47,11 @@ const CODE_SNIPPETS_REPOS: &str = "https://github.com/TheRenegadeCoder/sample-pr
 const CODE_SNIPPETS_REPOS_DESTINATION: &str = "target/sample-programs";
 const OUTPUT_MD_PREFIX: &str = "target/large-";
 
-/// Generate a big file with tons of snippet snippets in some of the languages listed in PROPOSED_GRAMMAR_SOURCES
-/// that have
+/// Generate a big file with tons of code snippets in some of the languages listed in PROPOSED_GRAMMAR_SOURCES
+/// that have available snippets in the CODE_SNIPPETS_REPOS
 pub fn generate_large_markdown_with_codes(max_number_of_snippets_per_lang: usize) -> String {
-    // println!(
-    //     "\n>> Generating for {} max number of snippets per lang\n",
-    //     max_number_of_snippets_per_lang
-    // );
     let repos_folder = PathBuf::from(CODE_SNIPPETS_REPOS_DESTINATION);
     if !repos_folder.exists() {
-        // println!("Cloning {} under target/", CODE_SNIPPETS_REPOS);
         GitRepos::from_clone(
             CODE_SNIPPETS_REPOS,
             &repos_folder.parent().unwrap().to_path_buf(),
@@ -83,7 +78,6 @@ pub fn generate_large_markdown_with_codes(max_number_of_snippets_per_lang: usize
             .join(lang);
 
         if !subfolder.exists() {
-            // println!("Skipping {} because no snippets.", lang);
             continue;
         };
         let mut codes: Vec<PathBuf> = read_dir(subfolder)
@@ -97,7 +91,6 @@ pub fn generate_large_markdown_with_codes(max_number_of_snippets_per_lang: usize
             continue;
         }
 
-        // println!("Building sections for {}", lang);
         writeln!(final_output, "## Sample programs in {}", lang).unwrap();
         for code in codes.iter().take(max_number_of_snippets_per_lang) {
             writeln!(
@@ -116,13 +109,5 @@ pub fn generate_large_markdown_with_codes(max_number_of_snippets_per_lang: usize
     let output_md_prefix_full =
         format!("{}{}.md", OUTPUT_MD_PREFIX, max_number_of_snippets_per_lang);
     std::fs::write(&output_md_prefix_full, &final_output).unwrap();
-    // println!(
-    //     "Saved file {} of size {} bytes and {} code snippets in total, with {} different languages.",
-    //     output_md_prefix_full,
-    //     final_output.len(),
-    //     included_snippets_count,
-    //     snippets_found_count
-    // );
-
     output_md_prefix_full
 }
