@@ -52,10 +52,7 @@ Un système de recherche permet ensuite de chercher un fichier Markdown sur son 
   caption: [Aperçu de l'interface de recherche, montrant des résultats de recherches avec des titres qui ont matchés.],
 ) <fig-search-overview>
 
-// TODO systeme de priority ??
-
 // TODO: description de la topo des systèmes de tests
-// TODO: description de la stratégie de benchmarking (mentionner essais ratés)
 
 == Rust
 
@@ -69,25 +66,20 @@ Pour éviter les regressions et s'assurer de la stabilité une fois le code refa
 
 Nous avons développés ça dans `app/core/tests`, ils peuvent être lancés spécifiquement depuis ce dossier avec `cargo test`, une fois les tests unitaires passés ils se lancent. Voir `tests/large_preview.rs` et `tests/large_search.rs` si utile.
 
-L'exemple suivant montre un test d'intégration qui vérifie que le preview d'un fichier Markdown avec des snippets de code fonctionne correctement. Il utilise la librairie `comrak` pour parser le Markdown et `tree-sitter` pour coloriser les snippets de code.
+L'exemple suivant montre un test d'intégration qui vérifie que le preview d'un fichier Markdown avec des snippets de code fonctionne correctement est bien généré comme la dernière version commitée dans le repos (sous `app/core/tests/reference/large-preview-1-ref.html`). Il utilise la librairie `comrak` pour parser le Markdown et `tree-sitter` pour coloriser les snippets de code. 3 tailles de documents sont testées.
 
 ```rust
 #[test]
-fn test_large_search_on_mdn_content_can_find_a_single_heading() {
-    let repos = clone_mdn_content();
-    let mut disk_search = DiskResearcher::new(repos.to_str().unwrap().to_string());
-    disk_search.start();
-    let search = "Array constructor with a single parameter";
-    let results = disk_search.search(search, 20, None);
-    assert_eq!(
-        results.len(),
-        1,
-        "Results should have only one result, contains\n{results:?}"
-    );
-    assert_eq!(results[0].title, Some(search.to_string()));
-    assert!(results[0].path.ends_with(
-        "content/files/en-us/web/javascript/reference/global_objects/array/array/index.md"
-    ));
+fn test_large_markdown_preview_with_codes_gives_same_result() {
+    install_all_grammars_in_local_target_folder();
+    for i in [1, 2, 5] {
+        let test_id = format!("large-preview-{}", i);
+        let path = generate_large_markdown_with_codes(i, 100);
+
+        let result = markdown_to_highlighted_html(&path).unwrap();
+
+        check_possible_regression(&test_id, "html", result.as_string());
+    }
 }
 ```
 
@@ -109,17 +101,19 @@ En rajoutant cette section au `Cargo.toml` de `bench`.
 debug = true
 ```
 
-Pour lister les benchmark il suffit de lancer le programme `bench` normalement.
 
 // TODO: complete list of benchmark there with latest names and desc
 
+Pour lister les benchmark il suffit de lancer le programme du dossier `app/core/bench` comme tout autre programme Rust mais en mode release.
 ```sh
 cd app/core/bench
 > cargo run --release
 
 Listing available benchmarks
-- preview_code : Different code snippets numbers in various languages
 - preview_md : Large Markdown file without code snippets
+- preview_code : Different code snippets numbers in various languages
+- grammar_install : Basic Rust grammar install
+- general_keyword : Build of index + search of the keyword 'abstraction' inside the MDN content
 
 To execute a benchmark run: cargo run --release -- bench <id>
 ```
@@ -131,12 +125,27 @@ Nous avons choisi de définir les paramètres de benchmark comme suit :
 
 === Alternatives non retenues
 
-La crate `criterion.rs` est un système de benchmark qui permet de faire des mesures plus précises que les systèmes tels que `hyperfine`. Elle permet de benchmarker des fonctions Rust de manière fine et de faire des comparaisons entre les versions. Nous avons essayé de l'utiliser mais nous ne l'avons pas retenue car les benchmarks prenaient trop de temps pour être réalisés.
+La crate `criterion.rs` est un système de benchmark qui permet de faire des mesures plus précises que les systèmes tels que `hyperfine`. Elle permet de benchmarker des fonctions Rust de manière fine et de faire des comparaisons entre les versions. Le système avait l'air incroyable niveau expérience, super simple d'écrire des benchmarks, possibilités de comparer avec l'exécution précédente, possibilité de nommer un résultat pour y comparer plus tard plus facilement, écriture des benchmarks en Rust, etc. Super dommage que le projet ne soient pas adaptés aux fonctions lentes.
+
+Nous avons essayé de l'utiliser mais nous ne l'avons pas retenue car les benchmarks prenaient trop de temps pour être réalisés. Afin de fournir une solidité statistique, criterion.rs nous force à avoir au minimum ~20 itérations pour un benchmark d'une fonction ce qui signifie 20 secondes minimum pour une fonction de 200ms. Avec hyperfine on arrivait à définir `-r 3` pour n'exécuter que 3 fois.
+
+Exemple de benchmark tenté avec criterion
+```rust
+pub fn preview_nocode_benchmark(c: &mut Criterion) {
+    let mut group = c.benchmark_group("preview_nocode");
+    let path = clone_mdn_content();
+    // That's a file without any code snippet and of 59627 chars.
+    let path = path.join("files/en-us/mdn/writing_guidelines/writing_style_guide/index.md");
+    group.bench_function("preview basic", |b| {
+        b.iter(|| markdown_to_highlighted_html(black_box(path.to_str().unwrap())))
+    });
+    group.finish();
+}
+```
 
 == Pull request
 
-La pull request est disponible sur https://github.com/samuelroland/dme/pull/10
-
+La pull request de se projet est disponible sur https://github.com/samuelroland/dme/pull/10, les tests d'intégrations ne sont pas listées car ils ont déjà été mergé dans une autre PR.
 // todo compléter la pr description
 
 == Optimisation de la colorisation syntaxique
@@ -258,33 +267,33 @@ impl SyntaxHighlighterAdapter for ComrakParser {
         maybe_lang: Option<&str>,
         code: &str,
     ) -> io::Result<()> {
-        // Shortened: skip when no lang
+        // ...
 
-  // Open the cache in write
-            let mut cache = TSH_CACHE.write().unwrap();
-            let highlighter = cache.get_mut(&owned_lang);
+        // Open the cache in write mode
+        let mut cache = TSH_CACHE.write().unwrap();
+        let highlighter = cache.get_mut(&owned_lang); // maybe we have a highlighter
 
-            match highlighter {
-                // We have a highlighter in cache, juse use it
-                Some(h_cached) => {
-                    output.write_all(h_cached.highlight(code).as_string().as_bytes())?;
-                }
-                None => {
-                    // Otherwise create a new one, use it and save it in CACHE
-                    let new_h = TreeSitterHighlighter::new(&owned_lang, &self.manager);
-                    match new_h {
-                        Ok(valid_new_h) => {
-                            output.write_all(valid_new_h.highlight(code).as_string().as_bytes())?;
-                            cache.insert(owned_lang, valid_new_h);
-                            drop(cache);
-                        }
-                        Err(_) => {
-                            output.write_all(code.as_bytes())?;
-                        }
+        match highlighter {
+            // We have a highlighter in cache, juse use it
+            Some(h_cached) => {
+                output.write_all(h_cached.highlight(code).as_string().as_bytes())?;
+            }
+            None => {
+                // Otherwise create a new one, use it and save it in CACHE
+                let new_h = TreeSitterHighlighter::new(&owned_lang, &self.manager);
+                match new_h {
+                    Ok(valid_new_h) => {
+                        output.write_all(valid_new_h.highlight(code).as_string().as_bytes())?;
+                        cache.insert(owned_lang, valid_new_h);
+                        drop(cache);
+                    }
+                    Err(_) => {
+                        output.write_all(code.as_bytes())?;
                     }
                 }
             }
         }
+    }
 ```
 
 Résultat du benchmark
@@ -319,7 +328,7 @@ Nous parlions précédemment du fait que nous voulions avoir principalement des 
 ```
 
 Les benchmark ne changent quasiment pas ce qui est normal puisque nous ne sommes pas encore en multithreadé.
-Running all benches
+
 // Running bench preview_code
 // Benchmark 1: target/release/bench fn preview_code target/large-30.md
 // Time (mean ± σ):     311.2 ms ±   6.4 ms    [User: 296.4 ms, System: 13.4 ms]
@@ -333,8 +342,9 @@ Résultat du benchmark
 
 Nous avions prévu d'optimiser la recherche mais le projet de PLM n'avait pas encore pu aller assez pour supporter une recherche stable et avec support de fuzzy matching et de tests solides (ce qui est difficile avec du fuzzy matching qui donne des résultats plus larges).
 
-Nous avons quand même pu établir la mesure suivante qui nous permet de voir que la construction de l'index et la recherche de "abstraction" dans le repos de MDN, est déjà plutôt rapide.
+Nous avons quand même pu établir la mesure suivante qui nous permet de voir que la construction de l'index et la recherche de "abstraction" dans le repos de MDN, est déjà plutôt rapide. 
 
+```
 > cargo run --release -- bench general_keyword
 Compiling bench v0.1.0 (/home/sam/HEIG/year3/PLM/dme/app/core/bench)
 Finished `release` profile [optimized + debuginfo] target(s) in 0.78s
@@ -343,8 +353,16 @@ Running bench general_keyword
 Benchmark 1: target/release/bench fn general_keyword target/content
 Time (mean ± σ):     159.5 ms ±  10.3 ms    [User: 164.0 ms, System: 184.3 ms]
 Range (min … max):   144.6 ms … 189.9 ms    40 runs
+```
 
-Si on ne lance que l'indexation et pas la recherche on obtient `125.5 ms` ce qui montre que la recherche en elle-même n'est pas gourmande même avec le fuzzy matching mis en place.
+La recherche a déjà été multithreadé pour le projet de PLM. Si on ne lance que l'indexation et pas la recherche on obtient `125.5 ms` ce qui montre que la recherche en elle-même n'est pas gourmande même avec le fuzzy matching mis en place.
+
+Si on change un poil le benchmark pour le contraindre à n'utiliser qu'un seul thread (`disk_search.set_max_nb_threads(1).unwrap();`), on voit qu'on a 222ms, ce qui montre un gain de 25% grâce à la parallélisation.
+```
+Benchmark 1: target/release/bench fn general_keyword target/content
+  Time (mean ± σ):     222.3 ms ±  10.9 ms    [User: 98.8 ms, System: 124.9 ms]
+  Range (min … max):   202.9 ms … 254.6 ms    40 runs
+```
 
 En plus, un système de "streaming" des réponses permet d'envoyer les résultats au fur et à mesure, ce qui réduit encore le temps nécessaires avant l'apparition visuelle des premiers résultats.
 
@@ -354,6 +372,7 @@ Parmi nos grammaires, certaines sont plus ou moins lourdes. Hors, si on démarre
 
 
 Aperçu des poids des repository Git de qqes grammars
+```
 30M	tree-sitter-bash
 25M	tree-sitter-c
 155M	tree-sitter-cpp
@@ -380,9 +399,11 @@ Aperçu des poids des repository Git de qqes grammars
 1.3M	tree-sitter-vue
 2.0M	tree-sitter-xml
 4.0M	tree-sitter-yaml
+```
 
 A première vu ça parait pas incroyable Tree-Sitter si c'est si lourd ces syntaxes... En fait, si on y regarde de plus près, ici avec celle de Rust cloné depuis `https://github.com/tree-sitter/tree-sitter-rust`, on voit que c'est le `.git` qui fait 49M la grande majorité du poids et que la librairie partagée `rust.so` ne fait que 1.1MB
 
+```
 > du -sh * .*
 4.0K	binding.gyp
 64K	bindings
@@ -413,6 +434,7 @@ A première vu ça parait pas incroyable Tree-Sitter si c'est si lourd ces synta
 4.0K	.gitattributes
 36K	.github
 4.0K	.gitignore
+```
 
 Comme tout l'historique et les branches séparées des branches principales ne sont pas du tout utile, ce qui compte c'est la dernière version sur `main`, nous pouvons demander à git de cloner seulement le dernier commit et seulement la branche principale.
 
@@ -445,15 +467,22 @@ A noter que le fait de pull un seul commit n'empêche les `git pull` suivant de 
 Testons sans l'optimisation
 
 ```rust
-GitRepos::from_clone( git_repo_https_url, &self.final_grammars_folder, None, false);
+GitRepos::from_clone(git_repo_https_url, &self.final_grammars_folder, None, false);
 ```
 
+```
+> cargo run --release -- bench grammar_install
 Benchmark 1: target/release/bench fn grammar_install https://github.com/tree-sitter/tree-sitter-rust
 Time (abs ≡):        11.483 s               [User: 4.585 s, System: 0.512 s]
-
-Mean: 11.4832
+```
 
 Et après optimisation ??
+
+```rust
+GitRepos::from_clone( git_repo_https_url, &self.final_grammars_folder, Some(1), true);
+```
+
+```
 > cargo run --release -- bench grammar_install
 Compiling dme-core v0.1.0 (/home/sam/HEIG/year3/PLM/dme/app/core)
 Compiling bench v0.1.0 (/home/sam/HEIG/year3/PLM/dme/app/core/bench)
@@ -462,27 +491,32 @@ Running `target/release/bench bench grammar_install`
 Running bench grammar_install
 Benchmark 1: target/release/bench fn grammar_install https://github.com/tree-sitter/tree-sitter-rust
 Time (abs ≡):         1.522 s               [User: 0.717 s, System: 0.091 s]
+```
 
-Mean: 1.5225
+A noter que les changements ont été mergé via une autre PR et #link("https://github.com/samuelroland/dme/pull/9/files#diff-8845cd890295a784334cb169980a266b0c69134911c60f9986a72a484ececd37")[sont visible ici].
 
-todo: commenter que forcément dépend surtout du réseau et taille de la grammaire.
+On passe de *11.4s à 1.5s*, donc un facteur 16.4x, si on considère qu'il existe des grammaires avec un historique encore tel que `haskell` (301MB) fait 14.05s, cela permettra probablement pour l'utilisateur si on lancait en parallèle les installations, de pouvoir coloriser un document moins de 10s après avoir lancé DME pour la première fois.
+Ce facteur et ce gain est forcément très dépendant de la vitesse de connexion internet et du poids du repos Git. surtout du réseau et taille de la grammaire.
 
 A noter que le benchmark Rust a définie de manière assez concise dans `bench/src/grammars.rs` de la façon suivante
 
+```rust
 pub fn install_grammar(args: Vec<String>) {
-let mut manager = TreeSitterGrammarsManager::new().unwrap();
-manager.install(&args[0]).unwrap();
+    let mut manager = TreeSitterGrammarsManager::new().unwrap();
+    manager.install(&args[0]).unwrap();
 }
 
 // Benches
 pub fn grammar_install_bench() {
-// Delete possible existing Rust syntax in the global folder
-let mut manager = TreeSitterGrammarsManager::new().unwrap();
-manager.delete("rust").unwrap();
-let link = "https://github.com/tree-sitter/tree-sitter-rust";
+    // Delete possible existing Rust syntax in the global folder
+    let mut manager = TreeSitterGrammarsManager::new().unwrap();
+    manager.delete("rust").unwrap();
+    let link = "https://github.com/tree-sitter/tree-sitter-rust";
 
-run_hyperfine("grammar_install", vec![link], 1);
+    run_hyperfine("grammar_install", vec![link], 1);
 }
+```
+
 
 == Conclusion
 

@@ -7,7 +7,10 @@ use std::{
 
 use dme_core::{
     markdown_to_highlighted_html,
-    search::{disk::DiskResearcher, search::Researcher},
+    search::{
+        disk::{self, DiskResearcher},
+        search::Researcher,
+    },
     util::setup::{
         clone_mdn_content, generate_large_markdown_with_codes,
         install_all_grammars_in_local_target_folder,
@@ -21,9 +24,9 @@ pub fn run_search(args: Vec<String>) {
     let mut disk_search = DiskResearcher::new(args[0].to_string());
     disk_search.start();
     let search = "abstraction";
-    // let results = disk_search.search(search, 20, None);
-    // let stats = disk_search.stats();
-    // dbg!(&results);
+    let results = disk_search.search(search, 20, None);
+    let stats = disk_search.stats();
+    dbg!(&results);
 }
 
 // Benches
