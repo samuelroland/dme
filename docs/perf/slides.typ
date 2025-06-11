@@ -1,5 +1,7 @@
 #import "@preview/polylux:0.4.0": *
 
+#set text(font: "Cantarell")
+
 #set page(paper: "presentation-16-9")
 #set text(lang: "fr", size: 25pt, discretionary-ligatures: true)
 
@@ -87,7 +89,7 @@
 
   - Cache global `TSH_CACHE: Lazy<RwLock<HashMap>>`
   - Lecture rapide des highlighters existants
-  - Écriture (creation) uniquement au premier usage par langue
+  - Écriture (création) uniquement au premier usage par langue
 
     #align(center, rect(inset: 1em)[
       #set align(left)
@@ -120,9 +122,9 @@
 
   - Indexation rapide du dépôt MDN
   - Fuzzy matching sur titres et chemins
-  - Benchmark général_keyword : 159 ms (index + recherche)
+  - Benchmark général_keyword : 159 ms (3/4 index + 1/4 recherche)
   - Streaming des résultats pour réactivité
-  - Pas eu le temps d'optimiser
+  - Pas tellement de sens ni de temps d'optimiser
 ]
 
 #slide[
@@ -132,6 +134,7 @@
   - Importance des tests et bench intégrés
   - Gains majeurs avec mise en cache et clone léger
   - Pistes futures :
-    - Parallélisation du cache (lecture concurrente)
-    - Optimisation de la recherche fuzzy
+    - Parallélisation de la colorisation des snippets de code
+    - Optimisation de l'indexation une fois la recherche full text disponible
+    - Gestion parallèle optimisée de l'installation des grammaires
 ]
