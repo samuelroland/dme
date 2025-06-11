@@ -11,6 +11,15 @@ impl Progress {
     }
 }
 
+/// Some statistics about the index created by the search system
+#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
+pub struct IndexStat {
+    /// the number of headings we have found
+    pub headings_count: usize,
+    /// the number of Markdown paths we have found
+    pub markdown_paths_count: usize,
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
 pub struct ResearchResult {
     pub path: String,
@@ -33,9 +42,11 @@ pub trait Researcher {
     /// The actual research of a raw string returning some matches
     /// Giving a SyncSender allows to receive result live (unsorted, unlimited)
     fn search(
-        &self,
+        &mut self,
         raw: &str,
         limit: u8,
         sender: Option<Sender<ResearchResult>>,
     ) -> Vec<ResearchResult>;
+
+    fn stats(&self) -> IndexStat;
 }

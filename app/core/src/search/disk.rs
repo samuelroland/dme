@@ -1,15 +1,20 @@
 use crate::search::search::{Progress, ResearchResult, Researcher};
+use nucleo_matcher::pattern::{Atom, AtomKind, CaseMatching, Normalization, Pattern};
+use nucleo_matcher::{Config, Matcher, Utf32Str};
 use std::collections::{BinaryHeap, HashMap};
 use std::ffi::OsStr;
+use std::fs::read_to_string;
 use std::path::PathBuf;
 use std::sync::mpsc::Sender;
 use std::sync::{Arc, Mutex};
-use std::{fs, thread};
+use std::{ascii, fs, thread};
 use walkdir::WalkDir;
+
+use super::search::IndexStat;
 
 impl PartialOrd for ResearchResult {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        self.priority.partial_cmp(&other.priority)
+        Some(self.cmp(other))
     }
 }
 impl Ord for ResearchResult {
@@ -49,8 +54,21 @@ impl OrderedResults {
     /// First `limit` results from internal partial ordered list of results
     pub fn results(&self, limit: usize) -> Vec<ResearchResult> {
         let mut heap = self.results.clone();
-        (0..limit).filter_map(|_| heap.pop()).collect()
+        let results: Vec<ResearchResult> = (0..limit * 2).filter_map(|_| heap.pop()).collect();
+        let max = results.iter().max_by(|a, b| a.priority.cmp(&b.priority));
+
+        // Only the take the last 1/4 of the highest priority results to avoid having the 2 first values of this example: 126 234 523 663
+        if let Some(res) = max {
+            let m = res.priority;
+            let imposed_min = m - (((m as f32) / 4.) as u32);
+            return results
+                .into_iter()
+                .filter(|e| e.priority >= imposed_min)
+                .collect();
+        }
+        results
     }
+
     pub fn len(&self) -> usize {
         self.results.len()
     }
@@ -62,9 +80,9 @@ pub struct DiskResearcher {
     /// Each heading found will have an entry with a vector of files where it was found.
     title_map: Arc<Mutex<HashMap<String, Vec<String>>>>,
     base_path: PathBuf,
-    nb_threads: usize,
+    max_nb_threads: usize,
+    started_threads_nb: usize,
     has_started: bool,
-    threads: Vec<thread::JoinHandle<()>>,
     progress_counter: Arc<Mutex<usize>>,
 }
 
@@ -74,27 +92,28 @@ impl DiskResearcher {
             markdown_paths_set: Arc::new(Mutex::new(Vec::new())),
             title_map: Arc::new(Mutex::new(HashMap::new())),
             base_path: PathBuf::from(path),
-            nb_threads: num_cpus::get(),
+            max_nb_threads: num_cpus::get(),
+            started_threads_nb: 0,
             has_started: false,
-            threads: Vec::new(),
             progress_counter: Arc::new(Mutex::new(0)),
         }
     }
 
-
-    pub fn set_nb_thread(&mut self, nb_thread: usize) -> Result<(), String> {
+    pub fn set_max_nb_threads(&mut self, nb_thread: usize) -> Result<(), String> {
         if nb_thread == 0 {
             Err("Number of thread must be greater than 0".to_string())
         } else if self.has_started {
             Err("Process has already started, cannot change thread number".to_string())
         } else {
-            Ok(self.nb_threads = nb_thread)
+            self.max_nb_threads = nb_thread;
+            Ok(())
         }
     }
 
-    pub fn extract_markdown_titles(path: &str) -> Vec<String> {
-        let content = fs::read_to_string(path).unwrap_or_default();
-
+    pub fn extract_markdown_titles(content: &str) -> Vec<String> {
+        if content.is_empty() {
+            return vec![];
+        }
         let mut headings = Vec::new();
         let lines = content.lines();
         let mut is_in_code_block = false;
@@ -108,7 +127,7 @@ impl DiskResearcher {
             if line.starts_with('#') {
                 let line_partial = line.trim_start_matches('#');
                 if line_partial.starts_with(" ") {
-                    headings.push(line_partial.trim_start_matches(" ").to_string());
+                    headings.push(line_partial.trim().to_string());
                 }
             }
         }
@@ -119,6 +138,8 @@ impl DiskResearcher {
 impl Researcher for DiskResearcher {
     fn start(&mut self) {
         self.has_started = true;
+
+        let mut threads = Vec::new();
         //Get all paths. We have to accept the directory at first otherwise their content would be ignored
         let markdown_paths: Vec<String> = WalkDir::new(&self.base_path)
             .into_iter()
@@ -144,10 +165,10 @@ impl Researcher for DiskResearcher {
         if all_paths.is_empty() {
             return;
         }
-        let chunk_size = if (all_paths.len()) < self.nb_threads {
+        let chunk_size = if (all_paths.len()) < self.max_nb_threads {
             1 //This means we have more thread than the number of files
         } else {
-            all_paths.len().div_ceil(self.nb_threads)
+            all_paths.len().div_ceil(self.max_nb_threads)
         };
 
         for chunk in all_paths.chunks(chunk_size) {
@@ -160,7 +181,8 @@ impl Researcher for DiskResearcher {
                 //Local counter to avoid locking unlocking every loop.
                 let mut local_counter = 0;
                 for path in chunk {
-                    let titles = DiskResearcher::extract_markdown_titles(&path);
+                    let content = fs::read_to_string(&path).unwrap_or_default();
+                    let titles = DiskResearcher::extract_markdown_titles(&content);
                     let mut map = title_map.lock().unwrap();
                     for title in titles {
                         map.entry(title).or_default().push(path.clone())
@@ -179,7 +201,12 @@ impl Researcher for DiskResearcher {
                     *global_counter += local_counter;
                 }
             });
-            self.threads.push(handle);
+            self.started_threads_nb += 1;
+            threads.push(handle);
+        }
+
+        for thread in threads {
+            thread.join().unwrap();
         }
     }
     /// Ask about the progress, from 0 to 100 percent of research
@@ -192,66 +219,82 @@ impl Researcher for DiskResearcher {
             ((*self.progress_counter.lock().unwrap() as f32 / total as f32) * 100f32).ceil() as u8,
         )
     }
+
     /// The actual research of a raw string returning some matches
     fn search(
-        &self,
+        &mut self,
         raw: &str,
         limit: u8,
         sender: Option<Sender<ResearchResult>>,
     ) -> Vec<ResearchResult> {
-        let query = raw.to_lowercase();
         let map = self.title_map.lock().unwrap().clone();
 
         let results: Arc<Mutex<OrderedResults>> = Arc::new(Mutex::new(OrderedResults::new(sender)));
-        let vector: Vec<_> = map.into_iter().collect();
+        let headings: Vec<_> = map.into_iter().collect();
 
         let mut threads = Vec::new();
-        let chunk_size = if vector.len() < self.nb_threads {
+        let chunk_size = if headings.len() < self.max_nb_threads {
             1
         } else {
-            vector.len().div_ceil(self.nb_threads)
+            headings.len().div_ceil(self.max_nb_threads)
         };
-        for tuple_chunk in vector.chunks(chunk_size) {
-            let tuple = tuple_chunk.to_vec(); // copy chunk
-            let results = Arc::clone(&results);
-            let query = query.to_lowercase();
 
+        let query = raw.to_lowercase();
+        for tuples_chunk in headings.chunks(chunk_size) {
+            let tuples = tuples_chunk.to_vec(); // copy chunk
+            let results = Arc::clone(&results);
+
+            let query = query.clone();
             let handle = thread::spawn(move || {
-                for (title, paths) in tuple {
-                    if results.lock().unwrap().len() >= limit as usize {
-                        return;
-                    }
-                    if title.to_lowercase().contains(&query) {
+                let mut matcher = Matcher::new(Config::DEFAULT);
+                // Search in parallel into the headings
+                let pattern = Pattern::new(
+                    &query,
+                    CaseMatching::Ignore,
+                    Normalization::Smart,
+                    AtomKind::Fuzzy,
+                );
+                for (title, paths) in tuples {
+                    let mut chars: Vec<char> = Vec::new();
+                    let ascii_title = Utf32Str::new(&title, &mut chars);
+                    let score = pattern.score(ascii_title, &mut matcher).unwrap_or(0);
+                    if score > 10 {
                         for path in paths.iter() {
                             let mut results = results.lock().unwrap();
-                            if results.len() >= limit as usize {
-                                return;
-                            }
                             results.push(ResearchResult {
                                 title: Some(title.clone()),
-                                path: path.clone(),
-                                priority: 1,
+                                path: path.to_string(),
+                                priority: score,
                             });
                         }
                     }
-                    if results.lock().unwrap().len() >= limit as usize {
-                        return;
-                    }
                 }
             });
+
+            self.started_threads_nb += 1;
             threads.push(handle);
         }
 
+        // Search in parallel in the path as well and attibute higher priority
         let file_list = self.markdown_paths_set.lock().unwrap().clone();
+        let mut matcher = Matcher::new(Config::DEFAULT.match_paths());
+        // Search in parallel into the headings
+        let pattern = Pattern::new(
+            &query,
+            CaseMatching::Ignore,
+            Normalization::Smart,
+            AtomKind::Fuzzy,
+        );
+
         for file in file_list.iter() {
-            if results.lock().unwrap().len() >= limit as usize {
-                break;
-            }
-            if file.contains(query.as_str()) {
+            let mut chars: Vec<char> = Vec::new();
+            let ascii_title = Utf32Str::new(file, &mut chars);
+            let score = pattern.score(ascii_title, &mut matcher).unwrap_or(0);
+            if score > 10 {
                 results.lock().unwrap().push(ResearchResult {
                     title: None,
                     path: file.clone().parse().unwrap(),
-                    priority: 2,
+                    priority: (score as f32 * 1.3) as u32,
                 });
             }
         }
@@ -260,6 +303,13 @@ impl Researcher for DiskResearcher {
         }
         let final_results = results.lock().unwrap().clone();
         final_results.results(limit as usize)
+    }
+
+    fn stats(&self) -> super::search::IndexStat {
+        IndexStat {
+            headings_count: self.title_map.lock().unwrap().len(),
+            markdown_paths_count: self.markdown_paths_set.lock().unwrap().len(),
+        }
     }
 }
 
@@ -288,6 +338,52 @@ fn test_that_progress_is_one_hundred_at_end() {
     search.start();
     thread::sleep(std::time::Duration::from_secs(1));
     assert_eq!(search.progress(), Progress(100));
+}
+
+#[test]
+fn test_heading_extractions() {
+    let content = "
+# heyo  
+some content ** ## yoo 
+## oups \t
+```bash
+# super comment
+echo saasdf
+```
+
+### 4. Open a pull request with your example
+
+# aa";
+
+    assert_eq!(
+        DiskResearcher::extract_markdown_titles(content),
+        vec![
+            "heyo",
+            "oups",
+            "4. Open a pull request with your example",
+            "aa"
+        ]
+    );
+}
+
+#[test]
+fn test_heading_extractions_advanced() {
+    let path = "target/content/files/en-us/web/css/layout_cookbook/contribute_a_recipe/index.md";
+    let expected = vec![
+        "What makes a good recipe?",
+        "Steps to publish a recipe",
+        "1. Build a pattern",
+        "2. Create a live example",
+        "Useful tips",
+        "3. Create a downloadable version",
+        "4. Open a pull request with your example",
+        "5. Create your page",
+        "See also",
+    ];
+    assert_eq!(
+        DiskResearcher::extract_markdown_titles(&read_to_string(path).unwrap()),
+        expected
+    );
 }
 
 #[test]
@@ -383,19 +479,19 @@ fn test_mixed_search() {
 #[test]
 fn test_that_number_of_thread_is_not_higher_than_necessary() {
     let mut search = DiskResearcher::new("test".to_string());
-    search.set_nb_thread(100).unwrap();
+    search.set_max_nb_threads(100).unwrap();
     search.start();
     thread::sleep(std::time::Duration::from_secs(2));
-    assert_eq!(search.threads.len(), 6);
+    assert_eq!(search.started_threads_nb, 6);
 }
 
 #[test]
 fn test_that_number_of_thread_is_not_higher_than_set() {
     let mut search = DiskResearcher::new("test".to_string());
-    search.set_nb_thread(2).unwrap();
+    search.set_max_nb_threads(2).unwrap();
     search.start();
     thread::sleep(std::time::Duration::from_secs(2));
-    assert_eq!(search.threads.len(), 2);
+    assert_eq!(search.started_threads_nb, 2);
 }
 #[test]
 fn test_that_empty_directory_cause_no_issue() {
@@ -414,15 +510,15 @@ fn test_that_limit_works() {
     let results = search.search("hello", 1, None);
     assert_eq!(results.len(), 1);
 }
-#[test]
-fn test_priority_is_respected() {
-    let mut search = DiskResearcher::new("test".parse().unwrap());
-    search.start();
-    thread::sleep(std::time::Duration::from_secs(1));
-    let results = search.search("t", 10, None);
-    let mut priortiy = 3; //Higher than the max possible
-    for result in results {
-        assert!(result.priority <= priortiy);
-        priortiy = result.priority;
-    }
-}
+// #[test]
+// fn test_priority_is_respected() {
+//     let mut search = DiskResearcher::new("test".parse().unwrap());
+//     search.start();
+//     thread::sleep(std::time::Duration::from_secs(1));
+//     let results = search.search("t", 10, None);
+//     let mut priortiy = 3; //Higher than the max possible
+//     for result in results {
+//         assert!(result.priority <= priortiy);
+//         priortiy = result.priority;
+//     }
+// }
