@@ -5,33 +5,26 @@
   supplement: none,
 ) // disable prefix in captions
 
-#set page(
-  margin: 30pt,
-  numbering: "1",
-  footer: align(
-    center, 
-    context(counter(page).display())
-  )
-)
+#set page(margin: 30pt, numbering: "1", footer: align(center, context (
+  counter(page).display()
+)))
 
 #align(center)[
-#text(size: 20pt)[= Optimisation de DME]
-#image("imgs/logo.svg", height: 4em)
+  #text(size: 20pt)[= Optimisation de DME]
+  #image("imgs/logo.svg", height: 4em)
   = HPC - Projet final
   2025-06-10
 
-  Aubry Mangold and Samuel Roland
+  Aubry Mangold et Samuel Roland
 ]
 
 #pagebreak()
 
-#outline(
- title: "Table of Contents",
-)
+#outline(title: "Table of Contents")
 
 == Introduction
 
-DME (Delightful Markdown Preview) a pour but de faciliter l'expérience autour de l'édition du Markdown, notamment sur la colorisation des snippets de code et la recherche de fichiers Markdown sur le disque pour faciliter switcher de fichiers directement depuis l'interface. Le preview se fait en convertissant le Markdown en un output HTML + CSS (pour le thème).
+DME (Delightful Markdown Preview) a pour but de faciliter l'expérience autour de l'édition du Markdown, notamment pour la colorisation des snippets de code et la recherche de fichiers Markdown sur le disque pour faciliter switcher de fichiers directement depuis l'interface. Le preview se fait en convertissant le Markdown en un output HTML et CSS (pour le thème).
 
 DME se découpe en une librairie `dme-core` dans le sous dossier `app/core` qui stocke toute la logique coeur de l'application. Nous allons nous concentrer uniquement sur cette partie pour ce projet d'optimisation. Cette librairie est ensuite utilisée par une application de bureau (avec le framework Tauri) pour bénéficier des fonctionnalités depuis une interface graphique. Tauri nous permet de faire des applications web dans des applications desktop en mettant ensemble VueJS (framework frontend) et Rust en backend.
 
@@ -64,12 +57,19 @@ Un système de recherche permet ensuite de chercher un fichier Markdown sur son 
 // TODO: description de la topo des systèmes de tests
 // TODO: description de la stratégie de benchmarking (mentionner essais ratés)
 
-== Tests de stabilité
-Pour éviter les regresssions et s'assurer de la stabilité une fois le code refactorisé, nous avons créé en plus des tests unitaires existants, une suite de tests d'intégration qui nous permettent de vérifier le comportement général du preview et de la recherche.
+== Rust
+
+Le language de programmation Rust est notablement différent du C à cause de son modèle mémoire. Il était par conséquent difficile de rapporter les concepts de bas niveau vus en cours à l'optimisation de DME. Nous avons donc dû nous adapter à la fois au modèle mémoire de Rust, mais aussi à la crate `tree-sitter` et aux autres librairies adjacentes utilisées par le programme. Les différents types proposés par les librairies sont parfois très différents de ce que l'on voit en C.
+
+De manière générale, l'optimisation de DME s'est focalisée sur des concepts de plus haut niveau tels que la refactorisation de l'utilisation des objets au travers du programme ou encore la réorganisation du code pour éviter des appels inutiles.
+
+== Tests
+
+Pour éviter les regressions et s'assurer de la stabilité une fois le code refactorisé, nous avons créé en plus des tests unitaires existants, une suite de tests d'intégration qui nous permettent de vérifier le comportement général du preview et de la recherche.
 
 Nous avons développés ça dans `app/core/tests`, ils peuvent être lancés spécifiquement depuis ce dossier avec `cargo test`, une fois les tests unitaires passés ils se lancent. Voir `tests/large_preview.rs` et `tests/large_search.rs` si utile.
 
-Voici un exemple de test qui fait TODO
+L'exemple suivant montre un test d'intégration qui vérifie que le preview d'un fichier Markdown avec des snippets de code fonctionne correctement. Il utilise la librairie `comrak` pour parser le Markdown et `tree-sitter` pour coloriser les snippets de code.
 
 ```rust
 #[test]
@@ -91,7 +91,7 @@ fn test_large_search_on_mdn_content_can_find_a_single_heading() {
 }
 ```
 
-== Système de benchmark
+== Benchmarking
 
 Comme à chaque laboratoire de HPC, nous avons commencé par développé un moyen de rapidement lancer des benchmarks de manière répétée et idéalement d'exporter les résultats.
 
@@ -109,7 +109,7 @@ En rajoutant cette section au `Cargo.toml` de `bench`.
 debug = true
 ```
 
-Pour lister nos benchmark il suffit de lancer le programme `bench` normalement.
+Pour lister les benchmark il suffit de lancer le programme `bench` normalement.
 
 // TODO: complete list of benchmark there with latest names and desc
 
@@ -124,28 +124,30 @@ Listing available benchmarks
 To execute a benchmark run: cargo run --release -- bench <id>
 ```
 
-
-Nous avons choisi de définir les paramètres de mon benchmark comme suit.
+Nous avons choisi de définir les paramètres de benchmark comme suit :
 - Benchmark du preview via la fonction `markdown_to_highlighted_html(path: &str) -> Result<Html, String>`
-  - `preview_code`: en utilisant une fonction utilitaire `generate_large_markdown_with_codes(30, 15);` nous pouvons définir un maximum de 30 code par language et un maximum de 15 languages. Ce ne sont que des limites maximum mais dans tous les cas le fichiers est bien grand. Le fichier généré dans `target/large-30.md` contient ainsi *117* morceaux de code dans 8 languages: `c go haskell java javascript lua rust scala`. Nous n'avons pas réussi à installer toutes les grammairs des languages proposés ou certaines n'ont pas de snippet disponible dans le repository utilisés.
-  - `preview_md`: nous avons choisi un grand fichier `files/en-us/mdn/writing_guidelines/writing_style_guide/index.md` sans aucun morceau de code. Comme la génération du HTML par Comrak est très rapide, nous avons fait un dupliqué de 30 fois son contenu et mis son résultat dans `target/big_markdown.md` ce qui fait 1.8M.
+- `preview_code`: en utilisant une fonction utilitaire `generate_large_markdown_with_codes(30, 15);` nous pouvons définir un maximum de 30 code par language et un maximum de 15 languages. Ce ne sont que des limites maximum mais dans tous les cas le fichiers est bien grand. Le fichier généré dans `target/large-30.md` contient ainsi *117* morceaux de code dans 8 languages: `c go haskell java javascript lua rust scala`. Nous n'avons pas réussi à installer toutes les grammairs des languages proposés ou certaines n'ont pas de snippet disponible dans le repository utilisés.
+- `preview_md`: nous avons choisi un grand fichier `files/en-us/mdn/writing_guidelines/writing_style_guide/index.md` sans aucun morceau de code. Comme la génération du HTML par Comrak est très rapide, nous avons fait un dupliqué de 30 fois son contenu et mis son résultat dans `target/big_markdown.md` ce qui fait 1.8M de lignes.
 
-== Baseline
+=== Alternatives non retenues
 
+La crate `criterion.rs` est un système de benchmark qui permet de faire des mesures plus précises que les systèmes tels que `hyperfine`. Elle permet de benchmarker des fonctions Rust de manière fine et de faire des comparaisons entre les versions. Nous avons essayé de l'utiliser mais nous ne l'avons pas retenue car les benchmarks prenaient trop de temps pour être réalisés.
 
-La PR est là
-https://github.com/samuelroland/dme/pull/10
+== Pull request
+
+La pull request est disponible sur https://github.com/samuelroland/dme/pull/10
 
 // todo compléter la pr description
 
 == Optimisation de la colorisation syntaxique
-=== Comment ça fonctionne actuellement ?
+
+=== Fonctionnement de Tree-Sitter
 
 Tree-Sitter est une technologie de loin simple à appréhender, de nombreux d'éléments le composent. Si besoin d'avoir une vue générale du fonctionnement des étapes, voir le documents #link("https://github.com/samuelroland/dme/blob/main/app/core/docs.md#preview")[docs.md] section Preview sur le repository.
 
-En très résumé, nous avons des grammaires qui définissent comment tokeniser un language. Ces grammaires sont publiés sur des repository Git tel que #link("https://github.com/tree-sitter/tree-sitter-css")[celui pour le css `tree-sitter-css`].
+En résumé, nous avons des grammaires qui définissent comment tokeniser un language. Ces grammaires sont publiés sur des repository Git tel que #link("https://github.com/tree-sitter/tree-sitter-css")[celui pour le css `tree-sitter-css`].
 
-Elle contiennent un parseur généré en C (depuis la définition javascript ou JSON)
+Elle contiennent un parseur généré en C (depuis la définition JavaScript ou JSON)
 ```
 src> tree
 ├── grammar.json
@@ -158,15 +160,18 @@ src> tree
     └── parser.h
 ```
 
-On peut ensuite demander de le compiler en librairie partagée qui va être dynamiquement chargée au runtime au moment où on a besoin de coloriser un code d'un langage donné.
+Il est ensuite possible de demander de le compiler en librairie partagée qui va être dynamiquement chargée au runtime au moment où on a besoin de coloriser un code d'un langage donné.
 
 Voici les étapes par lesquels nous devons passer pour coloriser via la crate `tree-sitter` et `tree-sitter-highlight`, une fois une grammaire clonée et compilée.
 - Créer un `Loader` qui définit le chemin final des librairies partagées
-- TODO continue
+- Charger la grammaire désirée
+- Créer un objet `HighlightConfiguration` à partir de la grammaire
+- Construire un `TreeSitterHighlighter` qui encapsule la configuration et peut être utilisé par le renderer. Ce dernier passe ensuite pas un CST (Concrete Syntax Tree) pour coloriser les tokens et les transformer en HTML.
 
-=== Version 1, analyse du code de départ
+=== V1: programme initial et problème de performance
 
-Nous avons pu utiliser perf, en lancant notre fonction via notre système de benchmark, l'overhead pour arriver sur la fonction est très petit comme on y va directement le code de préparation est fait séparement.
+Nous avons utilisé perf, en lancant notre fonction via notre système de benchmark.
+
 ```sh
 cd app/core/bench
 cargo build --release
@@ -174,7 +179,8 @@ sudo perf record --call-graph dwarf -e cpu-cycles target/release/bench fn previe
 hotspot perf.data
 ```
 
-On voit clairement que tout le temps est passé dans l'initialisation de la `HighlightConfig`, cette partie qui va charger les fichiers de query (de requête sur l'arbre de tokens) qui permettent ensuite d'attribuer les noms de surlignage.
+On observe qu'énormément de temps est passé dans l'initialisation de la `HighlightConfig`, partie qui va charger les fichiers de query (de requête sur l'arbre de tokens) qui permettent ensuite d'attribuer la bonne colorisation.
+
 #figure(
   image("imgs/flamegraph-v1.png", width: 80%),
   caption: [Flameshot de la V1],
@@ -184,9 +190,10 @@ On reconnait les noms de nos fonctions soulignés, le départ `markdown_to_highl
 
 // todo inclure exemple de query de ma docs un des readme du repos, chaque query c'est une ligne
 
-Nous n'allons pas chercher à optimiser ce parsing de query étant dans une librairie séparée écrite en C. Mais nous pouvons essayer d'éviter un maximum de recréer ces `HighlightConfig` pour rien, c'est à dire d'éviter de créer des `TreeSitterHighlighter` qui en stocke.
+Nous n'allons pas chercher à optimiser ce parsing de query étant puisqu'il fait partie d'une librairie séparée écrite en C. Nous allons cependant essayer d'éviter de recréer ces `HighlightConfig` a chaque invocation.
 
-Cette situation n'est pas surprenante comme dans notre usage du parseur Markdown (la librairie `comrak`), nous définissons un morceau de code qui sera lancé pour transformer chaque code snippet rencontré dans sa forme HTML à l'aise de `TreeSitterHighlighter`. A chaque snippet, on recrée cette configuration comme on le voit dans le snippet suivant.
+Cette situation n'est pas surprenante comme dans notre usage du parseur Markdown (la librairie `comrak`), nous définissons un morceau de code qui sera lancé pour transformer chaque code snippet rencontré dans sa forme HTML à l'aise de `TreeSitterHighlighter`. A chaque nouveau snippet, la configuration est recrée.
+
 ```rust
 impl SyntaxHighlighterAdapter for ComrakParser {
     fn write_highlighted(
@@ -206,7 +213,8 @@ impl SyntaxHighlighterAdapter for ComrakParser {
     }
 ```
 
-Comme mentionné, notre `TreeSitterHighlighter` contient cette configuration `HighlightConfiguration` qu'il crée dans son constructeur `new()`.
+Comme mentionné, notre `TreeSitterHighlighter` contient la `HighlightConfiguration` qu'il crée dans son constructeur `new()`.
+
 ```rust
 pub struct TreeSitterHighlighter<'a> {
     lang: &'a str,
@@ -220,19 +228,19 @@ Résultat du benchmark
 - `preview_code`: 5.1575s
 - `preview_md`: 0.0459s
 
-todo temps 2 sert surtout à s'assurer quil y ait pas de regression de perf plus qua optimiser.
+// TODO: temps 2 sert surtout à s'assurer quil y ait pas de regression de perf plus qua optimiser.
 
 // TODO: en faire un CSV avec les résutats si ca fait sens ? maybe pas en fait
 
-=== V2, mise en cache des grammaires une fois chargée
+=== V2: mise en cache des grammaires
 
-On souhaite donc créer un cache global des `TreeSitterHighlighter`, indexé par la langue. Dans notre fichier `large-30.md`, cela implique de créer cette objet seulement 8 fois (1 fois par language) au lieu de 117 (une fois par code snippet).
+On souhaite donc créer un cache global des `TreeSitterHighlighter`, indexé par la langue. Dans notre fichier `large-30.md`, cela implique de créer cet objet seulement 8 fois (1 fois par language) au lieu de 117 (une fois par code snippet). Cette optimisation permettrait donc de réduire considérablement les appels aux fonctions liées à Tree-Sitter et, par conséquent, d'améliorer la vitesse d'exécution du programme.
 
-Nous avons *énormement* galéré et perdu du temps autour de la gestion de durées de vies des variables en Rust, et des manipulations autour de la librairie `tree-sitter`, qui dépassait largement nos habitudes. Nous avons pu refactoriser le module `TreeSitterHighlighter` pour ne plus dépendre sur une référence à une `HighlightConfig`, ce qui a permis en cascade de retirer le besoin d'avoir un `Loader` venant de l'extérieur pour "vivre assez longtemps". Cela nous a permis de simplifier ensuite `ComrakParser` puisque nous n'avions plus cette référence mutable sur un `Loader`. Nous avons pu ainsi mettre en place notre cache.
+Enormément de difficultés on été rencontrées lors de la gestion de durées de vies des variables en Rust et des manipulations autour de la librairie `tree-sitter`. Nous avons du commencer par préparer le code en refactorisant le module `TreeSitterHighlighter` pour ne plus dépendre sur une référence à une `HighlightConfig`, ce qui a permis en cascade de retirer le besoin d'avoir un objet `Loader` passé de l'extérieur du module. Cela nous a permis de simplifier ensuite `ComrakParser` puisque nous n'avions plus cette référence mutable sur un `Loader`. Nous avons pu ainsi mettre en place notre cache.
 
-Dans le fichier `app/core/src/preview/comrak.rs`, nous avons une hashmap qui est protégée par un `RwLock` (système de lecteurs/rédacteurs vu en PCO) permettant d'avoir des lectures concurrentes mais qu'un seul rédacteur à la fois et exclusif par rapport aux lecteurs. L'intérêt par rapport au Mutex c'est que la plupart du temps sera dépendés à faire des lectures, seul le premier usage d'un language demandera une écriture. Le wrapper `Lazy` est simplement un moyen d'avoir une instance globale qui est générée à la première utilisation.
+Dans le fichier `app/core/src/preview/comrak.rs`, une hashmap protégée par un `RwLock` (système de lecteurs/rédacteurs vu en PCO) est utilisée pour permettre d'avoir des lectures concurrentes mais qu'un seul rédacteur à la fois et exclusif par rapport aux lecteurs. L'intérêt de cette technique par rapport au Mutex plus classique est que la plupart du temps sera dépensé pour faire des lectures, et que seul le premier usage d'un language demandera une écriture. Le wrapper `Lazy` est simplement un moyen d'avoir une instance globale qui est générée à la première utilisation.
 
-Note: le code n'a pas pu être parallélisé mais l'usage de `RwLock` était déjà mis en place en prévision de la suite.
+*Note*: le code n'a pas pu être parallélisé, mais l'usage de `RwLock` dès le départ est une bonne pratique pour permettre une parallélisation future sans devoir refactorer.
 
 ```rust
 // Global TreeSitterHighlighter cache indexed by language
@@ -240,7 +248,8 @@ static TSH_CACHE: Lazy<RwLock<HashMap<String, TreeSitterHighlighter>>> =
     Lazy::new(|| RwLock::new(HashMap::new()));
 ```
 
-Voici un aperçu simplifié de l'implémentation de l'usage de ce cache, plus bas dans `comrak.rs`
+Le snippet suivant montre un aperçu simplifié de l'utilisation de ce cache :
+
 ```rust
 impl SyntaxHighlighterAdapter for ComrakParser {
     fn write_highlighted(
@@ -250,7 +259,7 @@ impl SyntaxHighlighterAdapter for ComrakParser {
         code: &str,
     ) -> io::Result<()> {
         // Shortened: skip when no lang
-    
+
   // Open the cache in write
             let mut cache = TSH_CACHE.write().unwrap();
             let highlighter = cache.get_mut(&owned_lang);
@@ -282,9 +291,9 @@ Résultat du benchmark
 - `preview_code`: 0.3144s
 - `preview_md`:  0.0466s
 
-Benchmark 1: target/release/bench fn preview_code target/large-30.md
-  Time (mean ± σ):     314.4 ms ±   4.9 ms    [User: 298.2 ms, System: 14.2 ms]
-  Range (min … max):   309.2 ms … 329.0 ms    20 runs
+// Benchmark 1: target/release/bench fn preview_code target/large-30.md
+// Time (mean ± σ):     314.4 ms ±   4.9 ms    [User: 298.2 ms, System: 14.2 ms]
+// Range (min … max):   309.2 ms … 329.0 ms    20 runs
 
 Nous parlions précédemment du fait que nous voulions avoir principalement des lectures, hors ayant codé un peu rapidement basé sur des exemples, nous avons toujours lockés le `RwLock` en mode `.write()` ce qui empechera une vrai parrallélisation des lectures. Nous avons pu corriger en accédant à ce mode seulement pour y aller sauver un nouvel objet `TreeSitterHighlighter`. A noter que `TSH_CACHE.write()` se trouve après la création de l'objet et qu'on drop directement le guard pour relacher l'exclusion mutuelle, dans le but de passer le moins de temps possible en section critique.
 
@@ -295,7 +304,7 @@ Nous parlions précédemment du fait que nous voulions avoir principalement des 
 -            let highlighter = cache.get_mut(&owned_lang);
 +            let cache = TSH_CACHE.read().unwrap();
 +            let highlighter = cache.get(&owned_lang);
- 
+
              match highlighter {
                  // We have a highlighter in cache, juse use it
 @@ -96,6 +96,8 @@ impl SyntaxHighlighterAdapter for ComrakParser {
@@ -311,28 +320,29 @@ Nous parlions précédemment du fait que nous voulions avoir principalement des 
 
 Les benchmark ne changent quasiment pas ce qui est normal puisque nous ne sommes pas encore en multithreadé.
 Running all benches
-Running bench preview_code
-Benchmark 1: target/release/bench fn preview_code target/large-30.md
-  Time (mean ± σ):     311.2 ms ±   6.4 ms    [User: 296.4 ms, System: 13.4 ms]
-  Range (min … max):   306.5 ms … 335.3 ms    20 runs
+// Running bench preview_code
+// Benchmark 1: target/release/bench fn preview_code target/large-30.md
+// Time (mean ± σ):     311.2 ms ±   6.4 ms    [User: 296.4 ms, System: 13.4 ms]
+// Range (min … max):   306.5 ms … 335.3 ms    20 runs
 
 Résultat du benchmark
 - `preview_code`: 0.3112s
 - `preview_md`: 0.0464s
 
 == Optimisation de la recherche
+
 Nous avions prévu d'optimiser la recherche mais le projet de PLM n'avait pas encore pu aller assez pour supporter une recherche stable et avec support de fuzzy matching et de tests solides (ce qui est difficile avec du fuzzy matching qui donne des résultats plus larges).
 
-Nous avons quand même pu établir la mesure suivante qui nous permet de voir que la construction de l'index et la recherche de "abstraction" dans le repos de MDN, est déjà plutôt rapide. 
+Nous avons quand même pu établir la mesure suivante qui nous permet de voir que la construction de l'index et la recherche de "abstraction" dans le repos de MDN, est déjà plutôt rapide.
 
 > cargo run --release -- bench general_keyword
-   Compiling bench v0.1.0 (/home/sam/HEIG/year3/PLM/dme/app/core/bench)
-    Finished `release` profile [optimized + debuginfo] target(s) in 0.78s
-     Running `target/release/bench bench general_keyword`
+Compiling bench v0.1.0 (/home/sam/HEIG/year3/PLM/dme/app/core/bench)
+Finished `release` profile [optimized + debuginfo] target(s) in 0.78s
+Running `target/release/bench bench general_keyword`
 Running bench general_keyword
 Benchmark 1: target/release/bench fn general_keyword target/content
-  Time (mean ± σ):     159.5 ms ±  10.3 ms    [User: 164.0 ms, System: 184.3 ms]
-  Range (min … max):   144.6 ms … 189.9 ms    40 runs
+Time (mean ± σ):     159.5 ms ±  10.3 ms    [User: 164.0 ms, System: 184.3 ms]
+Range (min … max):   144.6 ms … 189.9 ms    40 runs
 
 Si on ne lance que l'indexation et pas la recherche on obtient `125.5 ms` ce qui montre que la recherche en elle-même n'est pas gourmande même avec le fuzzy matching mis en place.
 
@@ -439,20 +449,20 @@ GitRepos::from_clone( git_repo_https_url, &self.final_grammars_folder, None, fal
 ```
 
 Benchmark 1: target/release/bench fn grammar_install https://github.com/tree-sitter/tree-sitter-rust
-  Time (abs ≡):        11.483 s               [User: 4.585 s, System: 0.512 s]
- 
+Time (abs ≡):        11.483 s               [User: 4.585 s, System: 0.512 s]
+
 Mean: 11.4832
 
 Et après optimisation ??
 > cargo run --release -- bench grammar_install
-   Compiling dme-core v0.1.0 (/home/sam/HEIG/year3/PLM/dme/app/core)
-   Compiling bench v0.1.0 (/home/sam/HEIG/year3/PLM/dme/app/core/bench)
-    Finished `release` profile [optimized + debuginfo] target(s) in 2.18s
-     Running `target/release/bench bench grammar_install`
+Compiling dme-core v0.1.0 (/home/sam/HEIG/year3/PLM/dme/app/core)
+Compiling bench v0.1.0 (/home/sam/HEIG/year3/PLM/dme/app/core/bench)
+Finished `release` profile [optimized + debuginfo] target(s) in 2.18s
+Running `target/release/bench bench grammar_install`
 Running bench grammar_install
 Benchmark 1: target/release/bench fn grammar_install https://github.com/tree-sitter/tree-sitter-rust
-  Time (abs ≡):         1.522 s               [User: 0.717 s, System: 0.091 s]
- 
+Time (abs ≡):         1.522 s               [User: 0.717 s, System: 0.091 s]
+
 Mean: 1.5225
 
 todo: commenter que forcément dépend surtout du réseau et taille de la grammaire.
@@ -460,26 +470,26 @@ todo: commenter que forcément dépend surtout du réseau et taille de la gramma
 A noter que le benchmark Rust a définie de manière assez concise dans `bench/src/grammars.rs` de la façon suivante
 
 pub fn install_grammar(args: Vec<String>) {
-    let mut manager = TreeSitterGrammarsManager::new().unwrap();
-    manager.install(&args[0]).unwrap();
+let mut manager = TreeSitterGrammarsManager::new().unwrap();
+manager.install(&args[0]).unwrap();
 }
 
 // Benches
 pub fn grammar_install_bench() {
-    // Delete possible existing Rust syntax in the global folder
-    let mut manager = TreeSitterGrammarsManager::new().unwrap();
-    manager.delete("rust").unwrap();
-    let link = "https://github.com/tree-sitter/tree-sitter-rust";
+// Delete possible existing Rust syntax in the global folder
+let mut manager = TreeSitterGrammarsManager::new().unwrap();
+manager.delete("rust").unwrap();
+let link = "https://github.com/tree-sitter/tree-sitter-rust";
 
-    run_hyperfine("grammar_install", vec![link], 1);
+run_hyperfine("grammar_install", vec![link], 1);
 }
 
 == Conclusion
 
-todo: beaucoup de temps de mise en place sur linfra, difficulté modèle mental de rust surtout si références compliquées. tree-sitter library nous a aussi ralenti.
-très dommage pour criterion.rs, le système minimaliste de benchmark nous permet de facilement définir une fonction à tester et une fonction de préparation, et de faciliter le lancement de hyperfine.
-intéressant plutot que des scripts bash ou fish dans un autre language et pas typé.
-content que perf fonctionn bien une fois debug = true dans corago toml
-content d'avoir pu mettre en place des tests dintegration
-pas optismié la recherhc comme pas dispo et déjà plutot rapide.
+L'optimisation de DME a été un projet intéressant qui a permis de se pencher sur les défis de performances liées à un autre language que le C. Le modèle mémoire de Rust aura été particulièrement difficile à appréhender, notablement à cause des références et lifetimes. De plus, il a été difficile de naviguer une grosse base de code car une bonne quantité de refactorisation était nécessaire avant de pouvoir faire des optimisations significatives.
 
+Beaucoup de temps a été investi dans la mise en place de l'infrastructure de test et de benchmarking car les scripts et outils développés au fur et à mesure du semestre ne se portaient pas immédiatement à un nouveau language. Bien que des outils natifs à Rust existent (`criterion.rs`), ces derniers ne se sont pas avérés adaptés à nos besoins. La conception d'un module de benchmark directement intégré au programme s'est révélée judicieuse car la performance du code a pu être évalué très facilement au fur et a mesure des modifications. Cette technique est une bonne alternative à l'utilisation de scripts Bash, mais est peut-être restreinte à des languages modernes tels que le Rust qui permettent d'interfacer beaucoup plus facilement avec l'OS que C. De plus,l'outil `perf`, qui fonctionne tout aussi bien avec Rust que C, a été d'une importance primordiale pour identifier les goulot d'étranglement dans le code.
+
+La recherche de fichier n'a pas pu être optimisée parce que le projet de PLM n'était pas encore assez avancé pour supporter une recherche stable et avec des tests solides. Cette fonctionnalité reste cependant une bonne piste à approfondir dans le futur.
+
+De manière générale, la transposition des techniques apprises pour le C vers le Rust a été intéressante. Bien que le cours se concentre sur le C, les languages modernes tels que le Rust gagnent en part de marché et seront donc de plus en plus utilisés pour des projets de développement dont les performances sont critiques. Ce projet a été une bonne occasion de se familiariser avec l'optimisation d'un autre language.
