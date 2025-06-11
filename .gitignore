@@ -10,3 +10,5 @@ app/core/target
 # Reference files that are wrong must not be versionned, they are saved on disk for manual comparisons
 app/core/tests/reference/*-wrong.html
 app/core/bench/target
+app/core/bench/callgrind*
+app/core/bench/perf*
