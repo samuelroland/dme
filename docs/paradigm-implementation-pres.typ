@@ -15,13 +15,17 @@
 #blank-slide[
   #align(center, [
   #image("logo/logo.svg", height: 5em)
+    ```sh cargo test```#linebreak()
     ```sh cargo build --release```
 
-  #text(weight: "bold", size: 1.2em, fill: black)[Delightful Markdown Experience]
+  #text(weight: "bold", size: 1.2em, fill: black)[Ready to enter the Delightful Markdown Experience ?]
   ])
 ]
 
-#slide(title: "Demo")[ ]
+
+#title-slide[
+  Demo !
+]
 // open from start menu
 // view progress indexation
 // open search to find hpc report by path
@@ -30,19 +34,30 @@
 // see colored snippets
 //
 
-#slide(title: "Global architecture")[ ]
+#slide(title: "Global architecture")[
+#image("schemas/architecture.png")
+]
 list of modules
 core library
 tauri in rust
 vuejs frontend
 
-#slide(title: "Search strategy")[ ]
+#slide(title: "Search strategy")[
+#grid(
+  columns: (2fr, 3fr),
+text()[
 - Split the data
 - Prepare shared ressource
 - Computation
 - Update shared ressource
+    ],
+    [
+  #image("schemas/diskresearcher.png")
+  ]
+)
+]
 
-#slide(title: "Search strategy")[ ]
+#slide(title: "Search strategy")[
 ```rust
 for chunk in all_paths.chunks(chunk_size) {
     let chunk = chunk.to_vec(); // copy chunk
@@ -58,6 +73,7 @@ for chunk in all_paths.chunks(chunk_size) {
                 }
             }
 ```
+]
 #slide(title: "Syntax highlighting")[ ]
 - Tree-Sitter vite fait
 - Grammars installation
