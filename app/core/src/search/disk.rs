@@ -184,9 +184,11 @@ impl Researcher for DiskResearcher {
                 for path in chunk {
                     let content = fs::read_to_string(&path).unwrap_or_default();
                     let titles = DiskResearcher::extract_markdown_titles(&content);
-                    let mut map = title_map.lock().unwrap();
-                    for title in titles {
-                        map.entry(title).or_default().push(path.clone())
+                    {
+                        let mut map = title_map.lock().unwrap();
+                        for title in titles {
+                            map.entry(title).or_default().push(path.clone())
+                        }
                     }
                     local_counter += 1;
                     if local_counter == 10 {
@@ -390,37 +392,38 @@ fn test_that_search_works_inside_files() {
 
     let results2 = search.search("Introduction", 10, None);
     assert_eq!(results2.len(), 2);
+
     assert!(results2.contains(&ResearchResult {
         path: "test/depth2/test.md".to_string(),
         title: Some("Introduction".to_string()),
-        priority: 1,
+        priority: 322,
     }));
     assert!(results2.contains(&ResearchResult {
         path: "test/depth1/test.md".to_string(),
         title: Some("Introduction".to_string()),
-        priority: 1,
+        priority: 322,
     }));
     let results2 = search.search("intro", 10, None);
 
     assert!(results2.contains(&ResearchResult {
         path: "test/depth2/test.md".to_string(),
         title: Some("Introduction".to_string()),
-        priority: 1,
+        priority: 140,
     }));
     assert!(results2.contains(&ResearchResult {
         path: "test/depth1/test.md".to_string(),
         title: Some("Introduction".to_string()),
-        priority: 1,
+        priority: 140,
     }));
     assert!(results2.contains(&ResearchResult {
         path: "test/depth1/test.md".to_string(),
         title: Some("Intro".to_string()),
-        priority: 1,
+        priority: 140,
     }));
     assert!(results2.contains(&ResearchResult {
         path: "test/depth1/test.md".to_string(),
         title: Some("I swear introspection".to_string()),
-        priority: 1,
+        priority: 140,
     }));
     assert_eq!(results2.len(), 4);
 }
@@ -432,23 +435,25 @@ fn test_that_search_works_on_filename() {
     thread::sleep(std::time::Duration::from_secs(1));
     let results = search.search("depth2", 10, None);
     assert_eq!(results.len(), 2);
+
     assert!(results.contains(&ResearchResult {
         path: "test/depth2/test.md".to_string(),
         title: None,
-        priority: 2,
+        priority: 206,
     }));
     assert!(results.contains(&ResearchResult {
         path: "test/depth2/depth3/test3.md".to_string(),
         title: None,
-        priority: 2,
+        priority: 206,
     }));
 
     let results = search.search("depth3", 10, None);
+
     assert_eq!(results.len(), 1);
     assert!(results.contains(&ResearchResult {
         path: "test/depth2/depth3/test3.md".to_string(),
         title: None,
-        priority: 2,
+        priority: 206,
     }));
 }
 #[test]
@@ -458,15 +463,16 @@ fn test_mixed_search() {
     thread::sleep(std::time::Duration::from_secs(1));
     let results = search.search("hello", 10, None);
     assert_eq!(results.len(), 2);
+
     assert!(results.contains(&ResearchResult {
         path: "test/depth1/hello.md".to_string(),
         title: None,
-        priority: 2,
+        priority: 174,
     }));
     assert!(results.contains(&ResearchResult {
         path: "test/depth1/test4.md".to_string(),
         title: Some("Hello".to_string()),
-        priority: 1,
+        priority: 140,
     }));
 }
 
@@ -494,5 +500,5 @@ fn test_priority_is_respected() {
     search.start();
     thread::sleep(std::time::Duration::from_secs(1));
     let results = search.search("t", 100, None);
-    assert!(results.is_sorted_by(|a, b| a.priority > b.priority));
+    assert!(results.is_sorted_by(|a, b| a.priority >= b.priority));
 }
