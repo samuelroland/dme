@@ -1,5 +1,7 @@
 // This is our benchmark, driven by a hyperfine wrapper
 use chrono::Local;
+use grammars::{grammar_install_bench, install_grammar};
+use search::{general_keyword_search, run_search};
 use std::{
     collections::HashMap,
     fmt::format,
@@ -7,7 +9,9 @@ use std::{
     path::PathBuf,
     process::Command,
 };
+mod grammars;
 mod preview;
+mod search;
 mod util;
 
 use colored::Colorize;
@@ -90,6 +94,22 @@ pub static BENCHES: Lazy<HashMap<&'static str, Bench>> = Lazy::new(|| {
                 desc: "Different code snippets numbers in various languages",
                 tested: run_preview as fn(Vec<String>),
                 bench: preview_code_benchmark as fn(),
+            },
+        ),
+        (
+            "grammar_install",
+            Bench {
+                desc: "Basic Rust grammar install",
+                tested: install_grammar as fn(Vec<String>),
+                bench: grammar_install_bench,
+            },
+        ),
+        (
+            "general_keyword",
+            Bench {
+                desc: "Build of index + search of the keyword 'abstraction' inside the MDN content",
+                tested: run_search as fn(Vec<String>),
+                bench: general_keyword_search,
             },
         ),
     ])

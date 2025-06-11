@@ -40,5 +40,5 @@ pub fn preview_nocode_benchmark() {
 pub fn preview_code_benchmark() {
     install_all_grammars_in_local_target_folder(); // can be take 2-5 minutes the first time...
     let path = generate_large_markdown_with_codes(30, 15);
-    run_hyperfine("preview_code", vec![&path], 3);
+    run_hyperfine("preview_code", vec![&path], 20);
 }
