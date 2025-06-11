@@ -6,3 +6,6 @@ debug.md
 tools.md
 app/src-tauri/gen/android
 app/core/target
+
+# Reference files that are wrong must not be versionned, they are saved on disk for manual comparisons
+app/core/tests/reference/*-wrong.html

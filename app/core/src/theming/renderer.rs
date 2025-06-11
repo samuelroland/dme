@@ -29,7 +29,11 @@ impl<'a> Renderer<'a> {
             self.theme.background.color, CSS_SCOPE, self.theme.foreground.color
         );
 
-        for (index, style) in &self.theme.style_map {
+        // Just sort the vec in tests to allow regression tests on the output
+        // This is changing the order of iteration otherwise
+        let mut styles: Vec<(_, _)> = self.theme.style_map.iter().collect();
+        styles.sort();
+        for (index, style) in styles {
             let _ = write!(
                 css,
                 "{} .{}{{color:{};",

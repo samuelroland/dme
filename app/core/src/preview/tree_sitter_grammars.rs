@@ -23,7 +23,7 @@ pub struct TreeSitterGrammarsManager {
     final_grammars_folder: PathBuf,
 }
 
-impl<'a> TreeSitterGrammarsManager {
+impl TreeSitterGrammarsManager {
     /// Create a new manager with a loader that needs a Tree-Sitter LIBDIR
     pub fn new() -> Result<Self, String> {
         let loader = Loader::new().map_err(|e| e.to_string())?;
@@ -63,7 +63,7 @@ impl<'a> TreeSitterGrammarsManager {
     }
 
     /// Install a new grammar from a given git HTTPS URL
-    pub fn install(&mut self, git_repo_https_url: &'a str) -> Result<(), String> {
+    pub fn install(&mut self, git_repo_https_url: &str) -> Result<(), String> {
         // Only clone the repository if it is not already present
         // Note: we consider 2 repositories with the name folder name to be equivalent for now
         let repos_name =
@@ -71,7 +71,12 @@ impl<'a> TreeSitterGrammarsManager {
         let repos =
             match GitRepos::from_existing_folder(&self.final_grammars_folder.join(&repos_name)) {
                 Ok(repos) => repos,
-                Err(_) => GitRepos::from_clone(git_repo_https_url, &self.final_grammars_folder)?,
+                Err(_) => GitRepos::from_clone(
+                    git_repo_https_url,
+                    &self.final_grammars_folder,
+                    None,
+                    false,
+                )?,
             };
 
         self.loader.force_rebuild(true);
@@ -81,7 +86,7 @@ impl<'a> TreeSitterGrammarsManager {
     }
 
     /// Update the grammar behind the given lang and returns true if the grammar has changed
-    pub fn update(&mut self, lang: &'a str) -> Result<bool, String> {
+    pub fn update(&mut self, lang: &str) -> Result<bool, String> {
         let repos = self.get_repos_for_lang(lang)?;
         let pulled_something = repos.pull()?;
         // Only recompile if we pulled something
@@ -93,7 +98,7 @@ impl<'a> TreeSitterGrammarsManager {
 
     /// Delete the grammar behind the given lang
     /// This is consuming self to avoid reusing it after deletion
-    pub fn delete(&mut self, lang: &'a str) -> Result<(), String> {
+    pub fn delete(&mut self, lang: &str) -> Result<(), String> {
         let repos = self.get_repos_for_lang(lang)?;
         let result = std::fs::remove_dir_all(repos.path())
             .map(|_| ())

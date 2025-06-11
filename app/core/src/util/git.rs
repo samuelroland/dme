@@ -52,8 +52,27 @@ impl GitRepos {
     }
 
     /// Get a git repository after cloning it, make sure the link is valid before hand
-    pub fn from_clone(git_clone_url: &str, base_directory: &PathBuf) -> Result<Self, String> {
-        let output = Self::run_git_cmd(&vec!["clone", git_clone_url], base_directory)?;
+    /// We can define the --depth via only_latest_commits and the --single-branch argument for
+    /// faster clones when we don't need the full history or all the branches
+    pub fn from_clone(
+        git_clone_url: &str,
+        base_directory: &PathBuf,
+        only_latest_commits: Option<usize>,
+        single_branch: bool,
+    ) -> Result<Self, String> {
+        let mut args: Vec<String> = vec!["clone".to_owned(), git_clone_url.to_owned()];
+        let count_str = "";
+        if let Some(count) = only_latest_commits {
+            args.push("--depth".to_string());
+            args.push(count.to_string())
+        }
+        if single_branch {
+            args.push("--single-branch".to_owned());
+        }
+        // Note: we are forced to create a Vec<&str> afterwards because count.to_string() need to
+        // be owned first to exist long enough
+        let args_ref = args.iter().map(|e| e.as_ref()).collect();
+        let output = Self::run_git_cmd(&args_ref, base_directory)?;
         let grammar_folder_name =
             Self::validate_and_extract_repos_name_from_https_url(git_clone_url)?;
         if output.status.success() {
@@ -138,7 +157,7 @@ mod tests {
         fs::{create_dir, create_dir_all, remove_dir_all},
         path::PathBuf,
         thread::{self, sleep},
-        time::Duration,
+        time::{Duration, Instant},
     };
     // Note: I'm using a public Git repos almost empty to tests git clone and git pull operatiosn
     const REAL_GIT_REPO: &str = "https://github.com/samuelroland/cloneme.git";
@@ -157,20 +176,23 @@ mod tests {
 
     #[test]
     fn test_from_clone_with_invalid_link() {
-        assert!(GitRepos::from_clone("not a valid URL", &get_unique_tests_subfolder()).is_err());
+        assert!(GitRepos::from_clone(
+            "not a valid URL",
+            &get_unique_tests_subfolder(),
+            None,
+            false
+        )
+        .is_err());
     }
 
     #[test]
     #[ignore = "This test only work in serial mode and is slow"]
     fn test_from_clone_with_valid_link() {
         let tests_folder = &get_unique_tests_subfolder();
-        let repos = GitRepos::from_clone(REAL_GIT_REPO, tests_folder).unwrap();
+        let repos = GitRepos::from_clone(REAL_GIT_REPO, tests_folder, None, false).unwrap();
 
         assert_eq!(tests_folder.join("cloneme"), *repos.path());
         assert!(repos.path().exists());
-        // Note: accessing is_remote is failing the tests if it is run in concurrent mode with
-        // error "No such file or directory ". Adding sleep or trying to use different folders
-        // didn't fix the issue...
         assert!(repos.is_remote().unwrap());
     }
 
@@ -184,20 +206,38 @@ mod tests {
     #[ignore = "This test only work in serial mode and is slow"]
     fn test_from_existing_folder_with_git_repos_works() {
         let tests_folder = &get_unique_tests_subfolder();
-        let repos = GitRepos::from_clone(REAL_GIT_REPO, tests_folder).unwrap();
+        let repos = GitRepos::from_clone(REAL_GIT_REPO, tests_folder, None, false).unwrap();
 
         let new_repos = GitRepos::from_existing_folder(&tests_folder.join("cloneme")).unwrap();
-        // Note: accessing is_remote is failing the tests if it is run in concurrent mode with
-        // error "No such file or directory ". Adding sleep or trying to use different folders
-        // didn't fix the issue...
         assert!(new_repos.is_remote().unwrap());
+    }
+
+    #[test]
+    #[ignore = "This test only work in serial mode and is slow"]
+    fn test_clone_with_last_commit_one_branch_is_faster() {
+        let tests_folder = &get_unique_tests_subfolder();
+
+        let start = Instant::now();
+        let repos = GitRepos::from_clone(REAL_GIT_REPO, tests_folder, None, false).unwrap();
+        let duration1 = start.elapsed();
+
+        let tests_folder = &get_unique_tests_subfolder();
+
+        let start = Instant::now();
+        let repos = GitRepos::from_clone(REAL_GIT_REPO, tests_folder, Some(1), true).unwrap();
+        let duration2 = start.elapsed();
+
+        assert!(
+            duration2 < duration1,
+            "Cloning a repository should be faster with a single branch + only the last commit"
+        );
     }
 
     #[test]
     #[ignore = "This test only work in serial mode and is slow"]
     fn test_pull_works() {
         let tests_folder = &get_unique_tests_subfolder();
-        let repos = GitRepos::from_clone(REAL_GIT_REPO, tests_folder).unwrap();
+        let repos = GitRepos::from_clone(REAL_GIT_REPO, tests_folder, None, true).unwrap();
         assert!(repos.path().join("newfile").exists());
         assert!(!repos.pull().unwrap()); // nothing to pull !
                                          // Destroy latest commit with its changes to simulate a not update repos that needs to be pull

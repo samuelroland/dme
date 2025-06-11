@@ -7,6 +7,7 @@ use std::convert::From;
 use toml::value::Table;
 use toml::Value;
 
+#[derive(PartialEq, PartialOrd, Ord, Eq)]
 pub(crate) struct Style {
     pub color: String,
     pub is_bold: bool,
