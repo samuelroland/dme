@@ -9,13 +9,16 @@
   counter(page).display()
 )))
 
-#align(center)[
-  #text(size: 20pt)[= Optimisation de DME]
-  #image("imgs/logo.svg", height: 4em)
-  = HPC - Projet final
-  2025-06-10
+#align(horizon)[
+  #align(center)[
 
-  Aubry Mangold et Samuel Roland
+    #text(size: 20pt)[= Optimisation de DME]
+    #image("imgs/logo.svg", height: 4em)
+    = HPC - Projet final
+    2025-06-10
+
+    Aubry Mangold et Samuel Roland
+  ]
 ]
 
 #pagebreak()
@@ -139,8 +142,8 @@ To execute a benchmark run: cargo run --release -- bench <id>
 
 Nous avons choisi de définir les paramètres de benchmark comme suit :
 - Benchmark du preview via la fonction `markdown_to_highlighted_html(path: &str) -> Result<Html, String>`
-    - `preview_code`: en utilisant une fonction utilitaire `generate_large_markdown_with_codes(30, 15);` nous pouvons définir un maximum de 30 code par language et un maximum de 15 languages. Ce ne sont que des limites maximum mais dans tous les cas le fichiers est bien grand. Le fichier généré dans `target/large-30.md` contient ainsi *117* morceaux de code dans 8 languages: `c go haskell java javascript lua rust scala`. Nous n'avons pas réussi à installer toutes les grammairs des languages proposés ou certaines n'ont pas de snippet disponible dans le repository utilisés.
-    - `preview_md`: nous avons choisi un grand fichier `files/en-us/mdn/writing_guidelines/writing_style_guide/index.md` sans aucun morceau de code. Comme la génération du HTML par Comrak est très rapide, nous avons fait un dupliqué de 30 fois son contenu et mis son résultat dans `target/big_markdown.md` ce qui fait 1.8M de lignes. Cette mesure sert surtout à s'assurer qu'il n'y ait pas de regression de performance, plus que pour optimiser car le code autour de son usage est très restreint.
+  - `preview_code`: en utilisant une fonction utilitaire `generate_large_markdown_with_codes(30, 15);` nous pouvons définir un maximum de 30 code par language et un maximum de 15 languages. Ce ne sont que des limites maximum mais dans tous les cas le fichiers est bien grand. Le fichier généré dans `target/large-30.md` contient ainsi *117* morceaux de code dans 8 languages: `c go haskell java javascript lua rust scala`. Nous n'avons pas réussi à installer toutes les grammairs des languages proposés ou certaines n'ont pas de snippet disponible dans le repository utilisés.
+  - `preview_md`: nous avons choisi un grand fichier `files/en-us/mdn/writing_guidelines/writing_style_guide/index.md` sans aucun morceau de code. Comme la génération du HTML par Comrak est très rapide, nous avons fait un dupliqué de 30 fois son contenu et mis son résultat dans `target/big_markdown.md` ce qui fait 1.8M de lignes. Cette mesure sert surtout à s'assurer qu'il n'y ait pas de regression de performance, plus que pour optimiser car le code autour de son usage est très restreint.
 - Benchmark du preview via la fonction `markdown_to_highlighted_html(path: &str) -> Result<Html, String>`
 - `grammar_install` : Installation de la grammaire Tree-Sitter pour Rust
 - `general_keyword` : Méthode `DiskResearcher::start()` et `DiskResearcher::search`, construction de l'index et recherche du mot clé 'abstraction' dans le repository de MDN.
@@ -355,7 +358,7 @@ Résultat du benchmark
 
 L'indexation indexe dans une hashmap en mémoire tous les documents Markdown trouvés sur le disque, ainsi que tous les titres dans ces documents. Nous avions prévu d'optimiser la recherche mais le projet de PLM n'avait pas encore pu aller assez pour supporter une recherche stable et avec support de fuzzy matching et de tests solides (ce qui est difficile avec du fuzzy matching qui donne des résultats plus larges).
 
-Nous avons quand même pu établir la mesure suivante qui nous permet de voir que la construction de l'index et la recherche de "abstraction" dans le repos de MDN, est déjà plutôt rapide. 
+Nous avons quand même pu établir la mesure suivante qui nous permet de voir que la construction de l'index et la recherche de "abstraction" dans le repos de MDN, est déjà plutôt rapide.
 
 ```
 > cargo run --release -- bench general_keyword
