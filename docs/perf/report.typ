@@ -101,9 +101,6 @@ En rajoutant cette section au `Cargo.toml` de `bench`.
 debug = true
 ```
 
-
-// TODO: complete list of benchmark there with latest names and desc
-
 Pour lister les benchmark il suffit de lancer le programme du dossier `app/core/bench` comme tout autre programme Rust mais en mode release.
 ```sh
 cd app/core/bench
@@ -120,8 +117,11 @@ To execute a benchmark run: cargo run --release -- bench <id>
 
 Nous avons choisi de définir les paramètres de benchmark comme suit :
 - Benchmark du preview via la fonction `markdown_to_highlighted_html(path: &str) -> Result<Html, String>`
-- `preview_code`: en utilisant une fonction utilitaire `generate_large_markdown_with_codes(30, 15);` nous pouvons définir un maximum de 30 code par language et un maximum de 15 languages. Ce ne sont que des limites maximum mais dans tous les cas le fichiers est bien grand. Le fichier généré dans `target/large-30.md` contient ainsi *117* morceaux de code dans 8 languages: `c go haskell java javascript lua rust scala`. Nous n'avons pas réussi à installer toutes les grammairs des languages proposés ou certaines n'ont pas de snippet disponible dans le repository utilisés.
-- `preview_md`: nous avons choisi un grand fichier `files/en-us/mdn/writing_guidelines/writing_style_guide/index.md` sans aucun morceau de code. Comme la génération du HTML par Comrak est très rapide, nous avons fait un dupliqué de 30 fois son contenu et mis son résultat dans `target/big_markdown.md` ce qui fait 1.8M de lignes.
+    - `preview_code`: en utilisant une fonction utilitaire `generate_large_markdown_with_codes(30, 15);` nous pouvons définir un maximum de 30 code par language et un maximum de 15 languages. Ce ne sont que des limites maximum mais dans tous les cas le fichiers est bien grand. Le fichier généré dans `target/large-30.md` contient ainsi *117* morceaux de code dans 8 languages: `c go haskell java javascript lua rust scala`. Nous n'avons pas réussi à installer toutes les grammairs des languages proposés ou certaines n'ont pas de snippet disponible dans le repository utilisés.
+    - `preview_md`: nous avons choisi un grand fichier `files/en-us/mdn/writing_guidelines/writing_style_guide/index.md` sans aucun morceau de code. Comme la génération du HTML par Comrak est très rapide, nous avons fait un dupliqué de 30 fois son contenu et mis son résultat dans `target/big_markdown.md` ce qui fait 1.8M de lignes. Cette mesure sert surtout à s'assurer qu'il n'y ait pas de regression de performance, plus que pour optimiser car le code autour de son usage est très restreint.
+- Benchmark du preview via la fonction `markdown_to_highlighted_html(path: &str) -> Result<Html, String>`
+- `grammar_install` : Installation de la grammaire Tree-Sitter pour Rust
+- `general_keyword` : Méthode `DiskResearcher::start()` et `DiskResearcher::search`, construction de l'index et recherche du mot clé 'abstraction' dans le repository de MDN.
 
 === Alternatives non retenues
 
@@ -145,16 +145,17 @@ pub fn preview_nocode_benchmark(c: &mut Criterion) {
 
 == Pull request
 
-La pull request de se projet est disponible sur https://github.com/samuelroland/dme/pull/10, les tests d'intégrations ne sont pas listées car ils ont déjà été mergé dans une autre PR.
-// todo compléter la pr description
+La pull request de se projet est disponible sur #link("https://github.com/samuelroland/dme/pull/10")[Performance optimisations #10 ], les tests d'intégrations ne sont pas listées dans la diff car ils ont déjà été mergé dans une autre PR. Ils sont disponibles dans le code rendu si besoin.
+
+Si nécessaire de reproduire, aller voir le #link("https://github.com/samuelroland/dme/blob/main/README.md")[README.md] du projet.
 
 == Optimisation de la colorisation syntaxique
 
 === Fonctionnement de Tree-Sitter
 
-Tree-Sitter est une technologie de loin simple à appréhender, de nombreux d'éléments le composent. Si besoin d'avoir une vue générale du fonctionnement des étapes, voir le documents #link("https://github.com/samuelroland/dme/blob/main/app/core/docs.md#preview")[docs.md] section Preview sur le repository.
+Tree-Sitter est une technologie de loin d'être simple à appréhender, de nombreux d'éléments le composent. Si besoin d'avoir une vue générale du fonctionnement des étapes, voir le documents #link("https://github.com/samuelroland/dme/blob/main/app/core/docs.md#preview")[docs.md] section Preview sur le repository.
 
-En résumé, nous avons des grammaires qui définissent comment tokeniser un language. Ces grammaires sont publiés sur des repository Git tel que #link("https://github.com/tree-sitter/tree-sitter-css")[celui pour le css `tree-sitter-css`].
+En résumé, nous avons des grammaires qui définissent comment tokeniser un language. Ces grammaires sont publiés sur des repository Git tel que #link("https://github.com/tree-sitter/tree-sitter-css")[celui pour le css `tree-sitter-css`]. On pourrait bundler toutes les grammaires utiles dans un immense binaire de 90MB, mais cela demanderait de choisir quels languages sont utiles et le poids généré est beaucoup trop élévé. Nous les installons dynamiquement quand l'utilisateur choisi lui-même lesquels installer.
 
 Elle contiennent un parseur généré en C (depuis la définition JavaScript ou JSON)
 ```
@@ -171,11 +172,11 @@ src> tree
 
 Il est ensuite possible de demander de le compiler en librairie partagée qui va être dynamiquement chargée au runtime au moment où on a besoin de coloriser un code d'un langage donné.
 
-Voici les étapes par lesquels nous devons passer pour coloriser via la crate `tree-sitter` et `tree-sitter-highlight`, une fois une grammaire clonée et compilée.
+Voici les étapes par lesquels le code existant passe pour coloriser via la crate `tree-sitter` et `tree-sitter-highlight`, une fois une grammaire clonée et compilée.
 - Créer un `Loader` qui définit le chemin final des librairies partagées
-- Charger la grammaire désirée
-- Créer un objet `HighlightConfiguration` à partir de la grammaire
-- Construire un `TreeSitterHighlighter` qui encapsule la configuration et peut être utilisé par le renderer. Ce dernier passe ensuite pas un CST (Concrete Syntax Tree) pour coloriser les tokens et les transformer en HTML.
+- Charger les informations du `Language` et de sa configuration.
+- Créer un objet `HighlightConfiguration` à partir de la grammaire qui va charger la grammaire désirée
+- Construire un `TreeSitterHighlighter` qui encapsule la configuration et peut être utilisé par le renderer. Ce dernier passe ensuite sur le CST (Concrete Syntax Tree) pour coloriser les tokens et les transformer en HTML.
 
 === V1: programme initial et problème de performance
 
@@ -197,11 +198,21 @@ On observe qu'énormément de temps est passé dans l'initialisation de la `High
 
 On reconnait les noms de nos fonctions soulignés, le départ `markdown_to_highlighted_html` jusqu'à la dernière fonction visible dans notre code `HighlightConfig::new`, qui prend la grande majeure partie du temps.
 
-// todo inclure exemple de query de ma docs un des readme du repos, chaque query c'est une ligne
+Les fichiers de query ressemblent à ça.
+
+```scm
+; Assume that uppercase names in paths are types
+((scoped_identifier
+  path: (identifier) @type)
+ (#match? @type "^[A-Z]"))
+((scoped_identifier
+  path: (scoped_identifier
+    name: (identifier) @type))
+```
 
 Nous n'allons pas chercher à optimiser ce parsing de query étant puisqu'il fait partie d'une librairie séparée écrite en C. Nous allons cependant essayer d'éviter de recréer ces `HighlightConfig` a chaque invocation.
 
-Cette situation n'est pas surprenante comme dans notre usage du parseur Markdown (la librairie `comrak`), nous définissons un morceau de code qui sera lancé pour transformer chaque code snippet rencontré dans sa forme HTML à l'aise de `TreeSitterHighlighter`. A chaque nouveau snippet, la configuration est recrée.
+Cette situation n'est pas surprenante: notre usage du parseur Markdown `comrak.rs` nous définissons un morceau de code qui sera lancé pour transformer chaque code snippet rencontré dans sa forme HTML (via l'interface implémentée `SyntaxHighlighterAdapter`). A chaque nouveau snippet, un objet `TreeSitterHighlighter` est recrée.
 
 ```rust
 impl SyntaxHighlighterAdapter for ComrakParser {
@@ -216,10 +227,10 @@ impl SyntaxHighlighterAdapter for ComrakParser {
           Loader::new().map_err(|e| std::io::Error::new(io::ErrorKind::Other, e))?;
       let highlighter =
           TreeSitterHighlighter::new(&mut loader, lang.unwrap_or_default(), &self.manager);
-      // If lang might be supported or not
       output.write_all(highlighter.highlight(code).as_string().as_bytes())
     // ...
     }
+    // ...
 ```
 
 Comme mentionné, notre `TreeSitterHighlighter` contient la `HighlightConfiguration` qu'il crée dans son constructeur `new()`.
@@ -234,12 +245,10 @@ pub struct TreeSitterHighlighter<'a> {
 // code de départ sur commit 92c94261 si besoin
 
 Résultat du benchmark
-- `preview_code`: 5.1575s
+- `preview_code`: *5.1575s*
 - `preview_md`: 0.0459s
 
-// TODO: temps 2 sert surtout à s'assurer quil y ait pas de regression de perf plus qua optimiser.
-
-// TODO: en faire un CSV avec les résutats si ca fait sens ? maybe pas en fait
+5 secondes à attendre pour un utilisateur d'un gros document, ça signifie aussi 5 secondes à attendre à chaque rechargement du document, si on l'édite ça va être assez pénible à attendre si longtemps. Dans un rapport qui contient beaucoup de snippets, peu importe leur taille, cette lenteur va commencer à se faire ressentir sérieusement.
 
 === V2: mise en cache des grammaires
 
@@ -340,7 +349,7 @@ Résultat du benchmark
 
 == Optimisation de la recherche
 
-Nous avions prévu d'optimiser la recherche mais le projet de PLM n'avait pas encore pu aller assez pour supporter une recherche stable et avec support de fuzzy matching et de tests solides (ce qui est difficile avec du fuzzy matching qui donne des résultats plus larges).
+L'indexation indexe dans une hashmap en mémoire tous les documents Markdown trouvés sur le disque, ainsi que tous les titres dans ces documents. Nous avions prévu d'optimiser la recherche mais le projet de PLM n'avait pas encore pu aller assez pour supporter une recherche stable et avec support de fuzzy matching et de tests solides (ce qui est difficile avec du fuzzy matching qui donne des résultats plus larges).
 
 Nous avons quand même pu établir la mesure suivante qui nous permet de voir que la construction de l'index et la recherche de "abstraction" dans le repos de MDN, est déjà plutôt rapide. 
 
@@ -365,6 +374,8 @@ Benchmark 1: target/release/bench fn general_keyword target/content
 ```
 
 En plus, un système de "streaming" des réponses permet d'envoyer les résultats au fur et à mesure, ce qui réduit encore le temps nécessaires avant l'apparition visuelle des premiers résultats.
+
+Cette partie d'optimisation de l'indexation commencera à être utile au moment où la recherche full texte sera intégrée puisque l'indexation sera beaucoup plus évoluée qu'actuellement.
 
 == Optimisation de l'installation d'une grammaire
 
@@ -401,7 +412,7 @@ Aperçu des poids des repository Git de qqes grammars
 4.0M	tree-sitter-yaml
 ```
 
-A première vu ça parait pas incroyable Tree-Sitter si c'est si lourd ces syntaxes... En fait, si on y regarde de plus près, ici avec celle de Rust cloné depuis `https://github.com/tree-sitter/tree-sitter-rust`, on voit que c'est le `.git` qui fait 49M la grande majorité du poids et que la librairie partagée `rust.so` ne fait que 1.1MB
+A première vu ça parait pas incroyable Tree-Sitter si c'est si lourd ces syntaxes... En fait, si on y regarde de plus près, ici avec celle de Rust cloné depuis `https://github.com/tree-sitter/tree-sitter-rust`, on voit que c'est le `.git` qui fait 49M la grande majorité du poids et que la librairie partagée `rust.so` ne fait que 1.1MB.
 
 ```
 > du -sh * .*
