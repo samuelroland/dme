@@ -5,10 +5,16 @@ use super::tree_sitter_highlight::TreeSitterHighlighter;
 use comrak::{adapters::SyntaxHighlighterAdapter, html};
 use comrak::{markdown_to_html_with_plugins, ComrakPlugins, Options};
 use once_cell::sync::Lazy;
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::io::{self, Write};
 use std::path::PathBuf;
+use std::sync::{Arc, Mutex, RwLock};
 use tree_sitter_loader::Loader;
+
+// Global TreeSitterHighlighter cache indexed by language
+static TSH_CACHE: Lazy<RwLock<HashMap<String, TreeSitterHighlighter>>> =
+    Lazy::new(|| RwLock::new(HashMap::new()));
 
 static TREE_SITTER_GRAMMARS_FOLDER_VIA_ENV: Lazy<Option<String>> =
     Lazy::new(|| std::env::var("TREE_SITTER_GRAMMARS_FOLDER").ok());
@@ -28,6 +34,7 @@ impl ComrakParser {
             None => TreeSitterGrammarsManager::new(),
         }?;
 
+        let loader = Loader::new().map_err(|e| e.to_string())?;
         Ok(ComrakParser { manager })
     }
 
@@ -37,6 +44,7 @@ impl ComrakParser {
     pub(crate) fn new_with_configurable_grammars_folder(folder: String) -> Result<Self, String> {
         let manager =
             TreeSitterGrammarsManager::new_with_grammars_folder(PathBuf::from(folder.clone()))?;
+        let loader = Loader::new().map_err(|e| e.to_string())?;
         Ok(ComrakParser { manager })
     }
 }
@@ -64,25 +72,41 @@ impl SyntaxHighlighterAdapter for ComrakParser {
     fn write_highlighted(
         &self,
         output: &mut dyn Write,
-        lang: Option<&str>,
+        maybe_lang: Option<&str>,
         code: &str,
     ) -> io::Result<()> {
-        // Do not highlight in case there is no lang or it's empty
-        if lang.is_none_or(|v| v.trim().is_empty()) {
-            output.write_all(code.as_bytes())
-        } else {
-            let mut loader =
-                Loader::new().map_err(|e| std::io::Error::new(io::ErrorKind::Other, e))?;
-            let highlighter =
-                TreeSitterHighlighter::new(&mut loader, lang.unwrap_or_default(), &self.manager);
-            // If lang might be supported or not
+        // Do not highlight in case there is no lang or code is empty
+        if maybe_lang.is_none_or(|v| v.trim().is_empty()) {
+            return output.write_all(code.as_bytes());
+        }
+
+        if let Some(lang) = maybe_lang {
+            let owned_lang = lang.to_owned();
+            let mut cache = TSH_CACHE.write().unwrap();
+            let highlighter = cache.get_mut(&owned_lang);
+
             match highlighter {
-                Ok(highlighter) => {
-                    output.write_all(highlighter.highlight(code).as_string().as_bytes())
+                // We have a highlighter in cache, juse use it
+                Some(h_cached) => {
+                    output.write_all(h_cached.highlight(code).as_string().as_bytes())?;
                 }
-                Err(_) => output.write_all(code.as_bytes()),
+                None => {
+                    // Otherwise create a new one, use it and save it in CACHE
+                    let new_h = TreeSitterHighlighter::new(&owned_lang, &self.manager);
+                    match new_h {
+                        Ok(valid_new_h) => {
+                            output.write_all(valid_new_h.highlight(code).as_string().as_bytes())?;
+                            cache.insert(owned_lang, valid_new_h);
+                            drop(cache);
+                        }
+                        Err(_) => {
+                            output.write_all(code.as_bytes())?;
+                        }
+                    }
+                }
             }
         }
+        Ok(())
     }
 
     // Just use <pre> and <code> tags as usual, without anything special
