@@ -82,8 +82,8 @@ impl SyntaxHighlighterAdapter for ComrakParser {
 
         if let Some(lang) = maybe_lang {
             let owned_lang = lang.to_owned();
-            let mut cache = TSH_CACHE.write().unwrap();
-            let highlighter = cache.get_mut(&owned_lang);
+            let cache = TSH_CACHE.read().unwrap();
+            let highlighter = cache.get(&owned_lang);
 
             match highlighter {
                 // We have a highlighter in cache, juse use it
@@ -96,6 +96,8 @@ impl SyntaxHighlighterAdapter for ComrakParser {
                     match new_h {
                         Ok(valid_new_h) => {
                             output.write_all(valid_new_h.highlight(code).as_string().as_bytes())?;
+                            drop(cache);
+                            let mut cache = TSH_CACHE.write().unwrap();
                             cache.insert(owned_lang, valid_new_h);
                             drop(cache);
                         }
