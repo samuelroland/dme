@@ -18,13 +18,12 @@ const MDN_GIT_REPOSITORY: &str = "https://github.com/mdn/content";
 /// with over 13700 Markdown files (as of 2025-06-10)
 pub fn clone_mdn_content() -> PathBuf {
     let path = PathBuf::from("target");
-    let final_path = PathBuf::from("target/content");
-    if !final_path.exists() {
-        println!("reinstall ");
+    let repos_path = path.join("content");
+    if !repos_path.exists() {
         GitRepos::from_clone(MDN_GIT_REPOSITORY, &path, Some(1), true).unwrap();
     }
     println!("done ");
-    final_path
+    repos_path
 }
 
 const SUBFOLDER: &str = "target/all-grammars";
