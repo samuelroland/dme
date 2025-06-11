@@ -5,6 +5,8 @@ use pretty_assertions::{assert_eq, assert_ne};
 use std::fs::{read_to_string, write};
 use std::path::{Path, PathBuf};
 use std::sync::mpsc;
+use std::thread::sleep;
+use std::time::Duration;
 
 use dme_core::markdown_to_highlighted_html;
 use dme_core::util::setup::{clone_mdn_content, generate_large_markdown_with_codes};
@@ -12,17 +14,23 @@ use dme_core::*;
 use regex::Replacer;
 mod common;
 
+fn wait_on_indexing(disk_search: &DiskResearcher) {
+    while !disk_search.progress().is_done() {
+        sleep(Duration::from_millis(100));
+    }
+}
+
 #[test]
 fn test_large_search_on_mdn_content_can_find_multiple_match_for_generic_keyword() {
     let repos = clone_mdn_content();
     let mut disk_search = DiskResearcher::new(repos.to_str().unwrap().to_string());
 
     disk_search.start();
+    wait_on_indexing(&disk_search);
     let search = "abstraction";
     let results = disk_search.search(search, 50, None);
     let stats = disk_search.stats();
     dbg!(&stats);
-    // disk_search.print_index_stats();
     assert!(stats.markdown_paths_count > 13740); // as of 2025-06-10
     assert!(stats.headings_count > 17100); // number of UNIQUE headings as of 2025-06-10
     dbg!(&results);
@@ -65,6 +73,7 @@ fn test_large_search_on_mdn_content_can_find_a_single_heading() {
     let repos = clone_mdn_content();
     let mut disk_search = DiskResearcher::new(repos.to_str().unwrap().to_string());
     disk_search.start();
+    wait_on_indexing(&disk_search);
     let search = "Array constructor with a single parameter";
     let results = disk_search.search(search, 20, None);
     assert_eq!(
@@ -83,6 +92,7 @@ fn test_large_search_on_mdn_content_can_find_a_several_headings() {
     let repos = clone_mdn_content();
     let mut disk_search = DiskResearcher::new(repos.to_str().unwrap().to_string());
     disk_search.start();
+    wait_on_indexing(&disk_search);
     let search = "Array constructor with"; // should match 2 headings
     let mut results = disk_search.search(search, 20, None);
 
@@ -108,6 +118,7 @@ fn test_large_search_on_mdn_content_is_fuzzy_ordered_matching() {
     let repos = clone_mdn_content();
     let mut disk_search = DiskResearcher::new(repos.to_str().unwrap().to_string());
     disk_search.start();
+    wait_on_indexing(&disk_search);
     let patterns = vec![
         "arra c single",
         "Array constructor single",
@@ -131,6 +142,7 @@ fn test_large_search_on_mdn_content_is_fuzzy_on_paths() {
     let repos = clone_mdn_content();
     let mut disk_search = DiskResearcher::new(repos.to_str().unwrap().to_string());
     disk_search.start();
+    wait_on_indexing(&disk_search);
     let pattern = ["web js objects json index md"];
     // nothing match that in headings (checked via fzf)
     let results = disk_search.search(pattern[0], 20, None);

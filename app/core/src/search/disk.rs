@@ -52,12 +52,16 @@ impl OrderedResults {
     }
 
     /// First `limit` results from internal partial ordered list of results
-    pub fn results(&self, limit: usize) -> Vec<ResearchResult> {
+    /// Returns less results in case there are not relevant enough
+    pub fn results(&self, max_limit: usize) -> Vec<ResearchResult> {
         let mut heap = self.results.clone();
-        let results: Vec<ResearchResult> = (0..limit * 2).filter_map(|_| heap.pop()).collect();
+        let results: Vec<ResearchResult> = (0..max_limit).filter_map(|_| heap.pop()).collect();
         let max = results.iter().max_by(|a, b| a.priority.cmp(&b.priority));
 
-        // Only the take the last 1/4 of the highest priority results to avoid having the 2 first values of this example: 126 234 523 663
+        // Filter results to only take the upper quarter of best matches. This quarter is defined
+        // between max_priority - max_priority/4, and max_priority.
+        // Considering list of matches priorities: 126 234 523 663, we only want the last 2 because
+        // the first 2 values are too far away from the maximum and probably not relevant results
         if let Some(res) = max {
             let m = res.priority;
             let imposed_min = m - (((m as f32) / 4.) as u32);
@@ -81,7 +85,6 @@ pub struct DiskResearcher {
     title_map: Arc<Mutex<HashMap<String, Vec<String>>>>,
     base_path: PathBuf,
     max_nb_threads: usize,
-    started_threads_nb: usize,
     has_started: bool,
     progress_counter: Arc<Mutex<usize>>,
 }
@@ -93,7 +96,6 @@ impl DiskResearcher {
             title_map: Arc::new(Mutex::new(HashMap::new())),
             base_path: PathBuf::from(path),
             max_nb_threads: num_cpus::get(),
-            started_threads_nb: 0,
             has_started: false,
             progress_counter: Arc::new(Mutex::new(0)),
         }
@@ -201,12 +203,7 @@ impl Researcher for DiskResearcher {
                     *global_counter += local_counter;
                 }
             });
-            self.started_threads_nb += 1;
             threads.push(handle);
-        }
-
-        for thread in threads {
-            thread.join().unwrap();
         }
     }
     /// Ask about the progress, from 0 to 100 percent of research
@@ -222,7 +219,7 @@ impl Researcher for DiskResearcher {
 
     /// The actual research of a raw string returning some matches
     fn search(
-        &mut self,
+        &self,
         raw: &str,
         limit: u8,
         sender: Option<Sender<ResearchResult>>,
@@ -271,7 +268,6 @@ impl Researcher for DiskResearcher {
                 }
             });
 
-            self.started_threads_nb += 1;
             threads.push(handle);
         }
 
@@ -477,23 +473,6 @@ fn test_mixed_search() {
 }
 
 #[test]
-fn test_that_number_of_thread_is_not_higher_than_necessary() {
-    let mut search = DiskResearcher::new("test".to_string());
-    search.set_max_nb_threads(100).unwrap();
-    search.start();
-    thread::sleep(std::time::Duration::from_secs(2));
-    assert_eq!(search.started_threads_nb, 6);
-}
-
-#[test]
-fn test_that_number_of_thread_is_not_higher_than_set() {
-    let mut search = DiskResearcher::new("test".to_string());
-    search.set_max_nb_threads(2).unwrap();
-    search.start();
-    thread::sleep(std::time::Duration::from_secs(2));
-    assert_eq!(search.started_threads_nb, 2);
-}
-#[test]
 fn test_that_empty_directory_cause_no_issue() {
     let mut search = DiskResearcher::new("test/depth2/depth3/depth4/".to_string());
     search.start();
@@ -510,15 +489,12 @@ fn test_that_limit_works() {
     let results = search.search("hello", 1, None);
     assert_eq!(results.len(), 1);
 }
-// #[test]
-// fn test_priority_is_respected() {
-//     let mut search = DiskResearcher::new("test".parse().unwrap());
-//     search.start();
-//     thread::sleep(std::time::Duration::from_secs(1));
-//     let results = search.search("t", 10, None);
-//     let mut priortiy = 3; //Higher than the max possible
-//     for result in results {
-//         assert!(result.priority <= priortiy);
-//         priortiy = result.priority;
-//     }
-// }
+
+#[test]
+fn test_priority_is_respected() {
+    let mut search = DiskResearcher::new("test".parse().unwrap());
+    search.start();
+    thread::sleep(std::time::Duration::from_secs(1));
+    let results = search.search("t", 100, None);
+    assert!(results.is_sorted_by(|a, b| a.priority > b.priority));
+}
