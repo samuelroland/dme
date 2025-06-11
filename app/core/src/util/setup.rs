@@ -34,7 +34,6 @@ pub fn install_all_grammars_in_local_target_folder() -> PathBuf {
         create_dir_all(&grammars_folder).unwrap();
     }
 
-    let mut loader = Loader::new().unwrap();
     let manager =
         TreeSitterGrammarsManager::new_with_grammars_folder(grammars_folder.clone()).unwrap();
     for (lang, link) in PROPOSED_GRAMMAR_SOURCES.iter() {
@@ -44,7 +43,7 @@ pub fn install_all_grammars_in_local_target_folder() -> PathBuf {
         {
             let so_path = grammars_folder.join(format!("tree-sitter-{}/{}.so", lang, lang));
             if so_path.exists() {
-                let h = TreeSitterHighlighter::new(&mut loader, lang, &manager).unwrap();
+                let h = TreeSitterHighlighter::new(lang, &manager).unwrap();
                 h.highlight("test"); // highlight anything just to make sure
                 dbg!(&lang);
                 dbg!(&so_path);

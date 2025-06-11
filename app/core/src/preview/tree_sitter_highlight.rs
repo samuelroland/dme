@@ -5,7 +5,10 @@
 // https://dotat.at/cgi/git/wwwdotat.git/blob/HEAD:/src/hilite.rs
 
 use pretty_assertions::{assert_eq, assert_ne};
-use std::fs::read_to_string;
+use std::{
+    fs::read_to_string,
+    path::{Path, PathBuf},
+};
 use tree_sitter_highlight::{Highlight, HighlightConfiguration, Highlighter, HtmlRenderer};
 use tree_sitter_loader::{CompileConfig, LanguageConfiguration, Loader};
 
@@ -13,30 +16,27 @@ use super::{preview::Html, tree_sitter_grammars::TreeSitterGrammarsManager};
 
 /// A highlighter for a specific language, once loaded it can highlight multiple code snippets of
 /// the same programming language
-pub struct TreeSitterHighlighter<'a> {
+pub struct TreeSitterHighlighter {
     /// The language identifier
     lang: String,
     /// The highlighting configuration containing highlight queries,
     /// injections queries and local queries.
-    highlight_config: &'a HighlightConfiguration,
+    highlight_config: HighlightConfiguration,
 }
 
-impl<'a> TreeSitterHighlighter<'a> {
+impl<'a> TreeSitterHighlighter {
     /// Try to create a new highlighter based on an external loader
     /// A loader created with Loader::new() is fine
     /// The language to highlight, a grammar for this must be installed or it will fail
     /// The manager is used to get the grammar folder for this language
-    pub fn new(
-        loader: &'a mut Loader,
-        lang: &String,
-        manager: &TreeSitterGrammarsManager,
-    ) -> Result<Self, String> {
-        let lang = Self::normalize_lang(&lang).to_string();
+    pub fn new(lang: &str, manager: &TreeSitterGrammarsManager) -> Result<Self, String> {
+        let lang = Self::normalize_lang(lang).to_string();
 
         // Note: we making the supposition that the lang is in the folder name, for now
         let repos_path = manager.get_repos_for_lang(&lang)?.path().clone();
         if repos_path.exists() {
             // Even if the repos exists, it might not be a valid Tree-Sitter syntax
+            let mut loader = Loader::new().map_err(|e| e.to_string())?;
             let language = loader
                 .load_language_at_path(CompileConfig::new(&repos_path.join("src"), None, None))
                 .map_err(|e| e.to_string())?;
@@ -51,20 +51,60 @@ impl<'a> TreeSitterHighlighter<'a> {
                 .first()
                 .ok_or("Given path has no grammar at all in tree-sitter.json configuration")?;
 
-            // Generate a highlight configuration based on the language
-            // and no additionnal paths to queries files
-            let highlight_config = first
-                .highlight_config(language, None)
-                .map_err(|e| e.to_string())?
-                .ok_or("No highlighting queries defined for the language")?;
+            // That's a very painful solution but it works. Instead of letting the library read
+            // the queries files for us, we have to it ourself
+            // This old solution returns &HighlightConfiguration which is just impossible to deal with
+            // let highlight_config = first
+            //     .highlight_config(language.clone(), None)
+            //     .map_err(|e| e.to_string())?
+            //     .ok_or("No highlighting queries defined for the language")?;
+            let highlighting_queries = Self::read_all_files_with_join(
+                (first.highlights_filenames).as_deref().unwrap_or(&[]),
+                &repos_path,
+            );
+            let injection_queries = Self::read_all_files_with_join(
+                (first.injections_filenames).as_deref().unwrap_or(&[]),
+                &repos_path,
+            );
+            let locals_queries = Self::read_all_files_with_join(
+                (first.locals_filenames).as_deref().unwrap_or(&[]),
+                &repos_path,
+            );
+            let mut config = HighlightConfiguration::new(
+                language,
+                &lang,
+                &highlighting_queries,
+                &injection_queries,
+                &locals_queries,
+            )
+            .map_err(|e| e.to_string())?;
+
+            // But this second option need to configure with the highlight names for some reason
+            // so we have to clone existing one and pass them to avoid having a mutable + immutable
+            // reference living at the same time of config
+            let names: Vec<_> = config.names().iter().map(|e| e.to_string()).collect();
+            config.configure(&names);
 
             Ok(TreeSitterHighlighter {
                 lang,
-                highlight_config,
+                highlight_config: config,
             })
         } else {
             Err("The grammar {lang} is not installed locally".to_string())
         }
+    }
+
+    /// Given a list of relative PathBuf, read them all and join the content with a \n
+    /// with a base_path as paths are relative
+    fn read_all_files_with_join(list: &[PathBuf], base_path: &Path) -> String {
+        list.iter()
+            .map(|f2| {
+                let query_file_path = base_path.join(f2);
+                dbg!(&query_file_path);
+                read_to_string(query_file_path).unwrap_or_default()
+            })
+            .collect::<Vec<String>>()
+            .join("\n")
     }
 
     /// Just get the language of the highlighter defined via new()
@@ -101,7 +141,7 @@ impl<'a> TreeSitterHighlighter<'a> {
     pub fn highlight(&self, code: &str) -> Html {
         let mut renderer = HtmlRenderer::new();
         match Highlighter::new()
-            .highlight(self.highlight_config, code.as_bytes(), None, |_| None)
+            .highlight(&self.highlight_config, code.as_bytes(), None, |_| None)
             .and_then(|highlights| {
                 renderer.render(
                     highlights,
@@ -119,8 +159,7 @@ impl<'a> TreeSitterHighlighter<'a> {
 
     /// Normalise code block given lang to a set of known equivalence
     /// like js -> javascript, vuejs -> vue
-    pub fn normalize_lang(given: &String) -> String {
-        let given = given.as_str();
+    pub fn normalize_lang(given: &str) -> String {
         match given {
             "bash" | "sh" | "shell" => "bash",
             "js" => "javascript",
@@ -164,8 +203,7 @@ mod tests {
         m.install(&get_test_grammar_repos()).unwrap();
 
         let snippet = "color: blue";
-        let mut loader = Loader::new().unwrap();
-        let h = TreeSitterHighlighter::new(&mut loader, &TEST_GRAMMAR.to_string(), &m).unwrap();
+        let h = TreeSitterHighlighter::new(TEST_GRAMMAR, &m).unwrap();
         assert_eq!(h.highlight(snippet), Html("<span class='tag'>color</span><span class='punctuation delimiter'>:</span> <span class='attribute'>blue</span>\n".to_string()));
 
         let snippet = "#form { border: 1px solid #55232; }";
