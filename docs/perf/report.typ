@@ -52,8 +52,6 @@ Un système de recherche permet ensuite de chercher un fichier Markdown sur son 
   caption: [Aperçu de l'interface de recherche, montrant des résultats de recherches avec des titres qui ont matchés.],
 ) <fig-search-overview>
 
-// TODO: description de la topo des systèmes de tests
-
 == Rust
 
 Le language de programmation Rust est notablement différent du C à cause de son modèle mémoire. Il était par conséquent difficile de rapporter les concepts de bas niveau vus en cours à l'optimisation de DME. Nous avons donc dû nous adapter à la fois au modèle mémoire de Rust, mais aussi à la crate `tree-sitter` et aux autres librairies adjacentes utilisées par le programme. Les différents types proposés par les librairies sont parfois très différents de ce que l'on voit en C.
@@ -85,7 +83,31 @@ fn test_large_markdown_preview_with_codes_gives_same_result() {
 
 == Benchmarking
 
-Comme à chaque laboratoire de HPC, nous avons commencé par développé un moyen de rapidement lancer des benchmarks de manière répétée et idéalement d'exporter les résultats.
+Comme à chaque laboratoire de HPC, nous avons commencé par chercher un moyen de rapidement lancer des benchmarks de manière répétée et idéalement d'exporter les résultats.
+
+=== Premier essai avec Criterion.rs
+
+La crate `criterion.rs` est un système de benchmark qui permet de faire des mesures plus précises que les systèmes tels que `hyperfine`. Elle permet de benchmarker des fonctions Rust de manière fine et de faire des comparaisons entre les versions. Le système avait l'air incroyable niveau expérience, super simple d'écrire des benchmarks, possibilités de comparer avec l'exécution précédente, possibilité de nommer un résultat pour y comparer plus tard plus facilement, écriture des benchmarks en Rust, etc. Super dommage que le projet ne soient pas adaptés aux fonctions lentes.
+
+Nous avons essayé de l'utiliser mais nous ne l'avons pas retenue car les benchmarks prenaient trop de temps pour être réalisés. Afin de fournir une solidité statistique, criterion.rs nous force à avoir au minimum ~20 itérations pour un benchmark d'une fonction ce qui signifie 20 secondes minimum pour une fonction de 200ms. Avec hyperfine on arrivait à définir `-r 3` pour n'exécuter que 3 fois.
+
+Exemple de benchmark tenté avec criterion
+```rust
+pub fn preview_nocode_benchmark(c: &mut Criterion) {
+    let mut group = c.benchmark_group("preview_nocode");
+    let path = clone_mdn_content();
+    // That's a file without any code snippet and of 59627 chars.
+    let path = path.join("files/en-us/mdn/writing_guidelines/writing_style_guide/index.md");
+    group.bench_function("preview basic", |b| {
+        b.iter(|| markdown_to_highlighted_html(black_box(path.to_str().unwrap())))
+    });
+    group.finish();
+}
+```
+
+=== Deuxième essai en wrapper d'hyperfine
+
+Nous nous sommes donc rabattu sur `hyperfine` comme pour les autres laboratoires. Au lieu de faire des scripts Bash ou Fish et de demander à des contributeurs d'installer encore d'autres dépendances que celle du projet, nous avons créé un petit CLI séparé dans le dossier `app/core/bench` qui prend comme dépendance notre librairie dans le dossier du dessus. Ce CLI permet de facilement définir des benchmarks basiques avec préparation puis lancement et d'appeler hyperfine pour appeler cette deuxième fonction.
 
 Tout le code est toujours compilés en `--release` ce qui active les optimisations du compilateur Rust. On ne risque pas d'oublier de le faire car nous avons mis un check qui panic seulement en mode debug.
 
@@ -123,31 +145,13 @@ Nous avons choisi de définir les paramètres de benchmark comme suit :
 - `grammar_install` : Installation de la grammaire Tree-Sitter pour Rust
 - `general_keyword` : Méthode `DiskResearcher::start()` et `DiskResearcher::search`, construction de l'index et recherche du mot clé 'abstraction' dans le repository de MDN.
 
-=== Alternatives non retenues
-
-La crate `criterion.rs` est un système de benchmark qui permet de faire des mesures plus précises que les systèmes tels que `hyperfine`. Elle permet de benchmarker des fonctions Rust de manière fine et de faire des comparaisons entre les versions. Le système avait l'air incroyable niveau expérience, super simple d'écrire des benchmarks, possibilités de comparer avec l'exécution précédente, possibilité de nommer un résultat pour y comparer plus tard plus facilement, écriture des benchmarks en Rust, etc. Super dommage que le projet ne soient pas adaptés aux fonctions lentes.
-
-Nous avons essayé de l'utiliser mais nous ne l'avons pas retenue car les benchmarks prenaient trop de temps pour être réalisés. Afin de fournir une solidité statistique, criterion.rs nous force à avoir au minimum ~20 itérations pour un benchmark d'une fonction ce qui signifie 20 secondes minimum pour une fonction de 200ms. Avec hyperfine on arrivait à définir `-r 3` pour n'exécuter que 3 fois.
-
-Exemple de benchmark tenté avec criterion
-```rust
-pub fn preview_nocode_benchmark(c: &mut Criterion) {
-    let mut group = c.benchmark_group("preview_nocode");
-    let path = clone_mdn_content();
-    // That's a file without any code snippet and of 59627 chars.
-    let path = path.join("files/en-us/mdn/writing_guidelines/writing_style_guide/index.md");
-    group.bench_function("preview basic", |b| {
-        b.iter(|| markdown_to_highlighted_html(black_box(path.to_str().unwrap())))
-    });
-    group.finish();
-}
-```
+Pour exécuter tous les benchmarks la commande est `cargo run --release -- bench` et pour un en particulier `cargo run --release -- bench preview_code` par exemple.
 
 == Pull request
 
 La pull request de se projet est disponible sur #link("https://github.com/samuelroland/dme/pull/10")[Performance optimisations #10 ], les tests d'intégrations ne sont pas listées dans la diff car ils ont déjà été mergé dans une autre PR. Ils sont disponibles dans le code rendu si besoin.
 
-Si nécessaire de reproduire, aller voir le #link("https://github.com/samuelroland/dme/blob/main/README.md")[README.md] du projet.
+Si nécessaire de reproduire, aller voir le #link("https://github.com/samuelroland/dme/blob/main/README.md")[README.md] du projet pour installer les dépendences nécessaires.
 
 == Optimisation de la colorisation syntaxique
 
@@ -336,7 +340,7 @@ Nous parlions précédemment du fait que nous voulions avoir principalement des 
                          }
 ```
 
-Les benchmark ne changent quasiment pas ce qui est normal puisque nous ne sommes pas encore en multithreadé.
+Les benchmarks ne changent quasiment pas (quelques millisecondes) ce qui est normal puisque nous ne sommes pas encore en multithreadé.
 
 // Running bench preview_code
 // Benchmark 1: target/release/bench fn preview_code target/large-30.md
@@ -344,7 +348,7 @@ Les benchmark ne changent quasiment pas ce qui est normal puisque nous ne sommes
 // Range (min … max):   306.5 ms … 335.3 ms    20 runs
 
 Résultat du benchmark
-- `preview_code`: 0.3112s
+- `preview_code`: *0.3112s*
 - `preview_md`: 0.0464s
 
 == Optimisation de la recherche
