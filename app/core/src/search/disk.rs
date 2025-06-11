@@ -1,4 +1,5 @@
 use crate::search::search::{Progress, ResearchResult, Researcher};
+use crate::util::setup::clone_mdn_content;
 use nucleo_matcher::pattern::{Atom, AtomKind, CaseMatching, Normalization, Pattern};
 use nucleo_matcher::{Config, Matcher, Utf32Str};
 use std::collections::{BinaryHeap, HashMap};
@@ -364,7 +365,8 @@ echo saasdf
 
 #[test]
 fn test_heading_extractions_advanced() {
-    let path = "target/content/files/en-us/web/css/layout_cookbook/contribute_a_recipe/index.md";
+    let repos = clone_mdn_content();
+    let path = repos.join("files/en-us/web/css/layout_cookbook/contribute_a_recipe/index.md");
     let expected = vec![
         "What makes a good recipe?",
         "Steps to publish a recipe",

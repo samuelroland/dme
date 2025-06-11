@@ -13,7 +13,7 @@ mod common;
 fn test_large_markdown_preview_with_codes_gives_same_result() {
     for i in [1, 2, 5] {
         let test_id = format!("large-preview-{}", i);
-        let path = generate_large_markdown_with_codes(i);
+        let path = generate_large_markdown_with_codes(i, 100);
 
         let result = markdown_to_highlighted_html(&path).unwrap();
 
