@@ -74,8 +74,8 @@ impl TreeSitterGrammarsManager {
                 Err(_) => GitRepos::from_clone(
                     git_repo_https_url,
                     &self.final_grammars_folder,
-                    None,
-                    false,
+                    Some(1),
+                    true,
                 )?,
             };
 

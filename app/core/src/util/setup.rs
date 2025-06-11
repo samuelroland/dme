@@ -38,28 +38,12 @@ pub fn install_all_grammars_in_local_target_folder() -> PathBuf {
     let manager =
         TreeSitterGrammarsManager::new_with_grammars_folder(grammars_folder.clone()).unwrap();
     for (lang, link) in PROPOSED_GRAMMAR_SOURCES.iter() {
-        if grammars_folder
-            .join(format!("tree-sitter-{}", lang))
-            .exists()
-        {
-            let mut loader = Loader::new().unwrap();
-            let so_path = grammars_folder.join(format!("tree-sitter-{}/{}.so", lang, lang));
-            if so_path.exists() {
-                let h = TreeSitterHighlighter::new(&mut loader, lang, &manager).unwrap();
-                h.highlight("test"); // highlight anything just to make sure
-                dbg!(&lang);
-                dbg!(&so_path);
-                assert!(so_path.exists());
-            } else {
-                continue;
-            }
-        }
         if is_ignored_grammar(lang) {
             continue;
         }
         let mut manager =
             TreeSitterGrammarsManager::new_with_grammars_folder(grammars_folder.clone()).unwrap();
-        let _ = manager.install(link).unwrap(); // ignore failures
+        manager.install(link).unwrap(); // ignore failures
     }
 
     // Note: I hope this is not flaky again
@@ -75,9 +59,22 @@ const CODE_SNIPPETS_REPOS: &str = "https://github.com/TheRenegadeCoder/sample-pr
 const CODE_SNIPPETS_REPOS_DESTINATION: &str = "target/sample-programs";
 const OUTPUT_MD_PREFIX: &str = "target/large-";
 
-/// Some ignored grammars that do not compile
+/// Some ignored grammars that do not compile, or don't have code snippets in the
+/// CODE_SNIPPETS_REPOS so it's faster the first execution to skip them
 fn is_ignored_grammar(lang: &str) -> bool {
-    lang == "bash" || lang == "xml" || lang == "csv" || lang == "typescript" || lang == "php"
+    let ignored = [
+        "bash",
+        "xml",
+        "csv",
+        "typescript",
+        "php",
+        "vue",
+        "xml",
+        "json",
+        "toml",
+        "yaml",
+    ];
+    ignored.contains(&lang)
 }
 
 /// Generate a big file with tons of snippet snippets in some of the languages listed in PROPOSED_GRAMMAR_SOURCES
