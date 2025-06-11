@@ -97,7 +97,10 @@ pub static BENCHES: Lazy<HashMap<&'static str, Bench>> = Lazy::new(|| {
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
-
+    debug_assert!(
+        false,
+        "This benchmark system MUST be compiled and run in --release mode only to have best performances."
+    );
     // Run all benchmarks
     if args.len() == 1 {
         println!("Listing available benchmarks");
