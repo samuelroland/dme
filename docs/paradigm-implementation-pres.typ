@@ -37,9 +37,27 @@ tauri in rust
 vuejs frontend
 
 #slide(title: "Search strategy")[ ]
-- General algo
-- exemple paradigme application
+- Split the data
+- Prepare shared ressource
+- Computation
+- Update shared ressource
 
+#slide(title: "Search strategy")[ ]
+```rust
+for chunk in all_paths.chunks(chunk_size) {
+    let chunk = chunk.to_vec(); // copy chunk
+    let title_map = Arc::clone(&self.title_map);
+
+    thread::spawn(move || {
+        for path in chunk {
+            let titles = DiskResearcher::extract_markdown_titles(&path);
+            {
+                let mut map = title_map.lock().unwrap();
+                for title in titles {
+                    map.entry(title).or_default().push(path.clone())
+                }
+            }
+```
 #slide(title: "Syntax highlighting")[ ]
 - Tree-Sitter vite fait
 - Grammars installation

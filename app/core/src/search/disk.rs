@@ -8,7 +8,7 @@ use std::fs::read_to_string;
 use std::path::PathBuf;
 use std::sync::mpsc::Sender;
 use std::sync::{Arc, Mutex};
-use std::{ascii, fs, thread};
+use std::thread;
 use walkdir::WalkDir;
 
 use super::search::IndexStat;
@@ -179,11 +179,11 @@ impl Researcher for DiskResearcher {
             let counter = Arc::clone(&self.progress_counter);
 
             //Create the thread to search for markdown in chunk
-            let handle = thread::spawn(move || {
+            thread::spawn(move || {
                 //Local counter to avoid locking unlocking every loop.
                 let mut local_counter = 0;
                 for path in chunk {
-                    let content = fs::read_to_string(&path).unwrap_or_default();
+                    let content = read_to_string(&path).unwrap_or_default();
                     let titles = DiskResearcher::extract_markdown_titles(&content);
                     {
                         let mut map = title_map.lock().unwrap();
@@ -302,7 +302,7 @@ impl Researcher for DiskResearcher {
         final_results.results(limit as usize)
     }
 
-    fn stats(&self) -> super::search::IndexStat {
+    fn stats(&self) -> IndexStat {
         IndexStat {
             headings_count: self.title_map.lock().unwrap().len(),
             markdown_paths_count: self.markdown_paths_set.lock().unwrap().len(),
