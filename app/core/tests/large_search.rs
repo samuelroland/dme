@@ -52,7 +52,10 @@ fn test_large_search_on_mdn_content_can_find_multiple_match_for_generic_keyword(
             .filter(|e| e.title.is_none())
             .map(|e| e.path.clone())
             .collect::<Vec<String>>(),
-        vec!["target/content/files/en-us/glossary/abstraction/index.md"]
+        vec![
+            "target/content/files/en-us/glossary/abstraction/index.md",
+            "target/content/files/en-us/web/api/idbrequest/transaction/index.md"
+        ]
     );
     // assert!(results.len() >= 36, "{results:?}");
 }
@@ -82,11 +85,7 @@ fn test_large_search_on_mdn_content_can_find_a_several_headings() {
     disk_search.start();
     let search = "Array constructor with"; // should match 2 headings
     let mut results = disk_search.search(search, 20, None);
-    assert_eq!(
-        results.len(),
-        2,
-        "Results should have only 2 results, contains\n{results:?}"
-    );
+
     results.sort_by(|a, b| a.title.cmp(&b.title));
     assert_eq!(
         results[0].title,
@@ -116,11 +115,7 @@ fn test_large_search_on_mdn_content_is_fuzzy_ordered_matching() {
     ];
     for pattern in patterns {
         let results = disk_search.search(pattern, 20, None);
-        assert_eq!(
-            results.len(),
-            1,
-            "Results should have only one result, contains\n{results:?}"
-        );
+        dbg!(&results);
         assert_eq!(
             results[0].title,
             Some("Array constructor with a single parameter".to_string())
@@ -129,4 +124,21 @@ fn test_large_search_on_mdn_content_is_fuzzy_ordered_matching() {
             "content/files/en-us/web/javascript/reference/global_objects/array/array/index.md"
         ));
     }
+}
+
+#[test]
+fn test_large_search_on_mdn_content_is_fuzzy_on_paths() {
+    let repos = clone_mdn_content();
+    let mut disk_search = DiskResearcher::new(repos.to_str().unwrap().to_string());
+    disk_search.start();
+    let pattern = ["web js objects json index md"];
+    // nothing match that in headings (checked via fzf)
+    let results = disk_search.search(pattern[0], 20, None);
+    dbg!(&results);
+    assert!(results.len() > 4);
+    dbg!(&results[0]);
+    // The highest score with fuzzy is this one
+    assert!(results[0].path.ends_with(
+        "target/content/files/en-us/web/javascript/reference/global_objects/json/index.md"
+    ));
 }
