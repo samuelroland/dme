@@ -141,7 +141,6 @@ impl Researcher for DiskResearcher {
     fn start(&mut self) {
         self.has_started = true;
 
-        let mut threads = Vec::new();
         //Get all paths. We have to accept the directory at first otherwise their content would be ignored
         let markdown_paths: Vec<String> = WalkDir::new(&self.base_path)
             .into_iter()
@@ -203,7 +202,6 @@ impl Researcher for DiskResearcher {
                     *global_counter += local_counter;
                 }
             });
-            threads.push(handle);
         }
     }
     /// Ask about the progress, from 0 to 100 percent of research
