@@ -65,7 +65,7 @@ for chunk in all_paths.chunks(chunk_size) {
         for path in chunk {
             let titles = DiskResearcher::extract_markdown_titles(&path);
             {
-                let mut map = title_map.lock().unwrap();
+                let mut map = title_map.write().unwrap();
                 for title in titles {
                     map.entry(title).or_default().push(path.clone())
                 }
