@@ -137,7 +137,7 @@ src> tree
 [
 
 #linebreak()
-`queries/highlighting.scm`
+`queries/highlights.scm`
 ```scm
 "~" @operator
 ">" @operator
@@ -185,13 +185,15 @@ tree-sitter-csv
 
 #slide(title: "Highlighting steps")[
 #grid(
-  columns: (1fr, 1fr),
+  columns: (1fr, 2fr),
+  column-gutter: 32pt,
   [
 - Download, compile, load
-- Load language configuration
-- Load a highlighter with queries files
-- Apply highlight on code
-- Render HTML based on highlight names
+- Language configuration
+- Load a highlighter
+- Highlight some code
+- Render HTML
+- Include in bigger doc
   ],
 [
 #text(size: 0.7em)[
@@ -230,6 +232,7 @@ args.push("--single-branch");
 - Themes management
 - PDF export
 - Visual theme configuration
+- More benchmarking and optimisations
 ]
 
 #slide(title: "Our experience with the paradigm")[
