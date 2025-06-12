@@ -80,7 +80,12 @@ impl GitRepos {
                 path: base_directory.join(grammar_folder_name),
             })
         } else {
-            Err(format!("Failed to git clone {}", git_clone_url).to_string())
+            Err(format!(
+                "Failed to git clone {}\n{}",
+                git_clone_url,
+                String::from_utf8(output.stderr).unwrap_or_default()
+            )
+            .to_string())
         }
     }
 
@@ -218,13 +223,25 @@ mod tests {
         let tests_folder = &get_unique_tests_subfolder();
 
         let start = Instant::now();
-        let repos = GitRepos::from_clone(REAL_GIT_REPO, tests_folder, None, false).unwrap();
+        let repos = GitRepos::from_clone(
+            "https://github.com/tree-sitter/tree-sitter-css",
+            tests_folder,
+            None,
+            false,
+        )
+        .unwrap();
         let duration1 = start.elapsed();
 
         let tests_folder = &get_unique_tests_subfolder();
 
         let start = Instant::now();
-        let repos = GitRepos::from_clone(REAL_GIT_REPO, tests_folder, Some(1), true).unwrap();
+        let repos = GitRepos::from_clone(
+            "https://github.com/tree-sitter/tree-sitter-css",
+            tests_folder,
+            Some(1),
+            true,
+        )
+        .unwrap();
         let duration2 = start.elapsed();
 
         assert!(

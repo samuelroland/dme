@@ -1,12 +1,18 @@
 // This contains functions used to setup large test data for integration tests and benchmarks
+// This should actually be in the app/core/tests directory but we need these functions
+// in the app/core/bench program too. As it's only possible to import public interface
+// and code from tests directory is not accessible to external crates, we put it here
 
 use std::ffi::OsStr;
 use std::fmt::Write;
 use std::fs::{create_dir_all, read_dir, read_to_string};
 use std::path::{Path, PathBuf};
 
+use tree_sitter_loader::Loader;
+
 use crate::preview::proposed_grammars::PROPOSED_GRAMMAR_SOURCES;
 use crate::preview::tree_sitter_grammars::TreeSitterGrammarsManager;
+use crate::preview::tree_sitter_highlight::TreeSitterHighlighter;
 use crate::util::git::GitRepos;
 
 const MDN_GIT_REPOSITORY: &str = "https://github.com/mdn/content";
@@ -19,7 +25,7 @@ pub fn clone_mdn_content() -> PathBuf {
     if !repos_path.exists() {
         GitRepos::from_clone(MDN_GIT_REPOSITORY, &path, Some(1), true).unwrap();
     }
-    path.join("content")
+    repos_path
 }
 
 const SUBFOLDER: &str = "target/all-grammars";
@@ -28,10 +34,16 @@ pub fn install_all_grammars_in_local_target_folder() -> PathBuf {
     if !grammars_folder.exists() {
         create_dir_all(&grammars_folder).unwrap();
     }
-    for i in PROPOSED_GRAMMAR_SOURCES.iter() {
+
+    let manager =
+        TreeSitterGrammarsManager::new_with_grammars_folder(grammars_folder.clone()).unwrap();
+    for (lang, link) in PROPOSED_GRAMMAR_SOURCES.iter() {
+        if is_ignored_grammar(lang) {
+            continue;
+        }
         let mut manager =
             TreeSitterGrammarsManager::new_with_grammars_folder(grammars_folder.clone()).unwrap();
-        let _ = manager.install(i.1); // ignore failures
+        manager.install(link).unwrap(); // ignore failures
     }
 
     // Note: I hope this is not flaky again
@@ -47,9 +59,30 @@ const CODE_SNIPPETS_REPOS: &str = "https://github.com/TheRenegadeCoder/sample-pr
 const CODE_SNIPPETS_REPOS_DESTINATION: &str = "target/sample-programs";
 const OUTPUT_MD_PREFIX: &str = "target/large-";
 
-/// Generate a big file with tons of code snippets in some of the languages listed in PROPOSED_GRAMMAR_SOURCES
-/// that have available snippets in the CODE_SNIPPETS_REPOS
-pub fn generate_large_markdown_with_codes(max_number_of_snippets_per_lang: usize) -> String {
+/// Some ignored grammars that do not compile, or don't have code snippets in the
+/// CODE_SNIPPETS_REPOS so it's faster the first execution to skip them
+fn is_ignored_grammar(lang: &str) -> bool {
+    let ignored = [
+        "bash",
+        "xml",
+        "csv",
+        "typescript",
+        "php",
+        "vue",
+        "xml",
+        "json",
+        "toml",
+        "yaml",
+    ];
+    ignored.contains(&lang)
+}
+
+/// Generate a big file with tons of snippet snippets in some of the languages listed in PROPOSED_GRAMMAR_SOURCES
+/// that have
+pub fn generate_large_markdown_with_codes(
+    max_number_of_snippets_per_lang: usize,
+    max_lang: usize,
+) -> String {
     let repos_folder = PathBuf::from(CODE_SNIPPETS_REPOS_DESTINATION);
     if !repos_folder.exists() {
         GitRepos::from_clone(
@@ -65,12 +98,17 @@ pub fn generate_large_markdown_with_codes(max_number_of_snippets_per_lang: usize
     let mut grammars: Vec<(&&str, &&str)> =
         (*PROPOSED_GRAMMAR_SOURCES.iter().collect::<Vec<_>>()).to_vec();
     grammars.sort();
-    let mut snippets_found_count = 0;
+    let mut lang_included_count = 0;
     let mut included_snippets_count = 0;
     for (lang, link) in grammars {
-        if lang == &"php" || lang == &"typescript" {
+        if is_ignored_grammar(lang) {
             continue;
         } // it generate strange markdown outputs or doesn't support highlighting well
+
+        if lang_included_count >= max_lang {
+            break;
+        }
+
         let first_char = lang.chars().next().unwrap();
         let subfolder = repos_folder
             .join("archive")
@@ -103,11 +141,12 @@ pub fn generate_large_markdown_with_codes(max_number_of_snippets_per_lang: usize
             .unwrap();
             included_snippets_count += 1;
         }
-        snippets_found_count += 1;
+        lang_included_count += 1;
     }
 
     let output_md_prefix_full =
         format!("{}{}.md", OUTPUT_MD_PREFIX, max_number_of_snippets_per_lang);
     std::fs::write(&output_md_prefix_full, &final_output).unwrap();
+
     output_md_prefix_full
 }
