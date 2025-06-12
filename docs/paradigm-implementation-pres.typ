@@ -37,15 +37,11 @@
 #slide(title: "Global architecture")[
 #image("schemas/architecture.png")
 ]
-list of modules
-core library
-tauri in rust
-vuejs frontend
 
 #slide(title: "Search strategy")[
 #grid(
   columns: (2fr, 3fr),
-text()[
+[
 - Split the data
 - Prepare shared ressource
 - Computation
@@ -53,10 +49,12 @@ text()[
     ],
     [
   #image("schemas/diskresearcher.png")
+// todo update schema with rwlock
   ]
 )
 ]
 
+// todo update code
 #slide(title: "Search strategy")[
 ```rust
 for chunk in all_paths.chunks(chunk_size) {
@@ -74,23 +72,173 @@ for chunk in all_paths.chunks(chunk_size) {
             }
 ```
 ]
-#slide(title: "Syntax highlighting")[ ]
-- Tree-Sitter vite fait
-- Grammars installation
-- Highlighting process
-- Exemple paradigme application
 
-#slide(title: "Future of DME ?")[ ]
+#slide(title: "Syntax highlighting with Tree-sitter")[
+#text(size: 0.56em)[
+
+#grid(
+  columns: (2fr, 2fr, 2fr),
+[
+  `tree-sitter.json`
+```json
+{
+  "grammars": [
+    {
+      "name": "css",
+      "camelcase": "CSS",
+      "scope": "source.css",
+      "path": ".",
+      "file-types": [ "css" ],
+      "highlights": "queries/highlights.scm",
+      "injection-regex": "^css$"
+    }
+  ],
+  // ..
+}
+```
+],
+[
+
+`grammar.js`
+
+```js
+...
+ rules: {
+    stylesheet: $ => repeat($._top_level_item),
+
+    // Statements
+    import_statement: $ => seq(
+      '@import',
+      $._value,
+      sep(',', $._query),
+      ';',
+    ),
+...
+```
+
+
+],
+[
+
+C parser
+```sh
+src> tree
+├── grammar.json
+├── node-types.json
+├── parser.c
+├── scanner.c
+└── tree_sitter
+    ├── alloc.h
+    ├── array.h
+    └── parser.h
+```
+
+],
+[
+
+#linebreak()
+`queries/highlighting.scm`
+```scm
+"~" @operator
+">" @operator
+"+" @operator
+"-" @operator
+...
+
+(class_name) @property
+(id_name) @property
+(namespace_name) @property
+```
+
+  #linebreak()
+`<span class="operator">+</span>`
+
+], [
+
+`catpuccin-latte.toml`
+```toml
+"constant" = "peach"
+"constant.character" = "teal"
+"constant.character.escape" = "pink"
+
+"string" = "green"
+...
+
+[palette]
+rosewater = "#dc8a78"
+flamingo = "#dd7878"
+pink = "#ea76cb"
+```],
+  [
+```sh
+~/.local/share/tree-sitter-grammars>
+tree-sitter-c
+tree-sitter-cpp
+tree-sitter-css
+tree-sitter-csv
+...
+```
+]
+)
+]
+]
+
+#slide(title: "Highlighting steps")[
+#grid(
+  columns: (1fr, 1fr),
+  [
+- Download, compile, load
+- Load language configuration
+- Load a highlighter with queries files
+- Apply highlight on code
+- Render HTML based on highlight names
+  ],
+[
+#text(size: 0.7em)[
+
+```rust
+// git clone --depth 1 --single_branch
+let only_latest_commits: Option<u32> = Some(1);
+let mut args = vec!["clone", git_clone_url];
+if let Some(count) = only_latest_commits {
+    args.push("--depth");
+    args.push(&count.to_string());
+}
+if single_branch {
+    args.push("--single-branch");
+}
+```
+
+```sh
+args.push(&count.to_string());
+           ^^^^^^^^^^^^^^^^^ - temporary value is freed at the end of this statement
+           |
+           creates a temporary value which is freed while still in use
+
+args.push("--single-branch");
+---- borrow later used here
+```
+]
+]
+)
+]
+
+#slide(title: "Future of DME ?")[
 - Making syntax highlighting parallel
 - Making grammars installation parallel
 - Making a full text search
+- Themes management
+- PDF export
+- Visual theme configuration
+]
 
-#slide(title: "Our experience with the paradigm")[ ]
+#slide(title: "Our experience with the paradigm")[
 - Avoided thousands of possible errors
 - Hard to think about advanced memory references
 - No memory crash at runtime
+]
 
-#slide(title: "Our experience with Rust")[ ]
+#slide(title: "Our experience with Rust")[
 - The standard library
 - Tree-Sitter library
 - Unit and integration testing
@@ -99,4 +247,4 @@ for chunk in all_paths.chunks(chunk_size) {
 - Liked the functionnal part of Rust
 - Compilers contextual errors
 - Proposed fixes and refactoring
-
+]
