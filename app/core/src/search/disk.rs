@@ -9,9 +9,12 @@ use std::path::PathBuf;
 use std::sync::mpsc::Sender;
 use std::sync::{Arc, Mutex, RwLock};
 use std::thread;
+use std::time::Instant;
 use walkdir::WalkDir;
 
 use super::search::IndexStat;
+
+const MIN_PRIORITY: u32 = 150;
 
 impl PartialOrd for ResearchResult {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
@@ -107,6 +110,10 @@ impl DiskResearcher {
         }
     }
 
+    pub fn has_started(&self) -> bool {
+        self.has_started
+    }
+
     pub fn set_max_nb_threads(&mut self, nb_thread: usize) -> Result<(), String> {
         if nb_thread == 0 {
             Err("Number of thread must be greater than 0".to_string())
@@ -147,12 +154,26 @@ impl Researcher for DiskResearcher {
     fn start(&mut self) {
         self.has_started = true;
 
+        let ignored_folders = [
+            OsStr::new("node_modules"),
+            OsStr::new("target"),
+            OsStr::new("build"),
+            OsStr::new(".npm"),
+            OsStr::new("lib"),
+            OsStr::new("debug"),
+            OsStr::new("archive"),
+            OsStr::new("archives"),
+        ];
         // Get all paths by searching for Marddown files on disk
         // We have to accept the directory at first otherwise their content would be ignored
         let markdown_paths: Vec<String> = WalkDir::new(&self.base_path)
             .into_iter()
             .filter_entry(|entry| {
-                entry.file_type().is_dir() || entry.path().extension() == Some(OsStr::new("md"))
+                if entry.file_type().is_dir() {
+                    !ignored_folders.contains(&entry.file_name())
+                } else {
+                    entry.path().extension() == Some(OsStr::new("md"))
+                }
             })
             .filter_map(Result::ok)
             .filter(|e| e.file_type().is_file())
@@ -272,7 +293,7 @@ impl Researcher for DiskResearcher {
                     let mut chars: Vec<char> = Vec::new();
                     let ascii_title = Utf32Str::new(&title, &mut chars);
                     let score = pattern.score(ascii_title, &mut matcher).unwrap_or(0);
-                    if score > 10 {
+                    if score > MIN_PRIORITY {
                         for path in paths.iter() {
                             let mut results = results.lock().unwrap();
                             results.push(ResearchResult {
@@ -303,11 +324,11 @@ impl Researcher for DiskResearcher {
             let mut chars: Vec<char> = Vec::new();
             let ascii_title = Utf32Str::new(file, &mut chars);
             let score = pattern.score(ascii_title, &mut matcher).unwrap_or(0);
-            if score > 10 {
+            if score > MIN_PRIORITY + 100 {
                 results.lock().unwrap().push(ResearchResult {
                     title: None,
                     path: file.clone().parse().unwrap(),
-                    priority: (score as f32 * 1.3) as u32,
+                    priority: (score as f32 * 0.6) as u32,
                 });
             }
         }

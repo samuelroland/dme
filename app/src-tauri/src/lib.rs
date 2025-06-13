@@ -1,11 +1,20 @@
-use std::{env::current_dir, path::PathBuf, sync::mpsc};
+use std::{
+    env::current_dir,
+    path::{Path, PathBuf},
+    sync::{
+        mpsc::{self, Receiver},
+        Arc, Mutex,
+    },
+    thread::{self, sleep},
+    time::{Duration, Instant},
+};
 
 use dme_core::{
     markdown_to_highlighted_html,
     preview::preview::Html,
     search::{
         disk::DiskResearcher,
-        search::{ResearchResult, Researcher},
+        search::{Progress, ResearchResult, Researcher},
     },
 };
 use serde::Serialize;
@@ -48,20 +57,85 @@ fn open_markdown_file(mut path: String) -> Result<Option<Html>, String> {
     }
 }
 
+use tauri::{Builder, Manager};
+
+struct AppData {
+    disk_researcher: Mutex<DiskResearcher>,
+    search_stream_receiver: Mutex<Option<Receiver<ResearchResult>>>,
+}
+
 #[tauri::command]
-fn run_search(search: String) -> Result<Vec<ResearchResult>, String> {
-    let mut disk_search = DiskResearcher::new(
-        current_dir()
-            .map_err(|e| e.to_string())?
-            .join("../..")
-            .to_str()
-            .unwrap_or_default()
-            .to_string(),
-    );
-    disk_search.start();
-    let (tx, rx) = mpsc::channel::<ResearchResult>();
-    let results = disk_search.search(&search, 20, Some(tx.clone()));
-    Ok(results)
+fn run_search(app: AppHandle, search: String) -> Result<String, String> {
+    thread::spawn(move || {
+        println!("Searching {search} ");
+        let state = app.state::<AppData>();
+        let mut ds = state.disk_researcher.lock().unwrap();
+        if !ds.has_started() {
+            println!("INDEXING START");
+            ds.set_max_nb_threads(10);
+            ds.start();
+        }
+        drop(ds);
+
+        let mut existing_rx = state.search_stream_receiver.lock().unwrap();
+
+        let (tx, rx) = mpsc::channel::<ResearchResult>();
+        *existing_rx = Some(rx);
+        drop(existing_rx);
+
+        // Start the thread in parallel to avoid blocking
+        let app_arc = Arc::new(app);
+
+        let app_arced = app_arc.clone();
+        thread::spawn(move || {
+            let state = app_arced.state::<AppData>();
+            let mut progress = Progress(0);
+            while !progress.is_done() {
+                let guard = state.disk_researcher.lock().unwrap();
+                progress = guard.progress();
+                println!("Progress in indexing {}", progress.0);
+                drop(guard);
+                if progress.is_done() {
+                    println!("INDEXING DONE");
+                    break;
+                } else {
+                    println!("Progress in indexing {}", progress.0);
+                }
+                sleep(Duration::from_millis(10));
+            }
+        });
+        let app_arced_local = app_arc.clone();
+        // Span a thread to listen on rx events
+        thread::spawn(move || {
+            let state = app_arced_local.state::<AppData>();
+            let now = Instant::now();
+            loop {
+                let rx_guard = state.search_stream_receiver.lock().unwrap();
+
+                if let Some(rx) = rx_guard.as_ref() {
+                    if let Ok(res) = rx.recv() {
+                        println!("{:?}", res.path);
+                        // print!(".");
+                        app_arced_local.emit("search-match", res).unwrap();
+                        sleep(Duration::from_millis(10));
+                    } else {
+                        println!("End of search after {:?}", now.elapsed());
+                        break;
+                    }
+                } else {
+                    break;
+                }
+                drop(rx_guard);
+            }
+        });
+
+        let app_arced_local = app_arc.clone();
+
+        let state = app_arc.state::<AppData>();
+        let ds = state.disk_researcher.lock().unwrap();
+        ds.search(&search, 10, Some(tx.clone()));
+    });
+    Ok("started".to_string())
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -73,6 +147,19 @@ pub fn run() {
             run_search,
             open_markdown_file
         ])
+        .setup(|app| {
+            let disk_researcher = DiskResearcher::new(
+                Path::new("/home/sam/HEIG")
+                    .to_str()
+                    .unwrap_or_default()
+                    .to_string(),
+            );
+            app.manage(AppData {
+                disk_researcher: Mutex::new(disk_researcher),
+                search_stream_receiver: Mutex::new(None),
+            });
+            Ok(())
+        })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
