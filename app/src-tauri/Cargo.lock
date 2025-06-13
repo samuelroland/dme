@@ -973,6 +973,7 @@ name = "dme"
 version = "0.1.0"
 dependencies = [
  "dme-core",
+ "etcetera 0.10.0",
  "serde",
  "serde_json",
  "tauri",

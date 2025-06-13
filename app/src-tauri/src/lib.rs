@@ -148,12 +148,12 @@ pub fn run() {
             open_markdown_file
         ])
         .setup(|app| {
-            let disk_researcher = DiskResearcher::new(
-                Path::new("/home/sam/HEIG")
-                    .to_str()
-                    .unwrap_or_default()
-                    .to_string(),
-            );
+            let home_dir = etcetera::home_dir()
+                .expect("Couldn't get HOME directory")
+                .to_str()
+                .unwrap_or_default()
+                .to_string();
+            let disk_researcher = DiskResearcher::new(home_dir);
             app.manage(AppData {
                 disk_researcher: Mutex::new(disk_researcher),
                 search_stream_receiver: Mutex::new(None),
