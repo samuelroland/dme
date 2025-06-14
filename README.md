@@ -9,7 +9,12 @@
 
 ## Installation
 
-You need Git, the Rust toolchain ([See installation via Rustup](https://rustup.rs/))
+You need Git and the Rust toolchain 1.87 ([See installation via Rustup](https://rustup.rs/)).
+
+```sh
+git clone https://github.com/samuelroland/dme.git
+cd dme
+```
 
 ### Developing on the core library only
 ```sh
@@ -31,16 +36,18 @@ cargo test -- --include-ignored
 
 Note: **never change the `PATH`** variable in tests, it will affects other tests as well!
 
-### Running the desktop app for development
-1. Make sure you have the Tauri prequisites, the desktop app will not build otherwise: [Tauri prequisites](https://tauri.app/start/prerequisites/)
-1. The frontend is built using [pnpm](https://pnpm.io/), make sure you have that too
-    ```sh
-    cd app
-    pnpm install
-    pnpm tauri dev
-    ```
+### The desktop app
+1. Make sure you have the Tauri prequisites so all build dependencies will be present: [Tauri prequisites](https://tauri.app/start/prerequisites/)
+1. The frontend is built using [NodeJS v22+](https://nodejs.org) and [Pnpm 10+](https://pnpm.io/), make sure you have both of them
+#### Running the desktop app for development
+Just run
+```sh
+cd app
+pnpm install
+pnpm tauri dev
+```
 
-### Building the desktop app for production
+#### Building the desktop app for production
 Note: this is far ready to be fully usable for now, but if you want to install DME globally, here are the instructions.
 
 **WARNING: this only has been tested for Linux, installers for windows are generated as `.msi` but they have not been tested**
