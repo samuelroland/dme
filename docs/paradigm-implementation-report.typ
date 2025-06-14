@@ -1,3 +1,10 @@
+// Display inline code in a small box that retains the correct baseline.
+#show raw.where(block: false): box.with(
+    fill: luma(240),
+    inset: (x: 3pt, y: 0pt),
+    outset: (y: 3pt),
+    radius: 2pt,
+)
 #set text(font: "Cantarell")
 #show link: underline
 #let figure = figure.with(
@@ -25,9 +32,13 @@ PLM - Paradigm analysis report
 #outline(
  title: "Table of Contents",
 )
+#pagebreak()
 
-== The problem behind DME
-Markdown has the double advantage to be an easy and useful syntax to learn, and have a large support in numerous chat systems and collaboration tools. Redacting Markdown in VSCode or in a web editor is working fine. The editing experience is good, the problems are elsewhere. First, how do you export your document as PDF if you want to send to someone that needs this format ?
+== The problem with Markdown
+Markdown has the double advantage to be an easy and useful syntax to learn, and have a large support in numerous chat systems and collaboration tools. Redacting Markdown in VSCode or in a web editor is working fine. GitHub and Gitlab show it natively, the editing experience is good, the problems are elsewhere...
+
+=== Export
+First, how do you export your document as PDF if you want to send to someone that needs this format ?
 + You may use `pandoc` that convert it into Latex and then generate a PDF, but the default style is really not the same as the preview visible in VSCode. In addition, changing the style requires some Latex knowledge. This would imply a lot more learning and setup to change a few visual settings.
 + You could use an easier solution, the `Markdown PDF` extension in VSCode. It provides a simple `Export to PDF` action the command palette. But what happens if you don't like the default theme ? You have to write pure CSS to change the style of headings, tables, line height, to remove this strange yellow, etc.
 #figure(
@@ -38,7 +49,8 @@ Markdown has the double advantage to be an easy and useful syntax to learn, and 
 ) <fig-markdown-pdf-preview>
 
 
-What about syntax highlighting ? In VSCode, here is how would look the editor at left and the native preview at right. As the `@apply` from TailwindCSS is not integrated in the regex system of `highlight.js`, it breaks the style of other parts (see the last block). In the second block the `ul` and `has` are different types and should not be colored in the same way.
+=== Syntax highlighting
+What about syntax highlighting ? When you integrate code snippets in your reports, you want them to look good or at least like in your IDE. In VSCode, here is how would look the editor at left and the native preview at right. As the `@apply` from TailwindCSS is not integrated in the regex system of `highlight.js`, it breaks the style of other parts (see the last block). In the second block the `ul` and `has` are different types and should not be colored in the same way.
 #figure(
   image("imgs/code-preview-vscode.png", width: 80%),
   caption: [The code preview in VSCode using the library `highlight.js`],
@@ -47,12 +59,12 @@ What about syntax highlighting ? In VSCode, here is how would look the editor at
 
 #figure(
   image("imgs/java-preview-vscode.png", width: 60%),
-  caption: [Another preview of Java code in VSCode. Lots of parts are not colorised.],
+  caption: [Another preview of Java code in VSCode. Lots of parts in white are not colorised.],
 ) <fig-java-preview-vscode>
 
-Now let's say, you don't really remember where you put a very specific note on your disk. You have hundreds of notes everywhere, for different courses and projects. You remember a few keywords from the problem and you try to run `grep -r` to find all possible match on all files on your disk. The problem is that the given pattern will no exact match will be found, because you only give keywords and not exact sentence or titles. You could also try to run `find` command on all your disk and filter by a single keyword. You'll probably get hundreds of unrelated results.
+Now let's say, you don't really remember where you put a very specific note on your disk about some "keyboard shortcuts for my terminal". You have hundreds of notes everywhere for numerous projects. You try to run `grep -r` to find all possible match on all files on your disk. The problem with this approach is that no exact match will be found, because `grep` only find exact match. We would prefer to have approximative matching. You could search by file path with the `find` command on all your disk and filter by a single keyword. You'll probably get hundreds of unrelated results or just no result because the filename is too different.
 
-== The solution DME
+== Why DME is the solution ?
 
 DME is trying to fix these issues around the PDF export, search and syntax highlighting experience. We didn't have time to tackle PDF export in this semester but we successfully improved the situation on search and code preview.
 
@@ -60,24 +72,46 @@ When you open DME, either with the `dme` command or via the start menu, you can 
 
 TODO home view screenshot
 
-If you opened via the `dme document.md` it would open it and show the preview.
+If you opened with a file as first argument `dme document.md` it would open it and show the preview.
+
+#figure(
+  image("imgs/preview-readme.png", width: 60%),
+  caption: [Preview of DME's README with DME itself],
+) <fig-preview-readme>
+
+The code is now better highlighted, because we used a more advanced highlighting system called Tree-Sitter.
+
+#figure(
+  image("imgs/java-preview-demo.png", width: 60%),
+  caption: [Here is the same snippet of Java highlighted in DME],
+) <fig-java-preview-demo>
+
+DME is also providing a simple but working search system. By pressing `p`, you can access a search dialog that will match fuzzily. It means that you can do typos 
 
 #figure(
   image("imgs/search-demo.png", width: 80%),
   caption: [Searching for some keywords in incorrect order do matches the expected headings],
 ) <fig-search-demo>
 
+To avoid very low quality match, it removes the low score matches, so you have to type around 2 words to see the first results. The results are streamed, you will see the first one quickly, wait a bit and other might come after that.
+
+#pagebreak()
+
 == Architecture
 
-We splitted our application in multiple crate. First we have a frontend crate, under src-tauri
-//TODO SAM Explain what it does
+#figure(
+  image("schemas/architecture.png", width: 80%),
+  caption: [High level overview of the architecture],
+) <fig-search-demo>
 
-Then we have our backend crate. This crate itself is splitted in multiple module, each having their own responsabilites.
+We have `dme-core` crate (under `app/core`) as the library where most of the logic is implemented. It contain several modules.
 
-- preview responsible for generating the html to render on the front side
-- theming responsible for syntax higlithing
-- search respnsible for makdown indexing
+- `preview` responsible for rendering HTML for a given Markdown file, including syntax highlighting of code snippets
+- `theming` responsible to generate CSS based on a given theme
+- `search` responsible for Markdown indexing and search
+- `export` responsible for PDF export (not implemented)
 
+Then we use this library in another crate setup by Tauri, 
 
 == Implementation
 
