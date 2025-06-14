@@ -14,7 +14,7 @@ use walkdir::WalkDir;
 
 use super::search::IndexStat;
 
-const MIN_PRIORITY: u32 = 150;
+const MIN_PRIORITY: u32 = 50;
 
 impl PartialOrd for ResearchResult {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
@@ -155,22 +155,27 @@ impl Researcher for DiskResearcher {
         self.has_started = true;
 
         let ignored_folders = [
-            OsStr::new("node_modules"),
-            OsStr::new("target"),
-            OsStr::new("build"),
-            OsStr::new(".npm"),
-            OsStr::new("lib"),
-            OsStr::new("debug"),
-            OsStr::new("archive"),
-            OsStr::new("archives"),
+            OsStr::new("vendor"),       // composer dependencies
+            OsStr::new("node_modules"), // node dependencies
+            OsStr::new("dist"),         // web build directory
+            OsStr::new("target"),       // rust build folder
+            OsStr::new("build"),        // general build folder
+            OsStr::new("debug"),        // anything about debug should probably be excluded
+            OsStr::new("pkg"),          // to skip ~/go/pkg
         ];
         // Get all paths by searching for Marddown files on disk
         // We have to accept the directory at first otherwise their content would be ignored
         let markdown_paths: Vec<String> = WalkDir::new(&self.base_path)
             .into_iter()
             .filter_entry(|entry| {
+                // Skip all ignored folders and folder starting with a dot
                 if entry.file_type().is_dir() {
                     !ignored_folders.contains(&entry.file_name())
+                        && !entry
+                            .file_name()
+                            .to_str()
+                            .unwrap_or_default()
+                            .starts_with('.')
                 } else {
                     entry.path().extension() == Some(OsStr::new("md"))
                 }
