@@ -6,23 +6,23 @@ const menu: MenuEntry[] = [
     {
         action: "Search in your Markdown files",
         icon: "search",
-        keymap: "f"
+        keymap: "p"
     },
-    {
-        action: "Open history",
-        icon: "history",
-        keymap: "ctrl+h"
-    },
-    {
-        action: "Export to PDF",
-        icon: "pdf",
-        keymap: "ctrl+e"
-    },
-    {
-        action: "Open the help",
-        icon: "help",
-        keymap: "ctrl+h"
-    }
+    //    {
+    //        action: "Open history",
+    //        icon: "history",
+    //        keymap: "ctrl+h"
+    //    },
+    //    {
+    //        action: "Export to PDF",
+    //        icon: "pdf",
+    //        keymap: "ctrl+e"
+    //    },
+    //    {
+    //        action: "Open the help",
+    //        icon: "help",
+    //        keymap: "ctrl+h"
+    //    }
 ]
 
 const props = defineProps<{

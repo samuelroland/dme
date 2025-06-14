@@ -25,9 +25,17 @@ listen<ResearchResult>('search-match', (event) => {
     let localResults = searchResults.value
     console.log("localResults", localResults)
     localResults.push(event.payload);
-    searchResults.value = localResults
+    let results = localResults
         .filter((item, idx, arr) => arr.findIndex(x => x.path === item.path) === idx)
-        .sort((a, b) => b.priority - a.priority).slice(0, 10);
+        .sort((a, b) => b.priority - a.priority)
+
+    // Make sure to apply the same filter as core library with only the top 1/4 of results
+    // See disk.rs for details on the why and algorithm
+    // This needs to be done again here for streaming needs
+    const max = Math.max(...results.map(e => e.priority))
+    const newMin = max - 1 / 4 * max
+    results = results.filter(e => e.priority >= newMin).slice(0, 10);
+    searchResults.value = results
     if (selectedEntry.value > searchResults.value.length) {
         selectedEntry.value = 0 // reset selection if it overpassed the results length
     }
@@ -143,7 +151,7 @@ function cutLongPathAtLeft(text: string, before: boolean) {
             <div class="p-5 max-w-[90vh] max-h-[60vh] w-full h-full border rounded-sm  bg-gray-100/80 overflow-hidden">
                 <h2 class="text-3xl font-bold">Search</h2>
                 <input @focusin="isFocused = true" v-model="search" ref="searchInput" tabindex="1"
-                    @keydown.stop="onKeyDownOnSearchInput"
+                    @keyup.stop="onKeyDownOnSearchInput" @keydown.stop=""
                     class="text-2xl font-bold focus:bg-orange-100 w-full rounded-sm p-3 border border-orange-300"
                     placeholder="Starting typing file names or heading keywords..." autofocus />
 

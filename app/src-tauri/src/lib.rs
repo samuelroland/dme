@@ -72,7 +72,6 @@ fn run_search(app: AppHandle, search: String) -> Result<String, String> {
         let mut ds = state.disk_researcher.lock().unwrap();
         if !ds.has_started() {
             println!("INDEXING START");
-            ds.set_max_nb_threads(10);
             ds.start();
         }
         drop(ds);
