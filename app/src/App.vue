@@ -37,6 +37,7 @@ async function openMarkdown(path: string | null, selectedHeading: string | null)
     lastPathUsed.value = path
     try {
         const result = await invoke("open_markdown_file", { path: path ?? "" }) as string;
+        if (!result) return
         mdcontent.value = result
         switchToPage("Preview")
 

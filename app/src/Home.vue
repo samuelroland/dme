@@ -7,7 +7,7 @@ import { OhVueIcon } from "oh-vue-icons";
 const menu: MenuEntry[] = [
     { action: "Search in your Markdown files", icon: "co-search", keymap: "s" },
     { action: "Grammars installation page", icon: "co-paint", keymap: "Ctrl+g" },
-    { action: "Help page", icon: "io-help", keymap: "?" },
+    // TODO: enable when ready { action: "Help page", icon: "io-help", keymap: "?" },
 ]
 
 const appInfo: Ref<AppInfo> = ref({ version: "??" });
