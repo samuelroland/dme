@@ -8,7 +8,7 @@ use serde::Serialize;
 #[derive(Serialize)]
 pub enum InstalledStatus {
     NotInstalled,
-    // We dont manage the "Installing" status in Rust, only on the frontend
+    // We don't manage the "Installing" status in Rust, only on the frontend
     Installed,
 }
 

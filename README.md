@@ -6,6 +6,7 @@
 >  What if the whole experience with Markdown was as delightful as the redaction ? Let's redefine the export, navigation and code highlighting experience too.
 
 ## Why
+Because it's a pain to export Markdown as PDF and have a nice style. Because it's a pain to write pure CSS to customize dozens of little things by hand. Because the syntax highlighting is very fragile with large parts of uncolored code. Because switching between different files is slow, you shouldn't need to open a file explorer to find your notes. You shouldn' need to remember where they are or which section talked about a specific note. You should be able to search and find the information directly in the previewer.
 
 ## Installation
 
@@ -34,7 +35,6 @@ How to run tests and include ignored tests (they are marked as `#[ignored]` beca
 cargo test -- --include-ignored
 ```
 
-Note: **never change the `PATH`** variable in tests, it will affects other tests as well!
 
 ### The desktop app
 1. Make sure you have the Tauri prequisites so all build dependencies will be present: [Tauri prequisites](https://tauri.app/start/prerequisites/)
@@ -50,7 +50,7 @@ pnpm tauri dev
 #### Building the desktop app for production
 Note: this is far ready to be fully usable for now, but if you want to install DME globally, here are the instructions.
 
-**WARNING: this only has been tested for Linux, installers for windows are generated as `.msi` but they have not been tested**
+**WARNING: This is working mostly on Linux, installers for Windows are generated as `.msi` and for MacOS as `.dmg` but some features have not been tested or do not work**
 1. Just run this
     ```sh
     cd app
@@ -130,9 +130,11 @@ dme
 ├─ README.md
 ```
 
-todo complete tree
-
 ## Common errors
+
+### In tests
+Note: **try to never change the `PATH`** variable in tests, it will affects other tests as well as they run in parallel !!! It works with a single test but not when
+We only do it at one exception in `setup.rs` for test `test_large_markdown_preview_with_codes_gives_same_result` because this is an integration test that is alone and always run after the unit tests.
 
 ### In Tauri backend
 
@@ -163,10 +165,18 @@ error[E0599]: the method `blocking_kind` exists for reference `&Result<Vec<Gramm
     |   ^^^^^^^^^^^^^^^^^ method cannot be called on `&Result<Vec<GrammarState>, String>` due to unsatisfied trait bounds
 ```
 
-It misses the `#[derive(Serialize)]` on the 2 structs to be able to serialize them.
+It misses the `#[derive(Serialize)]` on the 2 structs to be able to serialize them!
 
 #### slow `invoke` call from frontend is blocking the browser thread
-Even without using `await` before the `invoke("action", ...)` call, it seems to block the thread if the action is slow. To fix that and get a real async system from the frontend point of view, we can 
+Even without using `await` before the `invoke("action", ...)` call, it seems to block the thread if the action is slow. To fix that and get a real async system from the frontend point of view, we can just turn on `async` command.
 
-common error of slow invoke from frontend
-
+Instead of this definition of the command
+```rust
+#[tauri::command]
+pub fn install_grammar(id: &str) -> Result<(), String> {
+```
+define it as `async`
+```rust
+#[tauri::command(async)]
+pub fn install_grammar(id: &str) -> Result<(), String> {
+```

@@ -79,6 +79,7 @@ onMounted(() => {
     })
     onKeyStroke((e) => { // Ctrl + G
         if (e.ctrlKey && e.key == 'g') {
+            e.preventDefault() // to avoid opening "Find in page" browser feature on Windows
             switchToPage("Grammars")
         }
     })

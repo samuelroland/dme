@@ -71,19 +71,24 @@ What about syntax highlighting ? When you integrate code snippets in your report
   caption: [Another preview of Java code in VSCode. Lots of parts in white are not colorised.],
 ) <fig-java-preview-vscode>
 
+=== Search
+
 Now let's say, you don't really remember where you put a very specific note on your disk about some "keyboard shortcuts for my terminal". You have hundreds of notes everywhere for numerous projects. You try to run `grep -r` to find all possible match on all files on your disk. The problem with this approach is that no exact match will be found, because `grep` only find exact match. We would prefer to have approximative matching. You could search by file path with the `find` command on all your disk and filter by a single keyword. You'll probably get hundreds of unrelated results or just no result because the filename is too different.
 
 == Why DME is the solution ?
 
-Note: the README.md at root contains instructions on how to install DME if you want to follow along.
+_Note: the README.md at root contains instructions on how to install DME if you want to follow along._
 
-DME is trying to fix these issues around the PDF export, search and syntax highlighting experience. We didn't have time to tackle PDF export in this semester but we successfully improved the situation on search and code preview.
+DME is trying to fix these issues around the search and syntax highlighting experience. We didn't have time to tackle PDF export in this semester but we successfully improved the situation on search and code preview. The PDF style will be the same as the preview style.
 
 When you open DME, either with the `dme` command or via the start menu, you can see the home view.
 
-TODO home view screenshot
+#figure(
+  image("imgs/dme-home.png", width: 80%),
+  caption: [The home page of DME, when started without a file as argument],
+) <fig-dme-home>
 
-If you opened with a file as first argument `dme document.md` it would open it and show the preview.
+If you opened with a file as first argument `dme README.md` it would open it and show the preview.
 
 #figure(
   image("imgs/preview-readme.png", width: 60%),
@@ -92,7 +97,7 @@ If you opened with a file as first argument `dme document.md` it would open it a
 
 The preview doesn't refresh by itself for now, but if the underlying file changed, you can press `r` to reload the preview manually. We don't have colors on these Bash commands yet, because the support for Bash highlighting is not installed.
 
-Just press `Ctrl+g`, it open this page:
+Just press `Ctrl+g`, it opens this page:
 
 #figure(
   image("imgs/grammars-management.png", width: 60%),
@@ -120,7 +125,7 @@ DME is also providing a simple but working search system. By pressing `p`, you c
   caption: [Searching for some keywords in incorrect order do matches the expected headings],
 ) <fig-search-demo>
 
-To avoid very low quality match, it removes the low score matches, so you have to type around 2 words to see the first results. The results are streamed, you will see the first one quickly, wait a bit and other might come after that.
+To avoid very low quality match, it removes the low priority matches, so you have to type around 2 words to see the first results. The results are streamed, you will see the first one quickly, wait a bit and other might come after that. To quit the search, you can hit `Escape` twice. If you hit `Escape` once, you can move the selected entry with `j/k` or arrow down/up and hit enter to open the selected document.
 
 #pagebreak()
 
@@ -147,37 +152,40 @@ Some integrations tests (`app/core/tests`) are testing the core library but only
 == Implementation
 
 The search crate contains two core functionallity:
-- The indexation of markdown title on disk
-- The search inside the built
+- The indexation of Markdown file paths and Markdown titles in all these files, starting at the HOME folder
+- The search with these 2 index
 
-An important point is that the indexing process is asynchronous, running in separated threads. The reasons for this is
-avoid blocking UI / caller on a start call. Instead, the DiskResearcher make available a Progress struc to know how
-much of the markdowns are treated.
+An important point is that the indexing process is asynchronous, running in separated threads. The reasons for this is avoid blocking UI / caller on a start call. Instead, the `DiskResearcher` makes available a `Progress` struct to know how much of the markdowns have been indexed.
+
 === Indexing the disk
 
 This is the base algorithm of the indexation of markdown title on disk
 ```
-chunks = split the markdown found on disk
-for each chunks
+paths = search all paths on disk ending with .md, excluding hidden folders and specific folders for dependencies
+chunks = split the paths found in N chunks, N depends on the number of CPU cores
+for each chunk in chunks
     start a thread
-        get makrdown content
-        extract title base on content
-        lock
-        write data to shared map of title
-        unlock
+      for each file in chunk
+          get file content
+          extract title base on content
+          lock shared map of title
+          write data to shared map of title
+          unlock
+      end for
     end thread
 end for
 ```
+
 === Searching with the index
 
 This is the base algorithm of the search inside the title map build by the indexing process
 ```
 chunks = split the title map
-for each chunks
+for each chunk in chunks
     start a thread
         evaluate how close the title is to the query
         lock
-        write proximity to shared map of results
+        write the entry and its proximity score to shared map of results
         unlock
     end thread
 end for
@@ -186,30 +194,27 @@ search for markdown path matching the query
 join and sort results
 ```
 
-The process of evaluating the proximity of the titles/path and the query use an external crate: nucleo_matcher.
-Each results is attributed a score, with the path receiving a 1.3 multiplicatore compared to title to prioritize them.
-Those results are then sorted, and a subset is returned.
+The process of evaluating the proximity of the titles/path and the query use an external crate: `nucleo_matcher`. Each results is attributed a score, with the path receiving a 1.3 multiplicatore compared to title to prioritize them. Those results are then sorted, and a subset is returned.
 
-To ensure the relevency of the resulsts, the sub is calculated as followed:
+To ensure the quality of the results, the subset is calculated as followed:
 
 ```
-get the highest match proximity-wise
-define the lowerbound of accepted matches:
-   tale 3/4 of the maximum
+get the highest scores in the results
+lowerbound of accepted matches = 3/4 of the maximum
 
-filter all matches to keep the one above lowerbound
+filter all matches to keep only entries with score above lowerbound
 return the results
 ```
 
-An important note is that even if we limit the results to let's say 10, we might still get fewer results, if the were deemed
-not relevant enough.
+An important note is that even if we limit the results to 10, we might still get fewer results, if they were deemed not relevant enough.
 
 == Syntax highlighting
 
-- Grammars installation
-- Highlighting process
+Other programs using Tree-Sitter to provide syntax highlighting generally choose a few grammars to package in the program's binary file. It works and simplify the final user experience, which doesn't need to have a C compiler. Some other programs choose to bundle 130 languages to make sure everyone is happy and find its language inside. And then, the binary size explodes in 90 MB...
 
-Here is an example of an error that also shows the value of the borrow checker. It is really not trivial to detect that manually by reading the code. We are constructing the command `git clone --depth 1 --single_branch`
+We don't want to choose which language is the most important nor take all of them. We took a different approach to solve this size problem. We bundle no grammar at all and the user installs only the grammars needed manually via the UI. The installation is just a `git clone` of one of the proposed grammar and compilation of the C parser auto generated in each repository cloned. Then the Tree-Sitter is able to load dynamically from disk the grammars.
+
+Here is an example of an error that also shows the value of the borrow checker in this part of the program. It is really not trivial to detect that manually by reading the code. We are constructing the command `git clone --depth 1 --single_branch` to clone a Git repository of a grammar efficiently.
 
 ```rust
 let only_latest_commits: Option<u32> = Some(1);
@@ -224,6 +229,7 @@ if single_branch {
 let output = Self::run_git_cmd(&args, base_directory)?;
 ```
 
+And the associated compiler error
 ```sh
    Compiling dme-core v0.1.0
 error[E0716]: temporary value dropped while borrowed
@@ -240,6 +246,10 @@ error[E0716]: temporary value dropped while borrowed
    = note: consider using a `let` binding to create a longer lived value
 ```
 
+The issue is that we need to push a string slice (`&str`) but we have an integer (`u32`), so we call `.to_string()` to convert to a String and we take a reference, which is transformed as a string slice of the whole string. The issue is that this String object is local to the call and immediately freed once the argument has been used. As we continue to use `args` later, `args` contains an entry with a reference to this number that became invalid as the string no longer exist !
+
+The note `consider using a let binding to create a longer lived value` confirms this is a lifetime issue, we need a value that lives longer that `args` to its reference stored inside `args` is always valid.
+
 Another example where we put the paradigm in practice, is the `theme.rs` file with the definition of a `Theme` as reference an array of string slices (reference to parts of strings). This `Theme` struct is also used in struct `Renderer` and we also keep it as a reference. We had to annotate the lifetimes manually here with `'a`. This strange notation indicates that every reference with this annotation will need to live at least as long as the struct itself.
 ```rust
 /// A theme defining colors and modifiers to be used for syntax highlighting.
@@ -254,7 +264,6 @@ pub struct Renderer<'a> {
 }
 ```
 Why ? Because if the reference `theme` is living shorter than the `Renderer` object, it means we could do `renderer.theme` and access an invalid reference. As the borrow checker is protecting us against invalid pointer dereference, it will not compile without it.
-
 
 == Our experience
 === Our experience with the paradigm
@@ -279,24 +288,8 @@ Why ? Because if the reference `theme` is living shorter than the `Renderer` obj
 - *Proposed fixes and refactoring* #linebreak()
   The experience in IDE with `rust-analyzer` (the Rust language server) is amazing, there is so many fixes or refactoring proposed, it helps a lot. The compiler itself also generate propositions in its console output.
 
-
-
-loader local ref error mess
-
-
-structure arc mutex dindex
-
-pourquoi ca dans la recherche
-            let chunk = chunk.to_vec(); // copy chunk
-
-surtout lié au join skippé
-
-
-exemple du verygood.rs
-
-
 == Future of DME ?
-DME will continue to be developed in the future, here are a few priorities
+DME will continue to be developed in the future, here are a few ideas on what to implement next
 - *Continue improve syntax highlighting* with better queries files for Tree-Sitter grammars
 - *Develop the PDF export* we didn't have time to develop this semester
 - *Making syntax highlighting parallel*: we could make the highlighting even faster, which will become crucial for large documents with a lot of snippets. The work on the HPC course has not been merged yet but show some 
@@ -309,8 +302,5 @@ For future projects or research, here are a few subjects that could be explored 
 - *Unsafe Rust*: How it works ? What are the additional possibilities and constraint change ? How is it possible to create safe wrapper around unsafe interfaces ? How a safe wrapper around a C library can be created ?
 - *Complex data structures*: How is it possible to define struct self-referential attributes to define graph or network structures ?
 - *Conception of advanced types in the standard library*: How `Arc`, `RefCell`, `Cell`, `Rc` are implemented and how to work with or around the borrow checker rules ? When do they need unsafe code and how this unsafe code is reviewed ?
-- *Miri* (An interpreter on the internal representation of Rust): How it works ? How it help to detect unsafe patterns at runtime for unsafe code ?
-
-TODO
-- il manquait une conclusion/synthèse un peu et peut-être des idées de comment cette recherche pouvait être continuée dans un autre travail.
+- *Miri* (An interpreter on the internal representation of Rust): How it works ? How it help to detect unsafe patterns at runtime for unsafe code ? That's a very interesting project that makes Rust safer even when we are forced to use unsafe Rust.
 
