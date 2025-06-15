@@ -1,6 +1,13 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
+@theme {
+    --color-black: #0f191eff; /* Lighter black used in the logo */
+    --color-white: #f5fcfb; /* Blued white as backgroung of the logo and also at the top left of the square logo */
+    --color-sea: #394e98; /* Blue at bottom right the square logo */
+    --color-sea-light: #6e7fb4; /* Lighter version of the color "sea" */
+}
+
 :root {
     font-family: Cantarell, Inter, Avenir, Helvetica, Arial, sans-serif;
     font-size: 16px;
@@ -32,7 +39,7 @@ blockquote p::before, blockquote p::after {
 }
 
 .nice-gradient {
-		background: linear-gradient(to right, #0f191eff 0%, #394e98ff  100%);
+		background: linear-gradient(to right, var(--color-black) 0%, var(--color-sea) 100%);
 		-webkit-background-clip: text;
 		-webkit-text-fill-color: transparent;
 		width: fit-content;
@@ -67,4 +74,8 @@ a:hover {
     input[type=checkbox] + p {
         display: inline;
     }
+}
+
+.btn {
+    @apply border px-3 py-1 rounded-sm cursor-pointer font-bold
 }

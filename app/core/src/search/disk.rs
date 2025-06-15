@@ -1,4 +1,5 @@
 use crate::search::search::{Progress, ResearchResult, Researcher};
+use crate::util::setup::clone_mdn_content;
 use nucleo_matcher::pattern::{Atom, AtomKind, CaseMatching, Normalization, Pattern};
 use nucleo_matcher::{Config, Matcher, Utf32Str};
 use std::collections::{BinaryHeap, HashMap};
@@ -6,11 +7,14 @@ use std::ffi::OsStr;
 use std::fs::read_to_string;
 use std::path::PathBuf;
 use std::sync::mpsc::Sender;
-use std::sync::{Arc, Mutex};
-use std::{ascii, fs, thread};
+use std::sync::{Arc, Mutex, RwLock};
+use std::thread;
+use std::time::Instant;
 use walkdir::WalkDir;
 
 use super::search::IndexStat;
+
+const MIN_PRIORITY: u32 = 50;
 
 impl PartialOrd for ResearchResult {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
@@ -22,7 +26,6 @@ impl Ord for ResearchResult {
         self.priority.cmp(&other.priority)
     }
 }
-struct Disk {}
 
 /// Storing the results incrementally found in the search index
 #[derive(Clone)]
@@ -80,25 +83,35 @@ impl OrderedResults {
 
 #[derive(Debug)]
 pub struct DiskResearcher {
-    markdown_paths_set: Arc<Mutex<Vec<String>>>,
+    /// The list of all paths to Markdown files found
+    /// Use a RwLock to make searches more optimized during index construction
+    markdown_paths_vec: Arc<RwLock<Vec<String>>>,
     /// Each heading found will have an entry with a vector of files where it was found.
-    title_map: Arc<Mutex<HashMap<String, Vec<String>>>>,
+    /// Use a RwLock to make searches more optimized during index construction
+    title_map: Arc<RwLock<HashMap<String, Vec<String>>>>,
     base_path: PathBuf,
     max_nb_threads: usize,
     has_started: bool,
+    /// The progress counter counting the number of markdown paths where the titles
+    /// have been extracted and saved
+    /// Use a Mutex because writes will probably be more frequent than reads
     progress_counter: Arc<Mutex<usize>>,
 }
 
 impl DiskResearcher {
     pub fn new(path: String) -> Self {
         Self {
-            markdown_paths_set: Arc::new(Mutex::new(Vec::new())),
-            title_map: Arc::new(Mutex::new(HashMap::new())),
+            markdown_paths_vec: Arc::new(RwLock::new(Vec::new())),
+            title_map: Arc::new(RwLock::new(HashMap::new())),
             base_path: PathBuf::from(path),
             max_nb_threads: num_cpus::get(),
             has_started: false,
             progress_counter: Arc::new(Mutex::new(0)),
         }
+    }
+
+    pub fn has_started(&self) -> bool {
+        self.has_started
     }
 
     pub fn set_max_nb_threads(&mut self, nb_thread: usize) -> Result<(), String> {
@@ -141,12 +154,31 @@ impl Researcher for DiskResearcher {
     fn start(&mut self) {
         self.has_started = true;
 
-        let mut threads = Vec::new();
-        //Get all paths. We have to accept the directory at first otherwise their content would be ignored
+        let ignored_folders = [
+            OsStr::new("vendor"),       // composer dependencies
+            OsStr::new("node_modules"), // node dependencies
+            OsStr::new("dist"),         // web build directory
+            OsStr::new("target"),       // rust build folder
+            OsStr::new("build"),        // general build folder
+            OsStr::new("debug"),        // anything about debug should probably be excluded
+            OsStr::new("pkg"),          // to skip ~/go/pkg
+        ];
+        // Get all paths by searching for Marddown files on disk
+        // We have to accept the directory at first otherwise their content would be ignored
         let markdown_paths: Vec<String> = WalkDir::new(&self.base_path)
             .into_iter()
             .filter_entry(|entry| {
-                entry.file_type().is_dir() || entry.path().extension() == Some(OsStr::new("md"))
+                // Skip all ignored folders and folder starting with a dot
+                if entry.file_type().is_dir() {
+                    !ignored_folders.contains(&entry.file_name())
+                        && !entry
+                            .file_name()
+                            .to_str()
+                            .unwrap_or_default()
+                            .starts_with('.')
+                } else {
+                    entry.path().extension() == Some(OsStr::new("md"))
+                }
             })
             .filter_map(Result::ok)
             .filter(|e| e.file_type().is_file())
@@ -158,57 +190,66 @@ impl Researcher for DiskResearcher {
                     .to_string()
             })
             .collect();
-        let all_paths: Vec<_> = markdown_paths.clone();
+        // Save the result into the markdown_paths_set
         {
-            let mut map = self.markdown_paths_set.lock().unwrap();
+            let mut map = self.markdown_paths_vec.write().unwrap();
             *map = markdown_paths.clone();
         }
 
-        if all_paths.is_empty() {
+        if markdown_paths.is_empty() {
             return;
         }
-        let chunk_size = if (all_paths.len()) < self.max_nb_threads {
+        let chunk_size = if (markdown_paths.len()) < self.max_nb_threads {
             1 //This means we have more thread than the number of files
         } else {
-            all_paths.len().div_ceil(self.max_nb_threads)
+            markdown_paths.len().div_ceil(self.max_nb_threads)
         };
 
-        for chunk in all_paths.chunks(chunk_size) {
-            let chunk = chunk.to_vec(); // copy chunk
+        // We iterate on chunks and do copy of it, because we need to have a local version on each
+        // thread to iterate without needing to lock the RwLock to read each entry
+        // and potentially be blocked by writers threads during indexing
+        for chunk in markdown_paths.chunks(chunk_size) {
+            let local_chunk = chunk.to_vec(); // copy chunk
             let title_map = Arc::clone(&self.title_map);
             let counter = Arc::clone(&self.progress_counter);
 
-            //Create the thread to search for markdown in chunk
-            let handle = thread::spawn(move || {
-                //Local counter to avoid locking unlocking every loop.
+            // Create the thread to search for markdown in chunk
+            thread::spawn(move || {
+                // Local counter to avoid locking unlocking every loop.
                 let mut local_counter = 0;
-                for path in chunk {
-                    let content = fs::read_to_string(&path).unwrap_or_default();
+                for path in local_chunk {
+                    let content = read_to_string(&path).unwrap_or_default();
+                    // We found some titles, let's insert them or add their paths to existing entries
                     let titles = DiskResearcher::extract_markdown_titles(&content);
-                    let mut map = title_map.lock().unwrap();
-                    for title in titles {
-                        map.entry(title).or_default().push(path.clone())
+                    {
+                        let mut map = title_map.write().unwrap();
+                        for title in titles {
+                            map.entry(title).or_default().push(path.clone())
+                        }
                     }
                     local_counter += 1;
+                    // We update the shared counter not at each iteration
                     if local_counter == 10 {
-                        let mut global_counter = counter.lock().unwrap();
-                        *global_counter += 10;
+                        {
+                            let mut global_counter = counter.lock().unwrap();
+                            *global_counter += 10;
+                        }
                         local_counter = 0;
                     }
                 }
-                //If final counter is not 0 then we need to add the rest
+                // If final counter is not 0 then we need to add the rest
                 // to the total to have the real total when finished.
                 if local_counter != 0 {
                     let mut global_counter = counter.lock().unwrap();
                     *global_counter += local_counter;
                 }
             });
-            threads.push(handle);
         }
     }
+
     /// Ask about the progress, from 0 to 100 percent of research
     fn progress(&self) -> Progress {
-        let total = self.markdown_paths_set.lock().unwrap().len();
+        let total = self.markdown_paths_vec.read().unwrap().len();
         if total == 0 {
             return Progress(0);
         }
@@ -224,7 +265,7 @@ impl Researcher for DiskResearcher {
         limit: u8,
         sender: Option<Sender<ResearchResult>>,
     ) -> Vec<ResearchResult> {
-        let map = self.title_map.lock().unwrap().clone();
+        let map = self.title_map.read().unwrap().clone();
 
         let results: Arc<Mutex<OrderedResults>> = Arc::new(Mutex::new(OrderedResults::new(sender)));
         let headings: Vec<_> = map.into_iter().collect();
@@ -237,16 +278,18 @@ impl Researcher for DiskResearcher {
         };
 
         let query = raw.to_lowercase();
+        // Each thread will inspect part of the titles index to search
+        // for matches of the given query. Again we use a local copy.
         for tuples_chunk in headings.chunks(chunk_size) {
             let tuples = tuples_chunk.to_vec(); // copy chunk
             let results = Arc::clone(&results);
 
-            let query = query.clone();
+            let local_query = query.clone();
             let handle = thread::spawn(move || {
                 let mut matcher = Matcher::new(Config::DEFAULT);
                 // Search in parallel into the headings
                 let pattern = Pattern::new(
-                    &query,
+                    &local_query,
                     CaseMatching::Ignore,
                     Normalization::Smart,
                     AtomKind::Fuzzy,
@@ -255,7 +298,7 @@ impl Researcher for DiskResearcher {
                     let mut chars: Vec<char> = Vec::new();
                     let ascii_title = Utf32Str::new(&title, &mut chars);
                     let score = pattern.score(ascii_title, &mut matcher).unwrap_or(0);
-                    if score > 10 {
+                    if score > MIN_PRIORITY {
                         for path in paths.iter() {
                             let mut results = results.lock().unwrap();
                             results.push(ResearchResult {
@@ -272,7 +315,7 @@ impl Researcher for DiskResearcher {
         }
 
         // Search in parallel in the path as well and attibute higher priority
-        let file_list = self.markdown_paths_set.lock().unwrap().clone();
+        let file_list = self.markdown_paths_vec.read().unwrap().clone();
         let mut matcher = Matcher::new(Config::DEFAULT.match_paths());
         // Search in parallel into the headings
         let pattern = Pattern::new(
@@ -286,11 +329,11 @@ impl Researcher for DiskResearcher {
             let mut chars: Vec<char> = Vec::new();
             let ascii_title = Utf32Str::new(file, &mut chars);
             let score = pattern.score(ascii_title, &mut matcher).unwrap_or(0);
-            if score > 10 {
+            if score > MIN_PRIORITY + 100 {
                 results.lock().unwrap().push(ResearchResult {
                     title: None,
                     path: file.clone().parse().unwrap(),
-                    priority: (score as f32 * 1.3) as u32,
+                    priority: (score as f32 * 0.6) as u32,
                 });
             }
         }
@@ -301,10 +344,10 @@ impl Researcher for DiskResearcher {
         final_results.results(limit as usize)
     }
 
-    fn stats(&self) -> super::search::IndexStat {
+    fn stats(&self) -> IndexStat {
         IndexStat {
-            headings_count: self.title_map.lock().unwrap().len(),
-            markdown_paths_count: self.markdown_paths_set.lock().unwrap().len(),
+            headings_count: self.title_map.read().unwrap().len(),
+            markdown_paths_count: self.markdown_paths_vec.read().unwrap().len(),
         }
     }
 }
@@ -316,8 +359,8 @@ fn test_that_file_are_found() {
     //Wait for completion
     thread::sleep(std::time::Duration::from_secs(1));
 
-    assert!(!search.markdown_paths_set.lock().unwrap().is_empty());
-    for path in search.markdown_paths_set.lock().unwrap().iter() {
+    assert!(!search.markdown_paths_vec.read().unwrap().is_empty());
+    for path in search.markdown_paths_vec.read().unwrap().iter() {
         assert!(path.ends_with(".md"));
     }
 }
@@ -364,7 +407,8 @@ echo saasdf
 
 #[test]
 fn test_heading_extractions_advanced() {
-    let path = "target/content/files/en-us/web/css/layout_cookbook/contribute_a_recipe/index.md";
+    let repos = clone_mdn_content();
+    let path = repos.join("files/en-us/web/css/layout_cookbook/contribute_a_recipe/index.md");
     let expected = vec![
         "What makes a good recipe?",
         "Steps to publish a recipe",
@@ -392,37 +436,38 @@ fn test_that_search_works_inside_files() {
 
     let results2 = search.search("Introduction", 10, None);
     assert_eq!(results2.len(), 2);
+
     assert!(results2.contains(&ResearchResult {
         path: "test/depth2/test.md".to_string(),
         title: Some("Introduction".to_string()),
-        priority: 1,
+        priority: 322,
     }));
     assert!(results2.contains(&ResearchResult {
         path: "test/depth1/test.md".to_string(),
         title: Some("Introduction".to_string()),
-        priority: 1,
+        priority: 322,
     }));
     let results2 = search.search("intro", 10, None);
 
     assert!(results2.contains(&ResearchResult {
         path: "test/depth2/test.md".to_string(),
         title: Some("Introduction".to_string()),
-        priority: 1,
+        priority: 140,
     }));
     assert!(results2.contains(&ResearchResult {
         path: "test/depth1/test.md".to_string(),
         title: Some("Introduction".to_string()),
-        priority: 1,
+        priority: 140,
     }));
     assert!(results2.contains(&ResearchResult {
         path: "test/depth1/test.md".to_string(),
         title: Some("Intro".to_string()),
-        priority: 1,
+        priority: 140,
     }));
     assert!(results2.contains(&ResearchResult {
         path: "test/depth1/test.md".to_string(),
         title: Some("I swear introspection".to_string()),
-        priority: 1,
+        priority: 140,
     }));
     assert_eq!(results2.len(), 4);
 }
@@ -434,23 +479,25 @@ fn test_that_search_works_on_filename() {
     thread::sleep(std::time::Duration::from_secs(1));
     let results = search.search("depth2", 10, None);
     assert_eq!(results.len(), 2);
+
     assert!(results.contains(&ResearchResult {
         path: "test/depth2/test.md".to_string(),
         title: None,
-        priority: 2,
+        priority: 206,
     }));
     assert!(results.contains(&ResearchResult {
         path: "test/depth2/depth3/test3.md".to_string(),
         title: None,
-        priority: 2,
+        priority: 206,
     }));
 
     let results = search.search("depth3", 10, None);
+
     assert_eq!(results.len(), 1);
     assert!(results.contains(&ResearchResult {
         path: "test/depth2/depth3/test3.md".to_string(),
         title: None,
-        priority: 2,
+        priority: 206,
     }));
 }
 #[test]
@@ -460,15 +507,16 @@ fn test_mixed_search() {
     thread::sleep(std::time::Duration::from_secs(1));
     let results = search.search("hello", 10, None);
     assert_eq!(results.len(), 2);
+
     assert!(results.contains(&ResearchResult {
         path: "test/depth1/hello.md".to_string(),
         title: None,
-        priority: 2,
+        priority: 174,
     }));
     assert!(results.contains(&ResearchResult {
         path: "test/depth1/test4.md".to_string(),
         title: Some("Hello".to_string()),
-        priority: 1,
+        priority: 140,
     }));
 }
 
@@ -496,5 +544,5 @@ fn test_priority_is_respected() {
     search.start();
     thread::sleep(std::time::Duration::from_secs(1));
     let results = search.search("t", 100, None);
-    assert!(results.is_sorted_by(|a, b| a.priority > b.priority));
+    assert!(results.is_sorted_by(|a, b| a.priority >= b.priority));
 }
