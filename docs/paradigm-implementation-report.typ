@@ -75,6 +75,8 @@ Now let's say, you don't really remember where you put a very specific note on y
 
 == Why DME is the solution ?
 
+Note: the README.md at root contains instructions on how to install DME if you want to follow along.
+
 DME is trying to fix these issues around the PDF export, search and syntax highlighting experience. We didn't have time to tackle PDF export in this semester but we successfully improved the situation on search and code preview.
 
 When you open DME, either with the `dme` command or via the start menu, you can see the home view.
@@ -88,7 +90,21 @@ If you opened with a file as first argument `dme document.md` it would open it a
   caption: [Preview of DME's README with DME itself],
 ) <fig-preview-readme>
 
-The preview doesn't refresh by itself for now, but if the underlying file changed, you can press `r` to reload the preview manually.
+The preview doesn't refresh by itself for now, but if the underlying file changed, you can press `r` to reload the preview manually. We don't have colors on these Bash commands yet, because the support for Bash highlighting is not installed.
+
+Just press `Ctrl+g`, it open this page:
+
+#figure(
+  image("imgs/grammars-management.png", width: 60%),
+  caption: [],
+) <fig-grammars-management>
+
+And click `Install` on the row with `bash`. If it works, it will show `Installed` once it's done. You can also delete it afterwards. Hit `Escape` or click on the `Close` button to go back to the previous page. Hit `r` to reload the preview and here
+
+#figure(
+  image("imgs/preview-readme-colors.png", width: 60%),
+  caption: [],
+) <fig-preview-readme-colors>
 
 The code is now better highlighted, because we used a more advanced highlighting system called Tree-Sitter.
 
@@ -97,7 +113,7 @@ The code is now better highlighted, because we used a more advanced highlighting
   caption: [Here is the same snippet of Java highlighted in DME],
 ) <fig-java-preview-demo>
 
-DME is also providing a simple but working search system. By pressing `p`, you can access a search dialog that will match fuzzily. It means that you can do typos 
+DME is also providing a simple but working search system. By pressing `p`, you can access a search dialog that will match fuzzily. It means that you can do typos or type keywords in any order, and you will still get some results.
 
 #figure(
   image("imgs/search-demo.png", width: 80%),
@@ -111,7 +127,7 @@ To avoid very low quality match, it removes the low score matches, so you have t
 == Architecture
 
 #figure(
-  image("schemas/architecture.png", width: 80%),
+  image("schemas/architecture.png", width: 90%),
   caption: [High level overview of the architecture],
 ) <fig-search-demo>
 
@@ -123,8 +139,10 @@ We have `dme-core` crate (under `app/core`) as the library where most of the log
 - `export` responsible for PDF export (not implemented)
 
 Then we use this library in the desktop app which is separated in 2 main parts
-1. The frontend (`app/src`), is the VueJS application written in TypeScript
-1. The backend (`app/src-tauri`) in Rust using Tauri. It defines some commands (some functions accessible by the frontend code) using the core library.
++ The frontend (`app/src`), is the VueJS application written in TypeScript
++ The backend (`app/src-tauri`) in Rust using Tauri. It defines some commands (some functions accessible by the frontend code) using the core library.
+
+Some integrations tests (`app/core/tests`) are testing the core library but only access public interfaces like external code.
 
 == Implementation
 
@@ -188,12 +206,10 @@ not relevant enough.
 
 == Syntax highlighting
 
-- Tree-Sitter vite fait
 - Grammars installation
 - Highlighting process
-- Exemple paradigme application
 
-
+Here is an example of an error that also shows the value of the borrow checker. It is really not trivial to detect that manually by reading the code. We are constructing the command `git clone --depth 1 --single_branch`
 
 ```rust
 let only_latest_commits: Option<u32> = Some(1);
@@ -224,6 +240,20 @@ error[E0716]: temporary value dropped while borrowed
    = note: consider using a `let` binding to create a longer lived value
 ```
 
+Another example where we put the paradigm in practice, is the `theme.rs` file with the definition of a `Theme` as reference an array of string slices (reference to parts of strings). This `Theme` struct is also used in struct `Renderer` and we also keep it as a reference. We had to annotate the lifetimes manually here with `'a`. This strange notation indicates that every reference with this annotation will need to live at least as long as the struct itself.
+```rust
+/// A theme defining colors and modifiers to be used for syntax highlighting.
+pub struct Theme<'a> {
+  //...
+    pub(crate) supported_highlight_names: &'a [&'a str],
+}
+
+/// HTML syntax highlighting renderer.
+pub struct Renderer<'a> {
+    theme: &'a theme::Theme<'a>,
+}
+```
+Why ? Because if the reference `theme` is living shorter than the `Renderer` object, it means we could do `renderer.theme` and access an invalid reference. As the borrow checker is protecting us against invalid pointer dereference, it will not compile without it.
 
 
 == Our experience
@@ -263,33 +293,24 @@ surtout lié au join skippé
 
 
 exemple du verygood.rs
-```rust
 
-TSH_CACHE: Lazy\<RwLock<HashMap>>
-
-/// A theme defining colors and modifiers to be used for syntax highlighting.
-pub struct Theme<'a> {
-  //...
-    pub(crate) supported_highlight_names: &'a [&'a str],
-}
-
-
-/// HTML syntax highlighting renderer.
-pub struct Renderer<'a> {
-    theme: &'a theme::Theme<'a>,
-}todo install instructions
-
-```
 
 == Future of DME ?
-- Making syntax highlighting parallel
-- Making grammars installation parallel
-- Making a full text search
+DME will continue to be developed in the future, here are a few priorities
+- *Continue improve syntax highlighting* with better queries files for Tree-Sitter grammars
+- *Develop the PDF export* we didn't have time to develop this semester
+- *Making syntax highlighting parallel*: we could make the highlighting even faster, which will become crucial for large documents with a lot of snippets. The work on the HPC course has not been merged yet but show some 
+- Making *a full text search* and keeping it fuzzy
+- Continue improving the *details of rules in the search system* and more testing
+- Continue *performance* benchmarking and improvements
 
 == Opportunities to dive deeper in the paradigm
+For future projects or research, here are a few subjects that could be explored around our paradigm
+- *Unsafe Rust*: How it works ? What are the additional possibilities and constraint change ? How is it possible to create safe wrapper around unsafe interfaces ? How a safe wrapper around a C library can be created ?
+- *Complex data structures*: How is it possible to define struct self-referential attributes to define graph or network structures ?
+- *Conception of advanced types in the standard library*: How `Arc`, `RefCell`, `Cell`, `Rc` are implemented and how to work with or around the borrow checker rules ? When do they need unsafe code and how this unsafe code is reviewed ?
+- *Miri* (An interpreter on the internal representation of Rust): How it works ? How it help to detect unsafe patterns at runtime for unsafe code ?
 
 TODO
 - il manquait une conclusion/synthèse un peu et peut-être des idées de comment cette recherche pouvait être continuée dans un autre travail.
-
-
 

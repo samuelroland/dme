@@ -9,7 +9,7 @@
 
 ## Installation
 
-You need Git and the Rust toolchain 1.87 ([See installation via Rustup](https://rustup.rs/)).
+You need Git and the Rust toolchain 1.87 ([See installation via Rustup](https://rustup.rs/)). You also need a C compiler so DME can compile Tree-sitter grammars.
 
 ```sh
 git clone https://github.com/samuelroland/dme.git
@@ -114,13 +114,59 @@ dme
 │   │   ├── Search.vue
 │   │   ├── types.ts
 │   ├── src-tauri
-│   │   ├── build.rs
-│   │   ├── Cargo.toml
-│   │   ├── icon
-│   │   ├── src
-│   │   │   ├── lib.rs
-│   │   │   └── main.rs
-│   │   └── tauri.conf.json
+│       ├── build.rs
+│       ├── Cargo.toml
+│       ├── icon
+│       ├── src
+│       │   ├── commands // Tauri commands by features, exposed for the frontend
+│       │   │   ├── grammars.rs
+│       │   │   ├── home.rs
+│       │   │   ├── preview.rs
+│       │   │   └── search.rs
+│       │   ├── lib.rs
+│       │   └── main.rs
+│       └── tauri.conf.json
 ├── docs
 ├─ README.md
 ```
+
+todo complete tree
+
+## Common errors
+
+### In Tauri backend
+
+#### its trait bounds were not satisfied
+
+
+```rust
+pub enum InstalledStatus {
+    NotInstalled,
+    Installing,
+    Installed,
+}
+
+pub struct GrammarState {
+    id: String,
+    link: String,
+    status: InstalledStatus,
+}
+
+#[tauri::command]
+pub fn get_grammars_list() -> Result<Vec<GrammarState>, String> {
+```
+```
+error[E0599]: the method `blocking_kind` exists for reference `&Result<Vec<GrammarState>, String>`, but its trait bounds were not satisfied
+   --> src/commands/grammars.rs:19:1
+    |
+19  |   #[tauri::command]
+    |   ^^^^^^^^^^^^^^^^^ method cannot be called on `&Result<Vec<GrammarState>, String>` due to unsatisfied trait bounds
+```
+
+It misses the `#[derive(Serialize)]` on the 2 structs to be able to serialize them.
+
+#### slow `invoke` call from frontend is blocking the browser thread
+Even without using `await` before the `invoke("action", ...)` call, it seems to block the thread if the action is slow. To fix that and get a real async system from the frontend point of view, we can 
+
+common error of slow invoke from frontend
+
