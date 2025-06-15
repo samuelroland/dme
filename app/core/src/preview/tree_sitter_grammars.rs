@@ -62,6 +62,11 @@ impl TreeSitterGrammarsManager {
         })
     }
 
+    /// Get the final grammars folder
+    pub fn get_grammars_folder(&self) -> &PathBuf {
+        &self.final_grammars_folder
+    }
+
     /// Install a new grammar from a given git HTTPS URL
     pub fn install(&mut self, git_repo_https_url: &str) -> Result<(), String> {
         // Only clone the repository if it is not already present
