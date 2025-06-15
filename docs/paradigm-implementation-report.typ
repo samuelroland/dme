@@ -5,6 +5,15 @@
     outset: (y: 3pt),
     radius: 2pt,
 )
+
+  // Display block code in a larger block with more padding.
+#show raw.where(block: true): block.with(
+    // fill: rgb(249, 251, 254),
+    inset: 10pt,
+    radius: 2pt,
+    stroke: 1pt + luma(200)
+)
+
 #set text(font: "Cantarell")
 #show link: underline
 #let figure = figure.with(
@@ -79,6 +88,8 @@ If you opened with a file as first argument `dme document.md` it would open it a
   caption: [Preview of DME's README with DME itself],
 ) <fig-preview-readme>
 
+The preview doesn't refresh by itself for now, but if the underlying file changed, you can press `r` to reload the preview manually.
+
 The code is now better highlighted, because we used a more advanced highlighting system called Tree-Sitter.
 
 #figure(
@@ -111,7 +122,9 @@ We have `dme-core` crate (under `app/core`) as the library where most of the log
 - `search` responsible for Markdown indexing and search
 - `export` responsible for PDF export (not implemented)
 
-Then we use this library in another crate setup by Tauri, 
+Then we use this library in the desktop app which is separated in 2 main parts
+1. The frontend (`app/src`), is the VueJS application written in TypeScript
+1. The backend (`app/src-tauri`) in Rust using Tauri. It defines some commands (some functions accessible by the frontend code) using the core library.
 
 == Implementation
 
@@ -215,29 +228,28 @@ error[E0716]: temporary value dropped while borrowed
 
 == Our experience
 === Our experience with the paradigm
-- Avoided thousands of possible errors
-- Hard to think about advanced memory references
-- No memory crash at runtime
+- *Avoided thousands of possible errors* #linebreak()
+  We encountered compile errors related to memory safety, which would have probably been missed in a C codebase.
+- *Hard to think about advanced memory references* #linebreak()
+  Sometimes, with some of the Tree-Sitter types and mutables references required, it was hard to manage some references where referenced objects didn't lived long enough. We had to refactor some parts of the code
+- *No memory crash at runtime*
+  In contrary to all C and C++ projects we did in the past, we had absolutely no memory issues that caused a crash. No segfault, no corrupted data structures, no and buffer overflow!
 
 === Our experience with Rust
-- The standard library
+- *The standard library* #linebreak()
+  The numerous types such as `Result`, `Option`, `HashMap`, `Vec` are very useful. If we worked in C, we would miss all this plug and play experience. It also offered us advanced feature that were really helpful like `Arc` or `RwLock`. They were easy to use and well-documented.
+- *Tree-Sitter library* #linebreak()
+  The Tree-Sitter library was the complete opposite of the standard library of Rust, there was hardly any documentation, often demanding to read the code to understand how it works. Some incoherent behaviors were also detected on 2 ways to do the same thing.
+- *Unit and integration testing* #linebreak()
+  We were able to write a lot of Unit tests, and even though are program was highly concurrent we did not suffer any side effect linked to concurrency. Our tests were deterministic.
+- *Be forced to manage errors*
+  Not having exceptions and having the `Result` enum type, that represents a succesful result or an error is a major advantage of the language! The fact that Rust forces to check if it was succesful before trying to use the result value, adds a cost during the coding process, but this cost is largely counter balanced with the lack of runtime issues. There is always a way to "go quickly and don't care about errors" if we are okay to see the program panic (crash). We can just call `unwrap()` on `Result`, which is very helpful for unit tests or during prototyping.
+- *Compilers contextual errors* #linebreak()
+  The Rust compiler is the only one we know that can point so precisely to multiple locations in our code, to indicate not just where the issue is created but the important parts around this issue that are deeply related. When the borrow-checker generate errors, like "could not borrow after move", it give the location of the move and the borrow and propose a fix like "considering borrowing instead of move by adding a &".
+- *Proposed fixes and refactoring* #linebreak()
+  The experience in IDE with `rust-analyzer` (the Rust language server) is amazing, there is so many fixes or refactoring proposed, it helps a lot. The compiler itself also generate propositions in its console output.
 
-Then standard library offerd quiet a lot of advanced feature that were really helpful, such as Arc or RwLock.
-They were easy to use and well-documented
-- Tree-Sitter library
-The Tree-Sitter library was the complete opposite of the standard library of rust, there was hardly any documentation,
-often requiering to read the code to understand how it worked.
-- Unit and integration testing
-We were able to write a lot of Unit tests, and even though are program was highly concurrent we did not suffer any side
-effect linked to concurrency. Our tests were deterministic.
-- Type expressiveness
-- Be forced to manage errors
-The fact that rust force direct management of error had a lot of cost during the coding process.
-Fortunetly this cost was leverage against less runtime issues.
 
-- Liked the functionnal part of Rust
-- Compilers contextual errors
-- Proposed fixes and refactoring
 
 loader local ref error mess
 
