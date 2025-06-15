@@ -49,7 +49,6 @@
     ],
     [
   #image("schemas/diskresearcher.png")
-// todo update schema with rwlock
   ]
 )
 ]
