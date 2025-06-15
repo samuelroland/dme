@@ -76,7 +76,7 @@ async function onEnterDuringSearch() {
 }
 
 // React to enter, escape or any other key that trigger running the search again
-function onKeyDownOnSearchInput(e) {
+function onKeyDownOnSearchInput(e: KeyboardEvent) {
     if (e.key == 'Escape') escapeFromSearchInput();
     else if (e.key == 'Enter') onEnterDuringSearch();
     else runSearch()
@@ -91,7 +91,7 @@ function changeSelectedEntry(increment: number) {
     }
 }
 
-function insertSearchInputDuringSearch(e) {
+function insertSearchInputDuringSearch(e: KeyboardEvent) {
     if (isFocused.value || !searchOpened.value) return;
     searchInput.value?.focus()
     e.preventDefault() // to avoid entering "i" in the input
@@ -103,7 +103,7 @@ function onEntryClick(result: ResearchResult) {
 
 onMounted(() => {
     // Toggle this search modal on key p
-    onKeyStroke(['p'], () => {
+    onKeyStroke(['s'], () => {
         searchOpened.value = true
         searchInput.value?.focus() // try to focus, even if this is not always successful
     })
