@@ -1,6 +1,7 @@
 <script setup lang="ts">
 // A basic Search modal accessible by pressing on `p`
 import { invoke } from '@tauri-apps/api/core';
+import { listen } from '@tauri-apps/api/event';
 import { onKeyStroke } from '@vueuse/core'
 import { ref, onMounted, Ref } from "vue";
 import { ResearchResult } from './types';
@@ -19,13 +20,33 @@ const error = ref("")
 const selectedEntry = ref(0)
 const isFocused = ref(false)
 
+listen<ResearchResult>('search-match', (event) => {
+    console.log("got event", event)
+    let localResults = searchResults.value
+    console.log("localResults", localResults)
+    localResults.push(event.payload);
+    let results = localResults
+        .filter((item, idx, arr) => arr.findIndex(x => x.path === item.path) === idx)
+        .sort((a, b) => b.priority - a.priority)
+
+    // Make sure to apply the same filter as core library with only the top 1/4 of results
+    // See disk.rs for details on the why and algorithm
+    // This needs to be done again here for streaming needs
+    const max = Math.max(...results.map(e => e.priority))
+    const newMin = max - 1 / 4 * max
+    results = results.filter(e => e.priority >= newMin).slice(0, 10);
+    searchResults.value = results
+    if (selectedEntry.value > searchResults.value.length) {
+        selectedEntry.value = 0 // reset selection if it overpassed the results length
+    }
+});
+
 async function runSearch() {
+    if (search.value.trim().length == 0) return
     try {
-        const result = await invoke("run_search", { search: search.value }) as ResearchResult[];
-        if (searchResults.value != result) {
-            selectedEntry.value = 0 // reset selection entry on each results change
-        }
-        searchResults.value = result
+        searchResults.value = []
+        await invoke("run_search", { search: search.value })
+        console.log("started search !!")
         error.value = ""
     } catch (err) {
         error.value = err
@@ -55,7 +76,7 @@ async function onEnterDuringSearch() {
 }
 
 // React to enter, escape or any other key that trigger running the search again
-function onKeyDownOnSearchInput(e) {
+function onKeyDownOnSearchInput(e: KeyboardEvent) {
     if (e.key == 'Escape') escapeFromSearchInput();
     else if (e.key == 'Enter') onEnterDuringSearch();
     else runSearch()
@@ -70,7 +91,7 @@ function changeSelectedEntry(increment: number) {
     }
 }
 
-function insertSearchInputDuringSearch(e) {
+function insertSearchInputDuringSearch(e: KeyboardEvent) {
     if (isFocused.value || !searchOpened.value) return;
     searchInput.value?.focus()
     e.preventDefault() // to avoid entering "i" in the input
@@ -82,7 +103,7 @@ function onEntryClick(result: ResearchResult) {
 
 onMounted(() => {
     // Toggle this search modal on key p
-    onKeyStroke(['p'], () => {
+    onKeyStroke(['s'], () => {
         searchOpened.value = true
         searchInput.value?.focus() // try to focus, even if this is not always successful
     })
@@ -94,7 +115,7 @@ onMounted(() => {
             changeSelectedEntry(1)
         }
     })
-    onKeyStroke(['k', 'ArrowUp'], (e) =>{
+    onKeyStroke(['k', 'ArrowUp'], (e) => {
         if (searchOpened.value) {
             e.preventDefault()
             changeSelectedEntry(-1)
@@ -108,11 +129,17 @@ onMounted(() => {
 })
 
 // Only show the end of the paths when too long to be able to see the filenames
-const MAX_PATH_SIZE = 60;
-function cutLongPathAtLeft(text: string) {
+const MAX_PATH_SIZE = 40;
+function cutLongPathAtLeft(text: string, before: boolean) {
     if (text.length > MAX_PATH_SIZE) {
-        return "..." + text.substring(text.length - MAX_PATH_SIZE)
+        if (before) {
+            return "..." + text.substring(text.length - MAX_PATH_SIZE)
+        } else {
+
+            return text.substring(0, MAX_PATH_SIZE) + "..."
+        }
     }
+    return text
 }
 
 </script>
@@ -121,11 +148,10 @@ function cutLongPathAtLeft(text: string) {
     <div>
         <div v-if="searchOpened"
             class="fixed flex items-center justify-center inset-0 border bg-gray-200/40 overflow-hidden">
-            <div
-                class="p-5 max-w-[90vh] max-h-[60vh] w-full h-full border rounded-sm  bg-gray-100/80 overflow-hidden">
+            <div class="p-5 max-w-[90vh] max-h-[60vh] w-full h-full border rounded-sm  bg-gray-100/80 overflow-hidden">
                 <h2 class="text-3xl font-bold">Search</h2>
                 <input @focusin="isFocused = true" v-model="search" ref="searchInput" tabindex="1"
-                    @keydown.stop="onKeyDownOnSearchInput"
+                    @keyup.stop="onKeyDownOnSearchInput" @keydown.stop=""
                     class="text-2xl font-bold focus:bg-orange-100 w-full rounded-sm p-3 border border-orange-300"
                     placeholder="Starting typing file names or heading keywords..." autofocus />
 
@@ -135,8 +161,9 @@ function cutLongPathAtLeft(text: string) {
                     <div :class="idx == selectedEntry ? 'bg-orange-300/70' : 'cursor-pointer hover:bg-orange-300/60 bg-orange-300/20'"
                         :key="result.path" class="my-1 p-1 w-full overflow-hidden" @click="() => onEntryClick(result)">
                         <div class="flex justify-between mx-3">
-                            <span v-if="result.title != null" class="font-bold text-xl">{{ result.title }}</span>
-                            <span class="italic">{{ cutLongPathAtLeft(result.path) }}
+                            <span v-if="result.title != null" class="font-bold text-xl">{{
+                                cutLongPathAtLeft(result.title, false) }}</span>
+                            <span class="italic">{{ cutLongPathAtLeft(result.path, true) }}
                                 <span class="ml-2 font-bold not-italic">{{ result.priority }}</span>
                             </span>
                         </div>
