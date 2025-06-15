@@ -14,8 +14,8 @@ import { BiTrashFill, CoSearch, IoHelp, CoPaint } from "oh-vue-icons/icons";
 addIcons(BiTrashFill, CoSearch, IoHelp, CoPaint);
 
 type Page = "Home" | "Grammars" | "Preview" | "Help"
-const mdcontent = ref(null);
-const lastPathUsed = ref(null)
+const mdcontent: Ref<string | null> = ref(null)
+const lastPathUsed: Ref<string | null> = ref(null)
 const page: Ref<Page> = ref("Home")
 const lastPage: Ref<Page> = ref("Home")
 
@@ -34,11 +34,9 @@ function backToLastPage() {
 // It's possible to give a heading to select once opened (useful during search)
 // Returns true if it has been opened, false in case of error
 async function openMarkdown(path: string | null, selectedHeading: string | null) {
-    if (!path) return
-
     lastPathUsed.value = path
     try {
-        const result = await invoke("open_markdown_file", { path: path }) as string;
+        const result = await invoke("open_markdown_file", { path: path ?? "" }) as string;
         mdcontent.value = result
         switchToPage("Preview")
 

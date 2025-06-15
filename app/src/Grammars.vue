@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { invoke } from '@tauri-apps/api/core';
-import { onMounted, reactive, Ref, ref } from 'vue';
+import { onMounted, Ref, ref } from 'vue';
 import { OhVueIcon } from "oh-vue-icons";
 
 enum InstalledStatus {
@@ -26,8 +26,7 @@ const lastError = ref("")
 // A set of grammars currently in installation
 // This is the easiest way to manage this state, on the frontend only
 // It will not always be 100% correct (if user go back to home and come back this set will be lost)
-// const installingIds: Set<string> = reactive(new Set())
-const installingIds: Ref<Array<string>> = ref([])
+const installingIds: Ref<Set<string>> = ref(new Set())
 
 async function reloadGrammarsList() {
     grammars.value = await invoke("get_grammars_list") as unknown as GrammarState[]
@@ -37,16 +36,16 @@ async function reloadGrammarsList() {
 async function installById(id: string) {
     lastError.value = ""
     try {
-        installingIds.value.push(id)
+        installingIds.value.add(id)
         console.log("start install", installingIds.value)
         const promise = invoke("install_grammar", { id })
         await promise
-        installingIds.value = installingIds.value.filter(i => i !== id)
+        installingIds.value.delete(id)
         console.log("end install", installingIds.value)
         reloadGrammarsList()
     } catch (error) {
         lastError.value = error
-        installingIds.value = installingIds.value.filter(i => i !== id)
+        installingIds.value.delete(id)
     }
 }
 
@@ -90,7 +89,7 @@ onMounted(async () => {
                     <td><a :href="grammar.link">{{ grammar.link }}</a></td>
                     <td class="text-center">
                         <span v-if="grammar.status == InstalledStatus.NotInstalled">
-                            <span v-if="installingIds.includes(grammar.id)">Installing...</span>
+                            <span v-if="installingIds.has(grammar.id)">Installing...</span>
                             <button v-else @click="() => installById(grammar.id)"
                                 class="btn border-sea-light text-sea">Install</button>
                         </span>
