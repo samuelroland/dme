@@ -10,9 +10,6 @@ use std::io::{self, Write};
 use std::path::PathBuf;
 use tree_sitter_loader::Loader;
 
-static TREE_SITTER_GRAMMARS_FOLDER_VIA_ENV: Lazy<Option<String>> =
-    Lazy::new(|| std::env::var("TREE_SITTER_GRAMMARS_FOLDER").ok());
-
 pub struct ComrakParser {
     manager: TreeSitterGrammarsManager,
 }
@@ -21,13 +18,7 @@ impl ComrakParser {
     /// Create a new ComrakParser with a default grammars folder or use the
     /// TREE_SITTER_GRAMMARS_FOLDER environment variable if defined
     pub fn new() -> Result<Self, String> {
-        let manager = match &*TREE_SITTER_GRAMMARS_FOLDER_VIA_ENV {
-            Some(folder) => {
-                TreeSitterGrammarsManager::new_with_grammars_folder(PathBuf::from(folder.clone()))
-            }
-            None => TreeSitterGrammarsManager::new(),
-        }?;
-
+        let manager = TreeSitterGrammarsManager::new()?;
         Ok(ComrakParser { manager })
     }
 
