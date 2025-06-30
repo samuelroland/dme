@@ -7,10 +7,7 @@ use std::{
 
 use dme_core::{
     markdown_to_highlighted_html,
-    search::{
-        disk::{self, DiskResearcher},
-        search::Researcher,
-    },
+    search::{disk::DiskResearcher, search::Researcher},
     util::setup::{
         clone_mdn_content, generate_large_markdown_with_codes,
         install_all_grammars_in_local_target_folder,
