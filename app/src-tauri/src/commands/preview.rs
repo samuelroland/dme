@@ -5,7 +5,7 @@ use dme_core::{markdown_to_highlighted_html, preview::preview::Html};
 #[tauri::command]
 /// Open given Markdown file or the default one provided as argument
 /// or none otherwise
-pub fn open_markdown_file(mut path: String) -> Result<Option<Html>, String> {
+pub async fn open_markdown_file(mut path: String) -> Result<Option<Html>, String> {
     println!("{path:?}");
     if path.is_empty() {
         path = {

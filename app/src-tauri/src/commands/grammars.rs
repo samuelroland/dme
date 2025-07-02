@@ -20,7 +20,7 @@ pub struct GrammarState {
 }
 
 #[tauri::command]
-pub fn get_grammars_list() -> Result<Vec<GrammarState>, String> {
+pub async fn get_grammars_list() -> Result<Vec<GrammarState>, String> {
     let mut manager = TreeSitterGrammarsManager::new()?;
     let list = manager.list_installed_langs()?;
     let installed_map: HashSet<String> = HashSet::from_iter(list);
@@ -43,8 +43,8 @@ pub fn get_grammars_list() -> Result<Vec<GrammarState>, String> {
     Ok(result)
 }
 
-#[tauri::command(async)]
-pub fn install_grammar(id: &str) -> Result<(), String> {
+#[tauri::command]
+pub async fn install_grammar(id: &str) -> Result<(), String> {
     let mut manager = TreeSitterGrammarsManager::new()?;
     let link = PROPOSED_GRAMMAR_SOURCES
         .get(id)
@@ -53,8 +53,8 @@ pub fn install_grammar(id: &str) -> Result<(), String> {
     Ok(())
 }
 
-#[tauri::command(async)]
-pub fn remove_grammar(id: &str) -> Result<(), String> {
+#[tauri::command]
+pub async fn remove_grammar(id: &str) -> Result<(), String> {
     let mut manager = TreeSitterGrammarsManager::new()?;
     let link = PROPOSED_GRAMMAR_SOURCES
         .get(id)
@@ -63,8 +63,8 @@ pub fn remove_grammar(id: &str) -> Result<(), String> {
     Ok(())
 }
 
-#[tauri::command(async)]
-pub fn grammars_folder() -> Result<String, String> {
+#[tauri::command]
+pub async fn grammars_folder() -> Result<String, String> {
     let manager = TreeSitterGrammarsManager::new()?;
     Ok(manager
         .get_grammars_folder()
