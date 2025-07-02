@@ -6,7 +6,7 @@ pub struct AppInfo {
 }
 
 #[tauri::command]
-pub fn get_app_info() -> AppInfo {
+pub async fn get_app_info() -> AppInfo {
     AppInfo {
         version: env!("CARGO_PKG_VERSION").to_owned(),
     }

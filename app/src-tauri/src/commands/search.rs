@@ -10,7 +10,7 @@ use tauri::{AppHandle, Emitter, Manager};
 use crate::AppData;
 
 #[tauri::command]
-pub fn run_search(app: AppHandle, search: String) -> Result<String, String> {
+pub async fn run_search(app: AppHandle, search: String) -> Result<String, String> {
     thread::spawn(move || {
         if let Some(state) = app.try_state::<AppData>() {
             println!("Searching {search} ");

@@ -2,37 +2,15 @@ mod commands;
 
 use crate::commands::grammars::get_grammars_list;
 use crate::commands::search::run_search;
-use std::{
-    collections::{HashMap, HashSet},
-    env::current_dir,
-    path::{Path, PathBuf},
-    sync::{
-        mpsc::{self, Receiver},
-        Arc, Mutex,
-    },
-    thread::{self, sleep},
-    time::{Duration, Instant},
-};
+use std::sync::{mpsc::Receiver, Mutex};
 
 use commands::{
     grammars::{grammars_folder, install_grammar, remove_grammar},
     home::get_app_info,
     preview::open_markdown_file,
 };
-use dme_core::{
-    markdown_to_highlighted_html,
-    preview::{
-        preview::Html, proposed_grammars::PROPOSED_GRAMMAR_SOURCES,
-        tree_sitter_grammars::TreeSitterGrammarsManager,
-    },
-    search::{
-        disk::DiskResearcher,
-        search::{Progress, ResearchResult, Researcher},
-    },
-};
-use serde::Serialize;
-use tauri::{AppHandle, Emitter};
-use tauri::{Builder, Manager};
+use dme_core::search::{disk::DiskResearcher, search::ResearchResult};
+use tauri::Manager;
 
 struct AppData {
     disk_researcher: Mutex<DiskResearcher>,
