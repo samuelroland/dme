@@ -6,13 +6,10 @@
 use std::ffi::OsStr;
 use std::fmt::Write;
 use std::fs::{create_dir_all, read_dir, read_to_string};
-use std::path::{Path, PathBuf};
-
-use tree_sitter_loader::Loader;
+use std::path::PathBuf;
 
 use crate::preview::proposed_grammars::PROPOSED_GRAMMAR_SOURCES;
 use crate::preview::tree_sitter_grammars::TreeSitterGrammarsManager;
-use crate::preview::tree_sitter_highlight::TreeSitterHighlighter;
 use crate::util::git::GitRepos;
 
 const MDN_GIT_REPOSITORY: &str = "https://github.com/mdn/content";

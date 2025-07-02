@@ -4,10 +4,8 @@
 // and the associated implementation
 // https://dotat.at/cgi/git/wwwdotat.git/blob/HEAD:/src/hilite.rs
 
-use pretty_assertions::{assert_eq, assert_ne};
-use std::fs::read_to_string;
 use tree_sitter_highlight::{Highlight, HighlightConfiguration, Highlighter, HtmlRenderer};
-use tree_sitter_loader::{CompileConfig, LanguageConfiguration, Loader};
+use tree_sitter_loader::{CompileConfig, Loader};
 
 use super::{preview::Html, tree_sitter_grammars::TreeSitterGrammarsManager};
 
@@ -138,7 +136,7 @@ impl<'a> TreeSitterHighlighter<'a> {
 
 #[cfg(test)]
 mod tests {
-    use std::{env::current_dir, fs::create_dir_all, path::PathBuf};
+    use pretty_assertions::{assert_eq, assert_ne};
 
     use tree_sitter_loader::Loader;
 

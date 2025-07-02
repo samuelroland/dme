@@ -4,7 +4,6 @@ use super::tree_sitter_grammars::TreeSitterGrammarsManager;
 use super::tree_sitter_highlight::TreeSitterHighlighter;
 use comrak::{adapters::SyntaxHighlighterAdapter, html};
 use comrak::{markdown_to_html_with_plugins, ComrakPlugins, Options};
-use once_cell::sync::Lazy;
 use std::collections::HashMap;
 use std::io::{self, Write};
 use std::path::PathBuf;
@@ -62,8 +61,7 @@ impl SyntaxHighlighterAdapter for ComrakParser {
         if lang.is_none_or(|v| v.trim().is_empty()) {
             output.write_all(code.as_bytes())
         } else {
-            let mut loader =
-                Loader::new().map_err(|e| std::io::Error::new(io::ErrorKind::Other, e))?;
+            let mut loader = Loader::new().map_err(std::io::Error::other)?;
             let highlighter =
                 TreeSitterHighlighter::new(&mut loader, lang.unwrap_or_default(), &self.manager);
             // If lang might be supported or not

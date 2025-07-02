@@ -8,11 +8,10 @@ pub mod util;
 use preview::{
     comrak::ComrakParser,
     preview::{Html, Previewable},
-    tree_sitter_highlight::TreeSitterHighlighter,
 };
 use theming::{
     helix::ALL_HIGHLIGHT_NAMES_SUPPORTED_BY_HELIX,
-    renderer::{self, Renderer},
+    renderer::Renderer,
     theme::{Theme, DEFAULT_THEME},
 };
 
