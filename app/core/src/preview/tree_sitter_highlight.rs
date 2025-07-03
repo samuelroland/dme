@@ -117,6 +117,7 @@ impl<'a> TreeSitterHighlighter<'a> {
 
     /// Normalise code block given lang to a set of known equivalence
     /// like js -> javascript, vuejs -> vue
+    /// TODO: we should deleguate this logic to tree-sitter library, each grammar has a list of equivalents
     pub fn normalize_lang(given: &'a str) -> &'a str {
         match given {
             "bash" | "sh" | "shell" => "bash",

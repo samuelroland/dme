@@ -58,8 +58,7 @@ impl TreeSitterGrammarsManager {
         if !another_grammars_folder.exists() {
             let _ = create_dir(&another_grammars_folder).map_err(|e| {
                 format!(
-                    "Coudln't create folder for grammars at {:?} because of {}",
-                    another_grammars_folder, e
+                    "Coudln't create folder for grammars at {another_grammars_folder:?} because of {e}"
                 )
             });
         }
