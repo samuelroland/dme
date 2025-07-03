@@ -51,157 +51,157 @@ code .diff.delta{color:#1e66f5;}
 <h1>Sample programs in all proposed grammars languages</h1>
 <h2>Sample programs in c</h2>
 <p>File: <code>baklava.c</code></p>
-<pre><code class="language-c"><span class='keyword'>#include</span> <span class='string'>&quot;stdio.h&quot;</span>
+<pre><code class="language-c"><span class="keyword">#include</span> <span class="string">"stdio.h"</span>
 
-<span class='type'>int</span> <span class='function'>main</span> (<span class='type'>void</span>)
+<span class="type">int</span> <span class="function">main</span> (<span class="type">void</span>)
 {
 
-  <span class='keyword'>for</span> (<span class='type'>int</span> <span class='variable'>i</span> <span class='operator'>=</span> <span class='number'>0</span><span class='delimiter'>;</span> <span class='variable'>i</span> <span class='operator'>&lt;</span> <span class='number'>10</span><span class='delimiter'>;</span> <span class='variable'>i</span><span class='operator'>++</span>)
+  <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span><span class="delimiter">;</span> <span class="variable">i</span> <span class="operator">&lt;</span> <span class="number">10</span><span class="delimiter">;</span> <span class="variable">i</span><span class="operator">++</span>)
   {
-    <span class='function'>printf</span> (<span class='string'>&quot;%.*s&quot;</span>, (<span class='number'>10</span> <span class='operator'>-</span> <span class='variable'>i</span>), <span class='string'>&quot;                                 &quot;</span>)<span class='delimiter'>;</span>
-    <span class='function'>printf</span> (<span class='string'>&quot;%.*s&quot;</span>, (<span class='variable'>i</span> <span class='operator'>*</span> <span class='number'>2</span> <span class='operator'>+</span> <span class='number'>1</span>), <span class='string'>&quot;******************************&quot;</span>)<span class='delimiter'>;</span>
-    <span class='function'>printf</span> (<span class='string'>&quot;\n&quot;</span>)<span class='delimiter'>;</span>
+    <span class="function">printf</span> (<span class="string">"%.*s"</span>, (<span class="number">10</span> <span class="operator">-</span> <span class="variable">i</span>), <span class="string">"                                 "</span>)<span class="delimiter">;</span>
+    <span class="function">printf</span> (<span class="string">"%.*s"</span>, (<span class="variable">i</span> <span class="operator">*</span> <span class="number">2</span> <span class="operator">+</span> <span class="number">1</span>), <span class="string">"******************************"</span>)<span class="delimiter">;</span>
+    <span class="function">printf</span> (<span class="string">"\n"</span>)<span class="delimiter">;</span>
   }
 
-  <span class='keyword'>for</span> (<span class='type'>int</span> <span class='variable'>i</span> <span class='operator'>=</span> <span class='number'>10</span><span class='delimiter'>;</span> <span class='number'>-1</span> <span class='operator'>&lt;</span> <span class='variable'>i</span><span class='delimiter'>;</span> <span class='variable'>i</span><span class='operator'>--</span>)
+  <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">10</span><span class="delimiter">;</span> <span class="number">-1</span> <span class="operator">&lt;</span> <span class="variable">i</span><span class="delimiter">;</span> <span class="variable">i</span><span class="operator">--</span>)
   {
-    <span class='function'>printf</span> (<span class='string'>&quot;%.*s&quot;</span>, (<span class='number'>10</span> <span class='operator'>-</span> <span class='variable'>i</span>), <span class='string'>&quot;                                 &quot;</span>)<span class='delimiter'>;</span>
-    <span class='function'>printf</span> (<span class='string'>&quot;%.*s&quot;</span>, (<span class='variable'>i</span> <span class='operator'>*</span> <span class='number'>2</span> <span class='operator'>+</span> <span class='number'>1</span>), <span class='string'>&quot;******************************&quot;</span>)<span class='delimiter'>;</span>
-    <span class='function'>printf</span> (<span class='string'>&quot;\n&quot;</span>)<span class='delimiter'>;</span>
+    <span class="function">printf</span> (<span class="string">"%.*s"</span>, (<span class="number">10</span> <span class="operator">-</span> <span class="variable">i</span>), <span class="string">"                                 "</span>)<span class="delimiter">;</span>
+    <span class="function">printf</span> (<span class="string">"%.*s"</span>, (<span class="variable">i</span> <span class="operator">*</span> <span class="number">2</span> <span class="operator">+</span> <span class="number">1</span>), <span class="string">"******************************"</span>)<span class="delimiter">;</span>
+    <span class="function">printf</span> (<span class="string">"\n"</span>)<span class="delimiter">;</span>
   }
 
-  <span class='keyword'>return</span> <span class='number'>0</span><span class='delimiter'>;</span>
+  <span class="keyword">return</span> <span class="number">0</span><span class="delimiter">;</span>
 
 }
 
 </code></pre>
 <h2>Sample programs in go</h2>
 <p>File: <code>baklava.go</code></p>
-<pre><code class="language-go"><span class='keyword'>package</span> main
+<pre><code class="language-go"><span class="keyword">package</span> main
 
-<span class='keyword'>import</span> (
-	<span class='string'>&quot;fmt&quot;</span>
-	<span class='string'>&quot;strings&quot;</span>
+<span class="keyword">import</span> (
+	<span class="string">"fmt"</span>
+	<span class="string">"strings"</span>
 )
 
-<span class='keyword'>func</span> <span class='variable'>main</span>() {
-	<span class='keyword'>for</span> <span class='variable'>i</span> <span class='operator'>:=</span> <span class='number'>0</span>; <span class='variable'>i</span> <span class='operator'>&lt;</span> <span class='number'>10</span>; <span class='variable'>i</span><span class='operator'>++</span> {
-		<span class='variable'>fmt</span>.<span class='property'>Println</span>(<span class='variable'>strings</span>.<span class='property'>Repeat</span>(<span class='string'>&quot; &quot;</span>, (<span class='number'>10</span><span class='operator'>-</span><span class='variable'>i</span>)) <span class='operator'>+</span> <span class='variable'>strings</span>.<span class='property'>Repeat</span>(<span class='string'>&quot;*&quot;</span>, (<span class='variable'>i</span><span class='operator'>*</span><span class='number'>2</span><span class='operator'>+</span><span class='number'>1</span>)))
+<span class="keyword">func</span> <span class="variable">main</span>() {
+	<span class="keyword">for</span> <span class="variable">i</span> <span class="operator">:=</span> <span class="number">0</span>; <span class="variable">i</span> <span class="operator">&lt;</span> <span class="number">10</span>; <span class="variable">i</span><span class="operator">++</span> {
+		<span class="variable">fmt</span>.<span class="property">Println</span>(<span class="variable">strings</span>.<span class="property">Repeat</span>(<span class="string">" "</span>, (<span class="number">10</span><span class="operator">-</span><span class="variable">i</span>)) <span class="operator">+</span> <span class="variable">strings</span>.<span class="property">Repeat</span>(<span class="string">"*"</span>, (<span class="variable">i</span><span class="operator">*</span><span class="number">2</span><span class="operator">+</span><span class="number">1</span>)))
 	}
 
-	<span class='keyword'>for</span> <span class='variable'>i</span> <span class='operator'>:=</span> <span class='number'>10</span>; <span class='operator'>-</span><span class='number'>1</span> <span class='operator'>&lt;</span> <span class='variable'>i</span>; <span class='variable'>i</span><span class='operator'>--</span> {
-		<span class='variable'>fmt</span>.<span class='property'>Println</span>(<span class='variable'>strings</span>.<span class='property'>Repeat</span>(<span class='string'>&quot; &quot;</span>, (<span class='number'>10</span><span class='operator'>-</span><span class='variable'>i</span>)) <span class='operator'>+</span> <span class='variable'>strings</span>.<span class='property'>Repeat</span>(<span class='string'>&quot;*&quot;</span>, (<span class='variable'>i</span><span class='operator'>*</span><span class='number'>2</span><span class='operator'>+</span><span class='number'>1</span>)))
+	<span class="keyword">for</span> <span class="variable">i</span> <span class="operator">:=</span> <span class="number">10</span>; <span class="operator">-</span><span class="number">1</span> <span class="operator">&lt;</span> <span class="variable">i</span>; <span class="variable">i</span><span class="operator">--</span> {
+		<span class="variable">fmt</span>.<span class="property">Println</span>(<span class="variable">strings</span>.<span class="property">Repeat</span>(<span class="string">" "</span>, (<span class="number">10</span><span class="operator">-</span><span class="variable">i</span>)) <span class="operator">+</span> <span class="variable">strings</span>.<span class="property">Repeat</span>(<span class="string">"*"</span>, (<span class="variable">i</span><span class="operator">*</span><span class="number">2</span><span class="operator">+</span><span class="number">1</span>)))
 	}
 }
 
 </code></pre>
 <h2>Sample programs in haskell</h2>
 <p>File: <code>baklava.hs</code></p>
-<pre><code class="language-haskell"><span class='keyword import'>module</span> <span class='module'>Main</span> <span class='keyword'>where</span>
+<pre><code class="language-haskell"><span class="keyword import">module</span> <span class="module">Main</span> <span class="keyword">where</span>
 
-<span class='type'>main</span> <span class='operator'>::</span> <span class='type'>IO</span> <span class='string special symbol'><span class='punctuation bracket'>(</span><span class='punctuation bracket'>)</span></span>
-<span class='type'>main</span> <span class='operator'>=</span> <span class='type'>putStrLn</span> <span class='type'>baklava</span>
+<span class="type">main</span> <span class="operator">::</span> <span class="type">IO</span> <span class="string special symbol"><span class="punctuation bracket">(</span><span class="punctuation bracket">)</span></span>
+<span class="type">main</span> <span class="operator">=</span> <span class="type">putStrLn</span> <span class="type">baklava</span>
 
-<span class='spell'>-- Create baklava where the top has 10 spaces and then 1 asterisk</span>
-<span class='type'>baklava</span> <span class='operator'>::</span>  <span class='type'>String</span>
-<span class='type'>baklava</span> <span class='operator'>=</span> <span class='type'>baklavaGrow</span> <span class='number'>10</span> <span class='number'>1</span>
+<span class="spell">-- Create baklava where the top has 10 spaces and then 1 asterisk</span>
+<span class="type">baklava</span> <span class="operator">::</span>  <span class="type">String</span>
+<span class="type">baklava</span> <span class="operator">=</span> <span class="type">baklavaGrow</span> <span class="number">10</span> <span class="number">1</span>
 
-<span class='spell'>-- Recursively grow the baklava until spaces &lt;= zero</span>
-<span class='function'><span class='function'><span class='type'>baklavaGrow</span> <span class='operator'>::</span> <span class='type'>Int</span> <span class='operator'>-&gt;</span> <span class='type'>Int</span> <span class='operator'>-&gt;</span> <span class='type'>String</span></span></span>
-<span class='type'>baklavaGrow</span> <span class='type'>space</span> <span class='type'>asterisk</span>
-  <span class='operator'>|</span> <span class='type'>space</span> <span class='operator'>&lt;=</span> <span class='number'>0</span> <span class='operator'>=</span> <span class='type'>line</span> <span class='number'>0</span>     <span class='type'>asterisk</span> <span class='operator'>++</span> <span class='string'>&quot;\n&quot;</span> <span class='operator'>++</span> <span class='type'>baklavaShrink</span> <span class='number'>1</span>          <span class='punctuation bracket'>(</span><span class='type'>asterisk</span> <span class='operator'>-</span> <span class='number'>2</span><span class='punctuation bracket'>)</span>
-  <span class='operator'>|</span> <span class='boolean'>otherwise</span>  <span class='operator'>=</span> <span class='type'>line</span> <span class='type'>space</span> <span class='type'>asterisk</span> <span class='operator'>++</span> <span class='string'>&quot;\n&quot;</span> <span class='operator'>++</span> <span class='type'>baklavaGrow</span>   <span class='punctuation bracket'>(</span><span class='type'>space</span> <span class='operator'>-</span> <span class='number'>1</span><span class='punctuation bracket'>)</span> <span class='punctuation bracket'>(</span><span class='type'>asterisk</span> <span class='operator'>+</span> <span class='number'>2</span><span class='punctuation bracket'>)</span>
+<span class="spell">-- Recursively grow the baklava until spaces &lt;= zero</span>
+<span class="function"><span class="function"><span class="type">baklavaGrow</span> <span class="operator">::</span> <span class="type">Int</span> <span class="operator">-&gt;</span> <span class="type">Int</span> <span class="operator">-&gt;</span> <span class="type">String</span></span></span>
+<span class="type">baklavaGrow</span> <span class="type">space</span> <span class="type">asterisk</span>
+  <span class="operator">|</span> <span class="type">space</span> <span class="operator">&lt;=</span> <span class="number">0</span> <span class="operator">=</span> <span class="type">line</span> <span class="number">0</span>     <span class="type">asterisk</span> <span class="operator">++</span> <span class="string">"\n"</span> <span class="operator">++</span> <span class="type">baklavaShrink</span> <span class="number">1</span>          <span class="punctuation bracket">(</span><span class="type">asterisk</span> <span class="operator">-</span> <span class="number">2</span><span class="punctuation bracket">)</span>
+  <span class="operator">|</span> <span class="boolean">otherwise</span>  <span class="operator">=</span> <span class="type">line</span> <span class="type">space</span> <span class="type">asterisk</span> <span class="operator">++</span> <span class="string">"\n"</span> <span class="operator">++</span> <span class="type">baklavaGrow</span>   <span class="punctuation bracket">(</span><span class="type">space</span> <span class="operator">-</span> <span class="number">1</span><span class="punctuation bracket">)</span> <span class="punctuation bracket">(</span><span class="type">asterisk</span> <span class="operator">+</span> <span class="number">2</span><span class="punctuation bracket">)</span>
 
-<span class='spell'>-- Recursively shrink the baklava until asterisks &lt;= zero</span>
-<span class='function'><span class='function'><span class='type'>baklavaShrink</span> <span class='operator'>::</span> <span class='type'>Int</span> <span class='operator'>-&gt;</span> <span class='type'>Int</span> <span class='operator'>-&gt;</span> <span class='type'>String</span></span></span>
-<span class='type'>baklavaShrink</span> <span class='type'>space</span> <span class='type'>asterisk</span>
-  <span class='operator'>|</span> <span class='type'>asterisk</span> <span class='operator'>&lt;=</span> <span class='number'>1</span> <span class='operator'>=</span> <span class='type'>line</span> <span class='type'>space</span> <span class='number'>1</span>
-  <span class='operator'>|</span> <span class='boolean'>otherwise</span>     <span class='operator'>=</span> <span class='type'>line</span> <span class='type'>space</span> <span class='type'>asterisk</span> <span class='operator'>++</span> <span class='string'>&quot;\n&quot;</span> <span class='operator'>++</span> <span class='type'>baklavaShrink</span> <span class='punctuation bracket'>(</span><span class='type'>space</span> <span class='operator'>+</span> <span class='number'>1</span><span class='punctuation bracket'>)</span> <span class='punctuation bracket'>(</span><span class='type'>asterisk</span> <span class='operator'>-</span> <span class='number'>2</span><span class='punctuation bracket'>)</span>
+<span class="spell">-- Recursively shrink the baklava until asterisks &lt;= zero</span>
+<span class="function"><span class="function"><span class="type">baklavaShrink</span> <span class="operator">::</span> <span class="type">Int</span> <span class="operator">-&gt;</span> <span class="type">Int</span> <span class="operator">-&gt;</span> <span class="type">String</span></span></span>
+<span class="type">baklavaShrink</span> <span class="type">space</span> <span class="type">asterisk</span>
+  <span class="operator">|</span> <span class="type">asterisk</span> <span class="operator">&lt;=</span> <span class="number">1</span> <span class="operator">=</span> <span class="type">line</span> <span class="type">space</span> <span class="number">1</span>
+  <span class="operator">|</span> <span class="boolean">otherwise</span>     <span class="operator">=</span> <span class="type">line</span> <span class="type">space</span> <span class="type">asterisk</span> <span class="operator">++</span> <span class="string">"\n"</span> <span class="operator">++</span> <span class="type">baklavaShrink</span> <span class="punctuation bracket">(</span><span class="type">space</span> <span class="operator">+</span> <span class="number">1</span><span class="punctuation bracket">)</span> <span class="punctuation bracket">(</span><span class="type">asterisk</span> <span class="operator">-</span> <span class="number">2</span><span class="punctuation bracket">)</span>
 
-<span class='spell'>-- Return a single line of the baklava</span>
-<span class='type'>line</span> <span class='type'>space</span> <span class='type'>asterisk</span> <span class='operator'>=</span> <span class='type'>replicate</span> <span class='type'>space</span> <span class='character'>&#39; &#39;</span> <span class='operator'>++</span> <span class='type'>replicate</span> <span class='type'>asterisk</span> <span class='character'>&#39;*&#39;</span>
+<span class="spell">-- Return a single line of the baklava</span>
+<span class="type">line</span> <span class="type">space</span> <span class="type">asterisk</span> <span class="operator">=</span> <span class="type">replicate</span> <span class="type">space</span> <span class="character">' '</span> <span class="operator">++</span> <span class="type">replicate</span> <span class="type">asterisk</span> <span class="character">'*'</span>
 
 </code></pre>
 <h2>Sample programs in java</h2>
 <p>File: <code>Baklava.java</code></p>
-<pre><code class="language-java"><span class='keyword'>public</span> <span class='keyword'>class</span> <span class='type'>Baklava</span> {
-    <span class='keyword'>public</span> <span class='keyword'>static</span> <span class='type builtin'>void</span> <span class='function method'>up</span>() {
-        <span class='keyword'>for</span> (<span class='type builtin'>int</span> <span class='variable'>i</span> = <span class='number'>0</span>; <span class='variable'>i</span> &lt; <span class='number'>10</span>; <span class='variable'>i</span>++)
-            <span class='function method'>printRow</span>(<span class='variable'>i</span>);
+<pre><code class="language-java"><span class="keyword">public</span> <span class="keyword">class</span> <span class="type">Baklava</span> {
+    <span class="keyword">public</span> <span class="keyword">static</span> <span class="type builtin">void</span> <span class="function method">up</span>() {
+        <span class="keyword">for</span> (<span class="type builtin">int</span> <span class="variable">i</span> = <span class="number">0</span>; <span class="variable">i</span> &lt; <span class="number">10</span>; <span class="variable">i</span>++)
+            <span class="function method">printRow</span>(<span class="variable">i</span>);
     }
 
-    <span class='keyword'>public</span> <span class='keyword'>static</span> <span class='type builtin'>void</span> <span class='function method'>down</span>() {
-        <span class='keyword'>for</span> (<span class='type builtin'>int</span> <span class='variable'>i</span> = <span class='number'>10</span>; <span class='variable'>i</span> &gt;= <span class='number'>0</span>; <span class='variable'>i</span>--)
-            <span class='function method'>printRow</span>(<span class='variable'>i</span>);
+    <span class="keyword">public</span> <span class="keyword">static</span> <span class="type builtin">void</span> <span class="function method">down</span>() {
+        <span class="keyword">for</span> (<span class="type builtin">int</span> <span class="variable">i</span> = <span class="number">10</span>; <span class="variable">i</span> &gt;= <span class="number">0</span>; <span class="variable">i</span>--)
+            <span class="function method">printRow</span>(<span class="variable">i</span>);
     }
 
-    <span class='keyword'>public</span> <span class='keyword'>static</span> <span class='type builtin'>void</span> <span class='function method'>printRow</span>(<span class='type builtin'>int</span> <span class='variable'>rowNum</span>) {
-        <span class='keyword'>for</span> (<span class='type builtin'>int</span> <span class='variable'>j</span> = <span class='number'>10</span> - <span class='variable'>rowNum</span>; <span class='variable'>j</span> &gt; <span class='number'>0</span>; <span class='variable'>j</span>--)
-            <span class='type'>System</span>.<span class='variable'>out</span>.<span class='function method'>print</span>(<span class='string'>&quot; &quot;</span>);
-        <span class='keyword'>for</span> (<span class='type builtin'>int</span> <span class='variable'>j</span> = <span class='number'>0</span>; <span class='variable'>j</span> &lt;= <span class='variable'>rowNum</span> * <span class='number'>2</span>; <span class='variable'>j</span>++)
-            <span class='type'>System</span>.<span class='variable'>out</span>.<span class='function method'>print</span>(<span class='string'>&quot;*&quot;</span>);
-        <span class='type'>System</span>.<span class='variable'>out</span>.<span class='function method'>println</span>();
+    <span class="keyword">public</span> <span class="keyword">static</span> <span class="type builtin">void</span> <span class="function method">printRow</span>(<span class="type builtin">int</span> <span class="variable">rowNum</span>) {
+        <span class="keyword">for</span> (<span class="type builtin">int</span> <span class="variable">j</span> = <span class="number">10</span> - <span class="variable">rowNum</span>; <span class="variable">j</span> &gt; <span class="number">0</span>; <span class="variable">j</span>--)
+            <span class="type">System</span>.<span class="variable">out</span>.<span class="function method">print</span>(<span class="string">" "</span>);
+        <span class="keyword">for</span> (<span class="type builtin">int</span> <span class="variable">j</span> = <span class="number">0</span>; <span class="variable">j</span> &lt;= <span class="variable">rowNum</span> * <span class="number">2</span>; <span class="variable">j</span>++)
+            <span class="type">System</span>.<span class="variable">out</span>.<span class="function method">print</span>(<span class="string">"*"</span>);
+        <span class="type">System</span>.<span class="variable">out</span>.<span class="function method">println</span>();
     }
 
-    <span class='keyword'>public</span> <span class='keyword'>static</span> <span class='type builtin'>void</span> <span class='function method'>main</span>(<span class='type'>String</span>[] <span class='variable'>args</span>) {
-        <span class='function method'>up</span>();
-        <span class='function method'>down</span>();
+    <span class="keyword">public</span> <span class="keyword">static</span> <span class="type builtin">void</span> <span class="function method">main</span>(<span class="type">String</span>[] <span class="variable">args</span>) {
+        <span class="function method">up</span>();
+        <span class="function method">down</span>();
     }
 }
 
 </code></pre>
 <h2>Sample programs in javascript</h2>
 <p>File: <code>baklava.js</code></p>
-<pre><code class="language-javascript"><span class='keyword'>for</span> <span class='punctuation bracket'>(</span><span class='keyword'>var</span> <span class='variable'>i</span> <span class='operator'>=</span> <span class='number'>0</span><span class='punctuation delimiter'>;</span> <span class='variable'>i</span> <span class='operator'>&lt;</span> <span class='number'>10</span><span class='punctuation delimiter'>;</span> <span class='variable'>i</span><span class='operator'>++</span><span class='punctuation bracket'>)</span>
-    <span class='variable builtin'>console</span><span class='punctuation delimiter'>.</span><span class='function method'>log</span> <span class='punctuation bracket'>(</span>
-        <span class='string'>&quot; &quot;</span><span class='punctuation delimiter'>.</span><span class='function method'>repeat</span> <span class='punctuation bracket'>(</span><span class='number'>10</span> <span class='operator'>-</span> <span class='variable'>i</span><span class='punctuation bracket'>)</span> <span class='operator'>+</span> <span class='string'>&quot;*&quot;</span><span class='punctuation delimiter'>.</span><span class='function method'>repeat</span> <span class='punctuation bracket'>(</span><span class='variable'>i</span> <span class='operator'>*</span> <span class='number'>2</span> <span class='operator'>+</span> <span class='number'>1</span><span class='punctuation bracket'>)</span>
-    <span class='punctuation bracket'>)</span><span class='punctuation delimiter'>;</span>
+<pre><code class="language-javascript"><span class="keyword">for</span> <span class="punctuation bracket">(</span><span class="keyword">var</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span><span class="punctuation delimiter">;</span> <span class="variable">i</span> <span class="operator">&lt;</span> <span class="number">10</span><span class="punctuation delimiter">;</span> <span class="variable">i</span><span class="operator">++</span><span class="punctuation bracket">)</span>
+    <span class="variable builtin">console</span><span class="punctuation delimiter">.</span><span class="function method">log</span> <span class="punctuation bracket">(</span>
+        <span class="string">" "</span><span class="punctuation delimiter">.</span><span class="function method">repeat</span> <span class="punctuation bracket">(</span><span class="number">10</span> <span class="operator">-</span> <span class="variable">i</span><span class="punctuation bracket">)</span> <span class="operator">+</span> <span class="string">"*"</span><span class="punctuation delimiter">.</span><span class="function method">repeat</span> <span class="punctuation bracket">(</span><span class="variable">i</span> <span class="operator">*</span> <span class="number">2</span> <span class="operator">+</span> <span class="number">1</span><span class="punctuation bracket">)</span>
+    <span class="punctuation bracket">)</span><span class="punctuation delimiter">;</span>
 
-<span class='keyword'>for</span> <span class='punctuation bracket'>(</span><span class='keyword'>var</span> <span class='variable'>i</span> <span class='operator'>=</span> <span class='number'>10</span><span class='punctuation delimiter'>;</span> <span class='operator'>-</span><span class='number'>1</span> <span class='operator'>&lt;</span> <span class='variable'>i</span><span class='punctuation delimiter'>;</span> <span class='variable'>i</span><span class='operator'>--</span><span class='punctuation bracket'>)</span>
-    <span class='variable builtin'>console</span><span class='punctuation delimiter'>.</span><span class='function method'>log</span> <span class='punctuation bracket'>(</span>
-        <span class='string'>&quot; &quot;</span><span class='punctuation delimiter'>.</span><span class='function method'>repeat</span> <span class='punctuation bracket'>(</span><span class='number'>10</span> <span class='operator'>-</span> <span class='variable'>i</span><span class='punctuation bracket'>)</span> <span class='operator'>+</span> <span class='string'>&quot;*&quot;</span><span class='punctuation delimiter'>.</span><span class='function method'>repeat</span> <span class='punctuation bracket'>(</span><span class='variable'>i</span> <span class='operator'>*</span> <span class='number'>2</span> <span class='operator'>+</span> <span class='number'>1</span><span class='punctuation bracket'>)</span>
-    <span class='punctuation bracket'>)</span><span class='punctuation delimiter'>;</span>
+<span class="keyword">for</span> <span class="punctuation bracket">(</span><span class="keyword">var</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">10</span><span class="punctuation delimiter">;</span> <span class="operator">-</span><span class="number">1</span> <span class="operator">&lt;</span> <span class="variable">i</span><span class="punctuation delimiter">;</span> <span class="variable">i</span><span class="operator">--</span><span class="punctuation bracket">)</span>
+    <span class="variable builtin">console</span><span class="punctuation delimiter">.</span><span class="function method">log</span> <span class="punctuation bracket">(</span>
+        <span class="string">" "</span><span class="punctuation delimiter">.</span><span class="function method">repeat</span> <span class="punctuation bracket">(</span><span class="number">10</span> <span class="operator">-</span> <span class="variable">i</span><span class="punctuation bracket">)</span> <span class="operator">+</span> <span class="string">"*"</span><span class="punctuation delimiter">.</span><span class="function method">repeat</span> <span class="punctuation bracket">(</span><span class="variable">i</span> <span class="operator">*</span> <span class="number">2</span> <span class="operator">+</span> <span class="number">1</span><span class="punctuation bracket">)</span>
+    <span class="punctuation bracket">)</span><span class="punctuation delimiter">;</span>
 
 </code></pre>
 <h2>Sample programs in lua</h2>
 <p>File: <code>baklava.lua</code></p>
-<pre><code class="language-lua"><span class='keyword function'>function</span> <span class='function'>diamondStarPattern</span><span class='punctuation bracket'>(</span><span class='parameter'>height</span><span class='punctuation bracket'>)</span>
-  <span class='repeat'>for</span> <span class='variable'>i</span> <span class='operator'>=</span> <span class='number'>1</span><span class='punctuation delimiter'>,</span> <span class='parameter'>height</span> <span class='repeat'>do</span> <span class='comment'>-- loop for printing the upper half of the baklava</span>
-    <span class='repeat'>for</span> <span class='variable'>j</span> <span class='operator'>=</span> <span class='variable'>i</span><span class='punctuation delimiter'>,</span> <span class='parameter'>height</span> <span class='operator'>-</span> <span class='number'>1</span> <span class='repeat'>do</span> <span class='variable'>io</span><span class='punctuation delimiter'>.</span><span class='function call'>write</span><span class='punctuation bracket'>(</span><span class='string'>&quot; &quot;</span><span class='punctuation bracket'>)</span> <span class='repeat'>end</span> <span class='comment'>--to print the leading spaces</span>
-    <span class='repeat'>for</span> <span class='variable'>j</span> <span class='operator'>=</span> <span class='number'>1</span><span class='punctuation delimiter'>,</span> <span class='punctuation bracket'>(</span><span class='number'>2</span><span class='operator'>*</span><span class='variable'>i</span><span class='operator'>-</span><span class='number'>1</span><span class='punctuation bracket'>)</span> <span class='repeat'>do</span> <span class='variable'>io</span><span class='punctuation delimiter'>.</span><span class='function call'>write</span><span class='punctuation bracket'>(</span><span class='string'>&quot;*&quot;</span><span class='punctuation bracket'>)</span> <span class='repeat'>end</span> <span class='comment'>-- to print the * for the upper half</span>
-    <span class='variable'>io</span><span class='punctuation delimiter'>.</span><span class='function call'>write</span><span class='punctuation bracket'>(</span><span class='string'>&quot;<span class='string escape'>\n</span>&quot;</span><span class='punctuation bracket'>)</span> <span class='comment'>-- to move pointer to next line</span>
-  <span class='repeat'>end</span>
-  <span class='repeat'>for</span> <span class='variable'>i</span> <span class='operator'>=</span> <span class='parameter'>height</span> <span class='operator'>-</span> <span class='number'>1</span><span class='punctuation delimiter'>,</span><span class='number'>1</span><span class='punctuation delimiter'>,</span><span class='operator'>-</span><span class='number'>1</span> <span class='repeat'>do</span> <span class='comment'>-- loop for printing the lower half of the baklava</span>
-    <span class='repeat'>for</span> <span class='variable'>j</span> <span class='operator'>=</span> <span class='variable'>i</span><span class='punctuation delimiter'>,</span> <span class='parameter'>height</span> <span class='operator'>-</span> <span class='number'>1</span> <span class='repeat'>do</span> <span class='variable'>io</span><span class='punctuation delimiter'>.</span><span class='function call'>write</span><span class='punctuation bracket'>(</span><span class='string'>&quot; &quot;</span><span class='punctuation bracket'>)</span> <span class='repeat'>end</span> <span class='comment'>-- to print the spaces</span>
-    <span class='repeat'>for</span> <span class='variable'>j</span> <span class='operator'>=</span> <span class='number'>1</span><span class='punctuation delimiter'>,</span> <span class='punctuation bracket'>(</span><span class='number'>2</span><span class='operator'>*</span><span class='variable'>i</span><span class='operator'>-</span><span class='number'>1</span><span class='punctuation bracket'>)</span> <span class='repeat'>do</span> <span class='variable'>io</span><span class='punctuation delimiter'>.</span><span class='function call'>write</span><span class='punctuation bracket'>(</span><span class='string'>&quot;*&quot;</span><span class='punctuation bracket'>)</span> <span class='repeat'>end</span> <span class='comment'>--  to print the * for the lower half</span>
-    <span class='variable'>io</span><span class='punctuation delimiter'>.</span><span class='function call'>write</span><span class='punctuation bracket'>(</span><span class='string'>&quot;<span class='string escape'>\n</span>&quot;</span><span class='punctuation bracket'>)</span> <span class='comment'>-- to move pointer to next line</span>
-  <span class='repeat'>end</span>  
-<span class='keyword function'>end</span>
+<pre><code class="language-lua"><span class="keyword function">function</span> <span class="function">diamondStarPattern</span><span class="punctuation bracket">(</span><span class="parameter">height</span><span class="punctuation bracket">)</span>
+  <span class="repeat">for</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">1</span><span class="punctuation delimiter">,</span> <span class="parameter">height</span> <span class="repeat">do</span> <span class="comment">-- loop for printing the upper half of the baklava</span>
+    <span class="repeat">for</span> <span class="variable">j</span> <span class="operator">=</span> <span class="variable">i</span><span class="punctuation delimiter">,</span> <span class="parameter">height</span> <span class="operator">-</span> <span class="number">1</span> <span class="repeat">do</span> <span class="variable">io</span><span class="punctuation delimiter">.</span><span class="function call">write</span><span class="punctuation bracket">(</span><span class="string">" "</span><span class="punctuation bracket">)</span> <span class="repeat">end</span> <span class="comment">--to print the leading spaces</span>
+    <span class="repeat">for</span> <span class="variable">j</span> <span class="operator">=</span> <span class="number">1</span><span class="punctuation delimiter">,</span> <span class="punctuation bracket">(</span><span class="number">2</span><span class="operator">*</span><span class="variable">i</span><span class="operator">-</span><span class="number">1</span><span class="punctuation bracket">)</span> <span class="repeat">do</span> <span class="variable">io</span><span class="punctuation delimiter">.</span><span class="function call">write</span><span class="punctuation bracket">(</span><span class="string">"*"</span><span class="punctuation bracket">)</span> <span class="repeat">end</span> <span class="comment">-- to print the * for the upper half</span>
+    <span class="variable">io</span><span class="punctuation delimiter">.</span><span class="function call">write</span><span class="punctuation bracket">(</span><span class="string">"<span class="string escape">\n</span>"</span><span class="punctuation bracket">)</span> <span class="comment">-- to move pointer to next line</span>
+  <span class="repeat">end</span>
+  <span class="repeat">for</span> <span class="variable">i</span> <span class="operator">=</span> <span class="parameter">height</span> <span class="operator">-</span> <span class="number">1</span><span class="punctuation delimiter">,</span><span class="number">1</span><span class="punctuation delimiter">,</span><span class="operator">-</span><span class="number">1</span> <span class="repeat">do</span> <span class="comment">-- loop for printing the lower half of the baklava</span>
+    <span class="repeat">for</span> <span class="variable">j</span> <span class="operator">=</span> <span class="variable">i</span><span class="punctuation delimiter">,</span> <span class="parameter">height</span> <span class="operator">-</span> <span class="number">1</span> <span class="repeat">do</span> <span class="variable">io</span><span class="punctuation delimiter">.</span><span class="function call">write</span><span class="punctuation bracket">(</span><span class="string">" "</span><span class="punctuation bracket">)</span> <span class="repeat">end</span> <span class="comment">-- to print the spaces</span>
+    <span class="repeat">for</span> <span class="variable">j</span> <span class="operator">=</span> <span class="number">1</span><span class="punctuation delimiter">,</span> <span class="punctuation bracket">(</span><span class="number">2</span><span class="operator">*</span><span class="variable">i</span><span class="operator">-</span><span class="number">1</span><span class="punctuation bracket">)</span> <span class="repeat">do</span> <span class="variable">io</span><span class="punctuation delimiter">.</span><span class="function call">write</span><span class="punctuation bracket">(</span><span class="string">"*"</span><span class="punctuation bracket">)</span> <span class="repeat">end</span> <span class="comment">--  to print the * for the lower half</span>
+    <span class="variable">io</span><span class="punctuation delimiter">.</span><span class="function call">write</span><span class="punctuation bracket">(</span><span class="string">"<span class="string escape">\n</span>"</span><span class="punctuation bracket">)</span> <span class="comment">-- to move pointer to next line</span>
+  <span class="repeat">end</span>  
+<span class="keyword function">end</span>
 
-<span class='function call'>diamondStarPattern</span><span class='punctuation bracket'>(</span><span class='number'>11</span><span class='punctuation bracket'>)</span>
+<span class="function call">diamondStarPattern</span><span class="punctuation bracket">(</span><span class="number">11</span><span class="punctuation bracket">)</span>
 
 </code></pre>
 <h2>Sample programs in rust</h2>
 <p>File: <code>baklava.rs</code></p>
-<pre><code class="language-rust"><span class='keyword'>fn</span> <span class='function'>main</span><span class='punctuation bracket'>(</span><span class='punctuation bracket'>)</span> <span class='punctuation bracket'>{</span>
-    <span class='keyword'>for</span> i <span class='keyword'>in</span> -<span class='constant builtin'>10i32</span>..<span class='constant builtin'>11i32</span> <span class='punctuation bracket'>{</span>
-        <span class='keyword'>let</span> num_spaces<span class='punctuation delimiter'>:</span> <span class='type builtin'>usize</span> = i<span class='punctuation delimiter'>.</span><span class='function method'>abs</span><span class='punctuation bracket'>(</span><span class='punctuation bracket'>)</span> <span class='keyword'>as</span> <span class='type builtin'>usize</span><span class='punctuation delimiter'>;</span>
-        <span class='function macro'>println</span><span class='function macro'>!</span><span class='punctuation bracket'>(</span><span class='string'>&quot;{}{}&quot;</span><span class='punctuation delimiter'>,</span> <span class='string'>&quot; &quot;</span><span class='punctuation delimiter'>.</span>repeat<span class='punctuation bracket'>(</span>num_spaces<span class='punctuation bracket'>)</span><span class='punctuation delimiter'>,</span> <span class='string'>&quot;*&quot;</span><span class='punctuation delimiter'>.</span>repeat<span class='punctuation bracket'>(</span><span class='constant builtin'>21</span> - <span class='constant builtin'>2</span> <span class='operator'>*</span> num_spaces<span class='punctuation bracket'>)</span><span class='punctuation bracket'>)</span><span class='punctuation delimiter'>;</span>
-    <span class='punctuation bracket'>}</span>
-<span class='punctuation bracket'>}</span>
+<pre><code class="language-rust"><span class="keyword">fn</span> <span class="function">main</span><span class="punctuation bracket">(</span><span class="punctuation bracket">)</span> <span class="punctuation bracket">{</span>
+    <span class="keyword">for</span> i <span class="keyword">in</span> -<span class="constant builtin">10i32</span>..<span class="constant builtin">11i32</span> <span class="punctuation bracket">{</span>
+        <span class="keyword">let</span> num_spaces<span class="punctuation delimiter">:</span> <span class="type builtin">usize</span> = i<span class="punctuation delimiter">.</span><span class="function method">abs</span><span class="punctuation bracket">(</span><span class="punctuation bracket">)</span> <span class="keyword">as</span> <span class="type builtin">usize</span><span class="punctuation delimiter">;</span>
+        <span class="function macro">println</span><span class="function macro">!</span><span class="punctuation bracket">(</span><span class="string">"{}{}"</span><span class="punctuation delimiter">,</span> <span class="string">" "</span><span class="punctuation delimiter">.</span>repeat<span class="punctuation bracket">(</span>num_spaces<span class="punctuation bracket">)</span><span class="punctuation delimiter">,</span> <span class="string">"*"</span><span class="punctuation delimiter">.</span>repeat<span class="punctuation bracket">(</span><span class="constant builtin">21</span> - <span class="constant builtin">2</span> <span class="operator">*</span> num_spaces<span class="punctuation bracket">)</span><span class="punctuation bracket">)</span><span class="punctuation delimiter">;</span>
+    <span class="punctuation bracket">}</span>
+<span class="punctuation bracket">}</span>
 
 </code></pre>
 <h2>Sample programs in scala</h2>
 <p>File: <code>Baklava.scala</code></p>
-<pre><code class="language-scala"><span class='include'>import</span> <span class='namespace'>scala</span><span class='punctuation delimiter'>.</span>math<span class='punctuation delimiter'>.</span>abs
+<pre><code class="language-scala"><span class="include">import</span> <span class="namespace">scala</span><span class="punctuation delimiter">.</span>math<span class="punctuation delimiter">.</span>abs
 
-<span class='keyword'>object</span> <span class='type'>Baklava</span> <span class='punctuation bracket'>{</span>
-  <span class='keyword function'>def</span> <span class='method'>main</span><span class='punctuation bracket'>(</span><span class='parameter'>args</span>: <span class='type'>Array</span><span class='punctuation bracket'>[</span><span class='type'>String</span><span class='punctuation bracket'>]</span><span class='punctuation bracket'>)</span>: <span class='type'>Unit</span> = <span class='punctuation bracket'>{</span>
-    <span class='repeat'>for</span> <span class='punctuation bracket'>(</span>i <span class='operator'>&lt;-</span> <span class='number'>-10</span><span class='punctuation delimiter'>.</span><span class='method call'>until</span><span class='punctuation bracket'>(</span><span class='number'>11</span><span class='punctuation bracket'>)</span><span class='punctuation bracket'>)</span> <span class='punctuation bracket'>{</span>
-        <span class='keyword'>var</span> <span class='variable'>numSpaces</span> = <span class='function call'>abs</span><span class='punctuation bracket'>(</span>i<span class='punctuation bracket'>)</span>
-        <span class='function call'>println</span><span class='punctuation bracket'>(</span><span class='string'>&quot; &quot;</span> <span class='operator'>*</span> numSpaces <span class='operator'>+</span> <span class='string'>&quot;*&quot;</span> <span class='operator'>*</span> <span class='punctuation bracket'>(</span><span class='number'>21</span> <span class='operator'>-</span> <span class='number'>2</span> <span class='operator'>*</span> numSpaces<span class='punctuation bracket'>)</span><span class='punctuation bracket'>)</span>
-    <span class='punctuation bracket'>}</span>
-  <span class='punctuation bracket'>}</span>
-<span class='punctuation bracket'>}</span>
+<span class="keyword">object</span> <span class="type">Baklava</span> <span class="punctuation bracket">{</span>
+  <span class="keyword function">def</span> <span class="method">main</span><span class="punctuation bracket">(</span><span class="parameter">args</span>: <span class="type">Array</span><span class="punctuation bracket">[</span><span class="type">String</span><span class="punctuation bracket">]</span><span class="punctuation bracket">)</span>: <span class="type">Unit</span> = <span class="punctuation bracket">{</span>
+    <span class="repeat">for</span> <span class="punctuation bracket">(</span>i <span class="operator">&lt;-</span> <span class="number">-10</span><span class="punctuation delimiter">.</span><span class="method call">until</span><span class="punctuation bracket">(</span><span class="number">11</span><span class="punctuation bracket">)</span><span class="punctuation bracket">)</span> <span class="punctuation bracket">{</span>
+        <span class="keyword">var</span> <span class="variable">numSpaces</span> = <span class="function call">abs</span><span class="punctuation bracket">(</span>i<span class="punctuation bracket">)</span>
+        <span class="function call">println</span><span class="punctuation bracket">(</span><span class="string">" "</span> <span class="operator">*</span> numSpaces <span class="operator">+</span> <span class="string">"*"</span> <span class="operator">*</span> <span class="punctuation bracket">(</span><span class="number">21</span> <span class="operator">-</span> <span class="number">2</span> <span class="operator">*</span> numSpaces<span class="punctuation bracket">)</span><span class="punctuation bracket">)</span>
+    <span class="punctuation bracket">}</span>
+  <span class="punctuation bracket">}</span>
+<span class="punctuation bracket">}</span>
 
 </code></pre>

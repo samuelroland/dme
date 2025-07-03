@@ -14,6 +14,6 @@ fn test_large_markdown_preview_with_codes_gives_same_result() {
 
         let result = markdown_file_to_highlighted_html(&path).unwrap();
 
-        check_possible_regression(&test_id, "html", result.as_string());
+        check_possible_regression(&test_id, "html", &result.to_safe_html_string());
     }
 }

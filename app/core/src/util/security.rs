@@ -32,7 +32,8 @@ mod tests {
 
     #[test]
     // Escaping is already handled by tree-sitter-highlight, just to make sure it continues to work on the long run
-    fn test_highlight_escape_html_even_if_unrelated() {
+    // Quotes are not escaped as this is only text inside tags, not in attributes
+    fn test_highlight_code_escapes_html_even_if_unrelated_to_lang() {
         let mut m = TreeSitterGrammarsManager::new_with_grammars_folder(
             get_unique_local_tree_sitter_grammars_folder(),
         )
@@ -44,7 +45,15 @@ mod tests {
         let h = TreeSitterHighlighter::new(&mut loader, TEST_GRAMMAR, &m).unwrap();
         assert_eq!(
             h.highlight(snippet).to_safe_html_string(),
-            "&lt;div<span class='operator'>&gt;</span><span class='tag'>This</span> <span class='tag'>is</span> <span class='tag'>an</span> <span class='tag'>HTML</span> <span class='tag'>page</span>&lt;<span class='operator'>/</span>div<span class='operator'>&gt;</span>&lt;SCRIPT<span class='operator'>&gt;</span><span class='tag'>alert</span><span class='punctuation bracket'>(</span><span class='string'>&#39;yoo&#39;</span><span class='punctuation bracket'>)</span>&lt;<span class='operator'>/</span>script<span class='operator'>&gt;</span>\n"
+            r#"&lt;div<span class="operator">&gt;</span><span class="tag">This</span> <span class="tag">is</span> <span class="tag">an</span> <span class="tag">HTML</span> <span class="tag">page</span>&lt;<span class="operator">/</span>div<span class="operator">&gt;</span>&lt;SCRIPT<span class="operator">&gt;</span><span class="tag">alert</span><span class="punctuation bracket">(</span><span class="string">'yoo'</span><span class="punctuation bracket">)</span>&lt;<span class="operator">/</span>script<span class="operator">&gt;</span>
+"#
+        );
+
+        let snippet = "\" onload='alert(true)'><span \"";
+        assert_eq!(
+            h.highlight(snippet).to_safe_html_string(),
+            r#"<span class="string">" onload='alert(true)'&gt;&lt;span "</span>
+"#
         );
     }
 
