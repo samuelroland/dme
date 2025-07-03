@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use dme_core::{markdown_to_highlighted_html, preview::preview::Html};
+use dme_core::{markdown_file_to_highlighted_html, preview::preview::Html};
 
 #[tauri::command]
 /// Open given Markdown file or the default one provided as argument
@@ -21,7 +21,7 @@ pub async fn open_markdown_file(mut path: String) -> Result<Option<Html>, String
     if path.is_empty() {
         Ok(None)
     } else if PathBuf::from(&path).exists() {
-        Ok(Some(markdown_to_highlighted_html(&path)?))
+        Ok(Some(markdown_file_to_highlighted_html(&path)?))
     } else {
         Err(format!("File {path} doesn't exist !").to_string())
     }
