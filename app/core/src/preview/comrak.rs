@@ -2,8 +2,11 @@
 use super::preview::{Html, Previewable};
 use super::tree_sitter_grammars::TreeSitterGrammarsManager;
 use super::tree_sitter_highlight::TreeSitterHighlighter;
+use ammonia::Builder;
+use comrak::html::escape;
 use comrak::{adapters::SyntaxHighlighterAdapter, html};
 use comrak::{markdown_to_html_with_plugins, ComrakPlugins, Options};
+use maplit::{hashmap, hashset};
 use std::collections::HashMap;
 use std::io::{self, Write};
 use std::path::PathBuf;
@@ -37,13 +40,24 @@ impl Previewable for ComrakParser {
         options.extension.table = true; // Enable tables
         options.extension.tasklist = true; // Enable list of tasks
         options.extension.autolink = true; // Enable creating links automatically for URLs in text
+        options.render.unsafe_ = true; // we take care of it with ammonia sanitizer just below
         let plugins = ComrakPlugins {
             render: comrak::RenderPlugins {
                 codefence_syntax_highlighter: Some(self as &dyn SyntaxHighlighterAdapter),
                 heading_adapter: None,
             },
         };
-        Html::from(markdown_to_html_with_plugins(source, &options, &plugins))
+
+        let unsafe_html = &markdown_to_html_with_plugins(source, &options, &plugins);
+
+        // Make the HTML safe by calling
+        let mut cleaner = Builder::default();
+        let authorized_tags_attribute = hashmap! {
+            "code" => hashset!{"class"}, // authorize the class attribute for <code> because we need
+            "span" => hashset!{"class"} // same as for <code>
+        };
+        cleaner.tag_attributes(authorized_tags_attribute);
+        Html::from(cleaner.clean(unsafe_html).to_string())
     }
 }
 
@@ -59,7 +73,9 @@ impl SyntaxHighlighterAdapter for ComrakParser {
     ) -> io::Result<()> {
         // Do not highlight in case there is no lang or it's empty
         if lang.is_none_or(|v| v.trim().is_empty()) {
-            output.write_all(code.as_bytes())
+            let mut escaped = Vec::new();
+            escape(&mut escaped, code.as_bytes()).unwrap_or_default();
+            output.write_all(escaped.as_slice())
         } else {
             let mut loader = Loader::new().map_err(std::io::Error::other)?;
             let highlighter =
@@ -69,7 +85,13 @@ impl SyntaxHighlighterAdapter for ComrakParser {
                 Ok(highlighter) => {
                     output.write_all(highlighter.highlight(code).as_string().as_bytes())
                 }
-                Err(_) => output.write_all(code.as_bytes()),
+                Err(_) => {
+                    let mut escaped = Vec::new();
+                    match escape(&mut escaped, code.as_bytes()) {
+                        Ok(_) => output.write_all(escaped.as_slice()),
+                        Err(_) => output.write_all("failed to escape code sorry...".as_bytes()),
+                    }
+                }
             }
         }
     }
