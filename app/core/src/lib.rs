@@ -14,7 +14,6 @@ use preview::{
 };
 use theming::{
     helix::ALL_HIGHLIGHT_NAMES_SUPPORTED_BY_HELIX,
-    renderer::Renderer,
     theme::{Theme, DEFAULT_THEME},
 };
 use tree_sitter_loader::Loader;
@@ -24,12 +23,11 @@ use tree_sitter_loader::Loader;
 pub fn markdown_content_to_highlighted_html(content: &str) -> Result<Html, String> {
     let theme = Theme::from_helix(DEFAULT_THEME, ALL_HIGHLIGHT_NAMES_SUPPORTED_BY_HELIX)
         .map_err(|e| e.to_string())?;
-    let renderer = Renderer::new(&theme);
-    let css = renderer.css();
+
     let parser = ComrakParser::new()?;
-    let html = parser.to_html(content);
-    let html = format!("<style>{}</style>\n\n{}", css, html.as_string());
-    Ok(Html(html))
+    let mut html = parser.to_html(content);
+    html.push_style_from_theme(&theme);
+    Ok(Html::from(html))
 }
 
 /// Same as `markdown_content_to_highlighted_html` with a given path to a Markdown file
@@ -39,8 +37,8 @@ pub fn markdown_file_to_highlighted_html(path: &str) -> Result<Html, String> {
     markdown_content_to_highlighted_html(&content)
 }
 
-// Try to detect the language via the file extension, this might returns some invalid languages
-// but should be still be useful for most use case
+/// Try to detect the language via the file extension, this might returns some invalid languages
+/// but should be still be useful for most use case
 pub fn detect_lang_from_file_extension(path: &str) -> String {
     let path = PathBuf::from(path);
     let ext = path.extension().unwrap_or_default();
@@ -60,15 +58,15 @@ pub fn highlight_code(lang: &str, code: &str) -> Result<Html, String> {
     let highlighter = TreeSitterHighlighter::new(&mut loader, lang, &manager);
 
     let final_html = match highlighter {
-        Ok(highlighter) => highlighter.highlight(code).0,
+        Ok(highlighter) => highlighter.highlight(code),
         Err(_) => {
             let mut escaped = Vec::new();
-            match escape(&mut escaped, code.as_bytes()) {
+            Html::from(match escape(&mut escaped, code.as_bytes()) {
                 Ok(_) => String::from_utf8(escaped).map_err(|e| e.to_string())?,
                 Err(_) => "failed to escape code sorry...".to_string(),
-            }
+            })
         }
     };
 
-    Ok(Html(final_html))
+    Ok(final_html)
 }

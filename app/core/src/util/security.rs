@@ -5,7 +5,7 @@ mod tests {
         highlight_code,
         preview::{
             comrak::ComrakParser,
-            preview::{Html, Previewable},
+            preview::Previewable,
             tree_sitter_grammars::{
                 get_test_grammar_repos, get_unique_local_tree_sitter_grammars_folder,
                 TreeSitterGrammarsManager, TEST_GRAMMAR,
@@ -24,10 +24,10 @@ mod tests {
         let result1 = highlight_code("", snippet).unwrap();
         let result2 = highlight_code("unknown", snippet).unwrap();
         assert_eq!(
-            result1, // the backticks are left as is, the html is escaped
-            Html("color: blue;\n```\n&lt;h1&gt;injected title !&lt;/h1&gt;\n```".to_string())
+            result1.to_safe_html_string(), // the backticks are left as is, the html is escaped
+            "color: blue;\n```\n&lt;h1&gt;injected title !&lt;/h1&gt;\n```"
         );
-        assert_eq!(result1, result2);
+        assert_eq!(result1.to_safe_html_string(), result2.to_safe_html_string());
     }
 
     #[test]
@@ -43,8 +43,8 @@ mod tests {
         let mut loader = Loader::new().unwrap();
         let h = TreeSitterHighlighter::new(&mut loader, TEST_GRAMMAR, &m).unwrap();
         assert_eq!(
-            h.highlight(snippet),
-            Html("&lt;div<span class='operator'>&gt;</span><span class='tag'>This</span> <span class='tag'>is</span> <span class='tag'>an</span> <span class='tag'>HTML</span> <span class='tag'>page</span>&lt;<span class='operator'>/</span>div<span class='operator'>&gt;</span>&lt;SCRIPT<span class='operator'>&gt;</span><span class='tag'>alert</span><span class='punctuation bracket'>(</span><span class='string'>&#39;yoo&#39;</span><span class='punctuation bracket'>)</span>&lt;<span class='operator'>/</span>script<span class='operator'>&gt;</span>\n".to_string())
+            h.highlight(snippet).to_safe_html_string(),
+            "&lt;div<span class='operator'>&gt;</span><span class='tag'>This</span> <span class='tag'>is</span> <span class='tag'>an</span> <span class='tag'>HTML</span> <span class='tag'>page</span>&lt;<span class='operator'>/</span>div<span class='operator'>&gt;</span>&lt;SCRIPT<span class='operator'>&gt;</span><span class='tag'>alert</span><span class='punctuation bracket'>(</span><span class='string'>&#39;yoo&#39;</span><span class='punctuation bracket'>)</span>&lt;<span class='operator'>/</span>script<span class='operator'>&gt;</span>\n"
         );
     }
 
@@ -54,10 +54,10 @@ mod tests {
         let parser = ComrakParser::new().unwrap();
         let snippet =
             "# Hello\n```zonk\n<div>This is an HTML page</div><SCRIPT>alert('yoo')</script>\n```";
-        let html = parser.to_html(snippet).0;
+        let html = parser.to_html(snippet);
         assert_eq!(
-        html,
-            "<h1>Hello</h1>\n<pre><code class=\"language-zonk\">&lt;div&gt;This is an HTML page&lt;/div&gt;&lt;SCRIPT&gt;alert('yoo')&lt;/script&gt;\n</code></pre>\n".to_string()
+        html.to_safe_html_string(),
+            "<h1>Hello</h1>\n<pre><code class=\"language-zonk\">&lt;div&gt;This is an HTML page&lt;/div&gt;&lt;SCRIPT&gt;alert('yoo')&lt;/script&gt;\n</code></pre>\n"
         );
     }
 
@@ -65,10 +65,10 @@ mod tests {
     fn test_html_in_document_is_not_escaped_but_cleaned() {
         let parser = ComrakParser::new().unwrap();
         let snippet = "# Hello\n<div>This is an HTML page</div><SCRIPT>alert('yoo')</script>\n";
-        let html = parser.to_html(snippet).0;
+        let html = parser.to_html(snippet);
         assert_eq!(
-            html,
-            "<h1>Hello</h1>\n<div>This is an HTML page</div>\n".to_string()
+            html.to_safe_html_string(),
+            "<h1>Hello</h1>\n<div>This is an HTML page</div>\n"
         );
     }
 }

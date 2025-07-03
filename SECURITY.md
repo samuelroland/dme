@@ -23,12 +23,13 @@ These are the possible threads that come to my mind, there are probably others. 
 ### Strategy against XSS
 This strategy is tested a bit in `app/core/util/security.rs` for high level functions of the library.
 
-- Let `tree-sitter-highlight` escape HTML special chars inside the highlighted code
+- Let `tree-sitter-highlight` escape HTML special chars inside the highlighted code, we added a test to make it is still the case in the future.
 - If the code cannot be highlighted, return an escaped version, via `comrak::html::escape()` function
 - `highlight_code()` does not use the Comrak parser to avoid code blocks escapes (via the 3 backticks in the code snippet directly), which could inject some HTML and modify the final UI look
-- Clean the final HTML with the [`ammonia` sanitization library](https://docs.rs/ammonia), which removes a lot of things (whitelist based): any JavaScript, any `<style>` and `<script>`. Here are the exceptions we put:
-    - Allow 
-- This final cleaning is made via wrapper type `Html` where the only way to get the `String` behind it
+- Clean the final HTML with the [`ammonia` sanitization library](https://docs.rs/ammonia), which removes a lot of things (whitelist based): any JavaScript, any `<style>` and `<script>`. We picked `ammonia` defaults, with the following exceptions:
+    - Allow `class` attribute on `<code>` and `<span>`
+    - Do not clean the CSS from the `Theme`
+- This final cleaning is made via wrapper type `Html` via the single method `to_safe_html_string` that can export a `String`. See `preview.rs` for implementation.
 
 ### Strategy against abuse of Tauri commands
 TODO

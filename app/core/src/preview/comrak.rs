@@ -2,11 +2,9 @@
 use super::preview::{Html, Previewable};
 use super::tree_sitter_grammars::TreeSitterGrammarsManager;
 use super::tree_sitter_highlight::TreeSitterHighlighter;
-use ammonia::Builder;
 use comrak::html::escape;
 use comrak::{adapters::SyntaxHighlighterAdapter, html};
 use comrak::{markdown_to_html_with_plugins, ComrakPlugins, Options};
-use maplit::{hashmap, hashset};
 use std::collections::HashMap;
 use std::io::{self, Write};
 use std::path::PathBuf;
@@ -40,7 +38,7 @@ impl Previewable for ComrakParser {
         options.extension.table = true; // Enable tables
         options.extension.tasklist = true; // Enable list of tasks
         options.extension.autolink = true; // Enable creating links automatically for URLs in text
-        options.render.unsafe_ = true; // we take care of it with ammonia sanitizer just below
+        options.render.unsafe_ = true; // we take care of it with ammonia sanitizer in the Html wrapper type
         let plugins = ComrakPlugins {
             render: comrak::RenderPlugins {
                 codefence_syntax_highlighter: Some(self as &dyn SyntaxHighlighterAdapter),
@@ -48,16 +46,8 @@ impl Previewable for ComrakParser {
             },
         };
 
-        let unsafe_html = &markdown_to_html_with_plugins(source, &options, &plugins);
-
-        // Make the HTML safe by calling
-        let mut cleaner = Builder::default();
-        let authorized_tags_attribute = hashmap! {
-            "code" => hashset!{"class"}, // authorize the class attribute for <code> because we need
-            "span" => hashset!{"class"} // same as for <code>
-        };
-        cleaner.tag_attributes(authorized_tags_attribute);
-        Html::from(cleaner.clean(unsafe_html).to_string())
+        let unsafe_html = markdown_to_html_with_plugins(source, &options, &plugins);
+        Html::from(unsafe_html)
     }
 }
 
@@ -83,7 +73,8 @@ impl SyntaxHighlighterAdapter for ComrakParser {
             // If lang might be supported or not
             match highlighter {
                 Ok(highlighter) => {
-                    output.write_all(highlighter.highlight(code).as_string().as_bytes())
+                    // Note: this is doing the to_safe_html_string conversion twice...
+                    output.write_all(highlighter.highlight(code).to_safe_html_string().as_bytes())
                 }
                 Err(_) => {
                     let mut escaped = Vec::new();

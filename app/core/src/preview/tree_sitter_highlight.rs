@@ -107,11 +107,11 @@ impl<'a> TreeSitterHighlighter<'a> {
                     &self.get_callback_to_apply_highlight_on_token(),
                 )
             }) {
-            Ok(_) => Html(
+            Ok(_) => Html::from(
                 String::from_utf8(renderer.html)
                     .unwrap_or("Rendered HTML is not a valid UTF8, could not render.".to_string()),
             ),
-            Err(_) => Html(code.to_string()),
+            Err(_) => Html::from(code.to_string()),
         }
     }
 
@@ -141,12 +141,9 @@ mod tests {
 
     use tree_sitter_loader::Loader;
 
-    use crate::preview::{
-        preview::Html,
-        tree_sitter_grammars::{
-            get_test_grammar_repos, get_unique_local_tree_sitter_grammars_folder,
-            TreeSitterGrammarsManager, TEST_GRAMMAR,
-        },
+    use crate::preview::tree_sitter_grammars::{
+        get_test_grammar_repos, get_unique_local_tree_sitter_grammars_folder,
+        TreeSitterGrammarsManager, TEST_GRAMMAR,
     };
 
     use super::TreeSitterHighlighter;
@@ -163,9 +160,9 @@ mod tests {
         let snippet = "color: blue";
         let mut loader = Loader::new().unwrap();
         let h = TreeSitterHighlighter::new(&mut loader, TEST_GRAMMAR, &m).unwrap();
-        assert_eq!(h.highlight(snippet), Html("<span class='tag'>color</span><span class='punctuation delimiter'>:</span> <span class='attribute'>blue</span>\n".to_string()));
+        assert_eq!(h.highlight(snippet).to_safe_html_string(), "<span class='tag'>color</span><span class='punctuation delimiter'>:</span> <span class='attribute'>blue</span>\n");
 
         let snippet = "#form { border: 1px solid #55232; }";
-        assert_eq!(h.highlight(snippet), Html("<span class='punctuation delimiter'>#</span><span class='property'>form</span> <span class='punctuation bracket'>{</span> <span class='property'>border</span><span class='punctuation delimiter'>:</span> <span class='number'>1<span class='type'>px</span></span> solid <span class='string special'><span class='punctuation delimiter'>#</span>55232</span><span class='punctuation delimiter'>;</span> <span class='punctuation bracket'>}</span>\n".to_string()));
+        assert_eq!(h.highlight(snippet).to_safe_html_string(), "<span class='punctuation delimiter'>#</span><span class='property'>form</span> <span class='punctuation bracket'>{</span> <span class='property'>border</span><span class='punctuation delimiter'>:</span> <span class='number'>1<span class='type'>px</span></span> solid <span class='string special'><span class='punctuation delimiter'>#</span>55232</span><span class='punctuation delimiter'>;</span> <span class='punctuation bracket'>}</span>\n");
     }
 }
