@@ -2,9 +2,9 @@
 use super::preview::{Html, Previewable};
 use super::tree_sitter_grammars::TreeSitterGrammarsManager;
 use super::tree_sitter_highlight::TreeSitterHighlighter;
+use comrak::html::escape;
 use comrak::{adapters::SyntaxHighlighterAdapter, html};
 use comrak::{markdown_to_html_with_plugins, ComrakPlugins, Options};
-use once_cell::sync::Lazy;
 use std::collections::HashMap;
 use std::io::{self, Write};
 use std::path::PathBuf;
@@ -38,13 +38,16 @@ impl Previewable for ComrakParser {
         options.extension.table = true; // Enable tables
         options.extension.tasklist = true; // Enable list of tasks
         options.extension.autolink = true; // Enable creating links automatically for URLs in text
+        options.render.unsafe_ = true; // we take care of it with ammonia sanitizer in the Html wrapper type
         let plugins = ComrakPlugins {
             render: comrak::RenderPlugins {
                 codefence_syntax_highlighter: Some(self as &dyn SyntaxHighlighterAdapter),
                 heading_adapter: None,
             },
         };
-        Html::from(markdown_to_html_with_plugins(source, &options, &plugins))
+
+        let unsafe_html = markdown_to_html_with_plugins(source, &options, &plugins);
+        Html::from(unsafe_html)
     }
 }
 
@@ -60,18 +63,26 @@ impl SyntaxHighlighterAdapter for ComrakParser {
     ) -> io::Result<()> {
         // Do not highlight in case there is no lang or it's empty
         if lang.is_none_or(|v| v.trim().is_empty()) {
-            output.write_all(code.as_bytes())
+            let mut escaped = Vec::new();
+            escape(&mut escaped, code.as_bytes()).unwrap_or_default();
+            output.write_all(escaped.as_slice())
         } else {
-            let mut loader =
-                Loader::new().map_err(|e| std::io::Error::new(io::ErrorKind::Other, e))?;
+            let mut loader = Loader::new().map_err(std::io::Error::other)?;
             let highlighter =
                 TreeSitterHighlighter::new(&mut loader, lang.unwrap_or_default(), &self.manager);
             // If lang might be supported or not
             match highlighter {
                 Ok(highlighter) => {
-                    output.write_all(highlighter.highlight(code).as_string().as_bytes())
+                    // Note: this is doing the to_safe_html_string conversion twice...
+                    output.write_all(highlighter.highlight(code).to_safe_html_string().as_bytes())
                 }
-                Err(_) => output.write_all(code.as_bytes()),
+                Err(_) => {
+                    let mut escaped = Vec::new();
+                    match escape(&mut escaped, code.as_bytes()) {
+                        Ok(_) => output.write_all(escaped.as_slice()),
+                        Err(_) => output.write_all("failed to escape code sorry...".as_bytes()),
+                    }
+                }
             }
         }
     }

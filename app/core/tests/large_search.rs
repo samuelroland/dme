@@ -1,17 +1,10 @@
-use common::regression::check_possible_regression;
 use dme_core::search::disk::DiskResearcher;
-use dme_core::search::search::{ResearchResult, Researcher};
-use pretty_assertions::{assert_eq, assert_ne};
-use std::fs::{read_to_string, write};
-use std::path::{Path, PathBuf};
-use std::sync::mpsc;
+use dme_core::search::search::Researcher;
+use pretty_assertions::assert_eq;
 use std::thread::sleep;
 use std::time::Duration;
 
-use dme_core::markdown_to_highlighted_html;
-use dme_core::util::setup::{clone_mdn_content, generate_large_markdown_with_codes};
-use dme_core::*;
-use regex::Replacer;
+use dme_core::util::setup::clone_mdn_content;
 mod common;
 
 fn wait_on_indexing(disk_search: &DiskResearcher) {

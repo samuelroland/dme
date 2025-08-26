@@ -1,10 +1,6 @@
-#[cfg(test)]
-use pretty_assertions::{assert_eq, assert_ne};
-
 use std::{
     env::current_dir,
-    io::Read,
-    path::{Path, PathBuf},
+    path::PathBuf,
     process::{Command, Output},
     sync::LazyLock,
 };
@@ -157,13 +153,8 @@ impl GitRepos {
 
 #[cfg(test)]
 mod tests {
-    use std::{
-        env::current_dir,
-        fs::{create_dir, create_dir_all, remove_dir_all},
-        path::PathBuf,
-        thread::{self, sleep},
-        time::{Duration, Instant},
-    };
+    use pretty_assertions::{assert_eq, assert_ne};
+    use std::{env::current_dir, fs::create_dir_all, path::PathBuf, time::Instant};
     // Note: I'm using a public Git repos almost empty to tests git clone and git pull operatiosn
     const REAL_GIT_REPO: &str = "https://github.com/samuelroland/cloneme.git";
 

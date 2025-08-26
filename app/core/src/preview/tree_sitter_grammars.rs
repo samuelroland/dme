@@ -1,5 +1,5 @@
 use std::{
-    collections::{BTreeSet, HashSet},
+    collections::BTreeSet,
     fs::create_dir,
     path::{Path, PathBuf},
     process::Command,
@@ -7,11 +7,10 @@ use std::{
 
 use etcetera::{AppStrategy, AppStrategyArgs};
 use once_cell::sync::Lazy;
-use pretty_assertions::{assert_eq, assert_ne};
 use tree_sitter::Language;
 use tree_sitter_loader::{CompileConfig, Config, Loader};
 
-use crate::util::git::{self, GitRepos};
+use crate::util::git::GitRepos;
 
 /// Manager of local Tree-Sitter grammars, cloned with Git from any Git HTTPS links
 /// We also have a list of official grammars on GitHub for ~22 languages in `proposed_grammars.rs`
@@ -59,8 +58,7 @@ impl TreeSitterGrammarsManager {
         if !another_grammars_folder.exists() {
             let _ = create_dir(&another_grammars_folder).map_err(|e| {
                 format!(
-                    "Coudln't create folder for grammars at {:?} because of {}",
-                    another_grammars_folder, e
+                    "Coudln't create folder for grammars at {another_grammars_folder:?} because of {e}"
                 )
             });
         }
@@ -223,6 +221,7 @@ mod tests {
     use crate::preview::tree_sitter_grammars::TEST_GRAMMAR;
 
     use crate::{preview::tree_sitter_grammars::TreeSitterGrammarsManager, util::git::GitRepos};
+    use pretty_assertions::{assert_eq, assert_ne};
 
     #[test]
     #[ignore = "Slow and network usage"]
