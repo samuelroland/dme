@@ -20,7 +20,6 @@ pub fn clone_mdn_content() -> PathBuf {
     if !repos_path.exists() {
         GitRepos::from_clone(MDN_GIT_REPOSITORY, &path, Some(1), true).unwrap();
     }
-    println!("done ");
     repos_path
 }
 
@@ -78,13 +77,8 @@ pub fn generate_large_markdown_with_codes(
     max_number_of_snippets_per_lang: usize,
     max_lang: usize,
 ) -> String {
-    // println!(
-    //     "\n>> Generating for {} max number of snippets per lang\n",
-    //     max_number_of_snippets_per_lang
-    // );
     let repos_folder = PathBuf::from(CODE_SNIPPETS_REPOS_DESTINATION);
     if !repos_folder.exists() {
-        // println!("Cloning {} under target/", CODE_SNIPPETS_REPOS);
         GitRepos::from_clone(
             CODE_SNIPPETS_REPOS,
             &repos_folder.parent().unwrap().to_path_buf(),
@@ -115,7 +109,6 @@ pub fn generate_large_markdown_with_codes(
             .join(lang);
 
         if !subfolder.exists() {
-            // println!("Skipping {} because no snippets.", lang);
             continue;
         };
         let mut codes: Vec<PathBuf> = read_dir(subfolder)
@@ -129,7 +122,6 @@ pub fn generate_large_markdown_with_codes(
             continue;
         }
 
-        // println!("Building sections for {}", lang);
         writeln!(final_output, "## Sample programs in {lang}").unwrap();
         for code in codes.iter().take(max_number_of_snippets_per_lang) {
             writeln!(
@@ -146,13 +138,6 @@ pub fn generate_large_markdown_with_codes(
 
     let output_md_prefix_full = format!("{OUTPUT_MD_PREFIX}{max_number_of_snippets_per_lang}.md");
     std::fs::write(&output_md_prefix_full, &final_output).unwrap();
-    // println!(
-    //     "Saved file {} of size {} bytes and {} code snippets in total, with {} different languages.",
-    //     output_md_prefix_full,
-    //     final_output.len(),
-    //     included_snippets_count,
-    //     snippets_found_count
-    // );
 
     output_md_prefix_full
 }
