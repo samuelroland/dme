@@ -99,7 +99,6 @@ impl<'a> TreeSitterHighlighter {
         list.iter()
             .map(|f2| {
                 let query_file_path = base_path.join(f2);
-                dbg!(&query_file_path);
                 read_to_string(query_file_path).unwrap_or_default()
             })
             .collect::<Vec<String>>()
