@@ -62,6 +62,52 @@ impl Previewable for ComrakParser {
     }
 }
 
+/// The high level entrypoint to access a cached TreeSitterHighlighter and highlight a given piece of code
+/// If the grammar is not installed or cannot be used, the original code is used in its HTML
+/// escaped form to avoid being changed in sanitization
+pub fn highlight_code_from_cached_highlighter(
+    manager: &TreeSitterGrammarsManager,
+    maybe_lang: Option<&str>,
+    code: &str,
+) -> Html {
+    if let Some(lang) = maybe_lang {
+        if !lang.is_empty() {
+            let owned_lang = lang.to_owned();
+            let cache = TSH_CACHE.read().unwrap();
+            let highlighter = cache.get(&owned_lang);
+
+            match highlighter {
+                // We have a highlighter in cache, juse use it
+                Some(h_cached) => {
+                    return h_cached.highlight(code);
+                }
+                None => {
+                    // Otherwise create a new one, use it and save it in CACHE
+                    let new_h = TreeSitterHighlighter::new(&owned_lang, manager);
+                    if let Ok(valid_new_h) = new_h {
+                        let result = valid_new_h.highlight(code);
+                        drop(cache);
+                        let mut cache = TSH_CACHE.write().unwrap();
+                        cache.insert(owned_lang, valid_new_h);
+                        drop(cache);
+                        return result;
+                    }
+                }
+            }
+        }
+    }
+
+    // If we reach this point, we need to take the original code without highlighting
+    // BUT we need to escape it to support things like "#include <iostream>" and not have it
+    // removed by the sanitization
+
+    let mut escaped = Vec::new();
+    if escape(&mut escaped, code.as_bytes()).is_err() {
+        let _ = escaped.write_all("failed to escape code sorry...".as_bytes());
+    }
+    Html::from(String::from_utf8(escaped).unwrap_or("Invalid non UTF8 escaped code...".to_string()))
+}
+
 /// Implement a TreeSitterHighlighter integration on Comrak
 // This is based on Syntect integration
 // https://docs.rs/comrak/latest/src/comrak/plugins/syntect.rs.html#71-133
@@ -72,7 +118,9 @@ impl SyntaxHighlighterAdapter for ComrakParser {
         maybe_lang: Option<&str>,
         code: &str,
     ) -> io::Result<()> {
-        let html = highlight_from_cached_highlighter(&self.manager, maybe_lang, code);
+        let html = highlight_code_from_cached_highlighter(&self.manager, maybe_lang, code);
+        // TODO: refactor this to avoid calling to_safe_html_string on each code snippet + on the whole final document
+        // How can we call it only at the end ?
         let _ = output.write_all(html.to_safe_html_string().as_bytes());
         Ok(())
     }
