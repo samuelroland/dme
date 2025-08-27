@@ -14,7 +14,6 @@ mod tests {
         },
     };
     use pretty_assertions::assert_eq;
-    use tree_sitter_loader::Loader;
     #[test]
     fn test_highlight_code_cannot_inject_markdown_nor_html() {
         let snippet = r#"color: blue;
@@ -41,8 +40,7 @@ mod tests {
 
         m.install(&get_test_grammar_repos()).unwrap();
         let snippet = "<div>This is an HTML page</div><SCRIPT>alert('yoo')</script>";
-        let mut loader = Loader::new().unwrap();
-        let h = TreeSitterHighlighter::new(&mut loader, TEST_GRAMMAR, &m).unwrap();
+        let h = TreeSitterHighlighter::new(TEST_GRAMMAR, &m).unwrap();
         assert_eq!(
             h.highlight(snippet).to_safe_html_string(),
             r#"&lt;div<span class="operator">&gt;</span><span class="tag">This</span> <span class="tag">is</span> <span class="tag">an</span> <span class="tag">HTML</span> <span class="tag">page</span>&lt;<span class="operator">/</span>div<span class="operator">&gt;</span>&lt;SCRIPT<span class="operator">&gt;</span><span class="tag">alert</span><span class="punctuation bracket">(</span><span class="string">'yoo'</span><span class="punctuation bracket">)</span>&lt;<span class="operator">/</span>script<span class="operator">&gt;</span>

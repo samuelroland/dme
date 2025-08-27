@@ -1,9 +1,5 @@
 use common::regression::check_possible_regression;
-use pretty_assertions::{assert_eq, assert_ne};
-use std::fs::{read_to_string, write};
-use std::path::{Path, PathBuf};
 
-use dme_core::markdown_to_highlighted_html;
 use dme_core::util::setup::{
     generate_large_markdown_with_codes, install_all_grammars_in_local_target_folder,
 };
