@@ -52,6 +52,8 @@ impl Previewable for ComrakParser {
         options.extension.table = true; // Enable tables
         options.extension.tasklist = true; // Enable list of tasks
         options.extension.autolink = true; // Enable creating links automatically for URLs in text
+
+        options.render.unsafe_ = true; // Unable unsafe mode to allow HTML to go through. To avoid XSS, we take care of it with ammonia sanitizer in the Html wrapper type
         let plugins = ComrakPlugins {
             render: comrak::RenderPlugins {
                 codefence_syntax_highlighter: Some(self as &dyn SyntaxHighlighterAdapter),
