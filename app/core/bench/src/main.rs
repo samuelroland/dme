@@ -4,7 +4,6 @@ use grammars::{grammar_install_bench, install_grammar};
 use search::{general_keyword_search, run_search};
 use std::{
     collections::HashMap,
-    fmt::format,
     fs::{File, create_dir_all},
     path::PathBuf,
     process::Command,
@@ -15,13 +14,6 @@ mod search;
 mod util;
 
 use colored::Colorize;
-use dme_core::{
-    markdown_to_highlighted_html,
-    util::setup::{
-        clone_mdn_content, generate_large_markdown_with_codes,
-        install_all_grammars_in_local_target_folder,
-    },
-};
 use once_cell::sync::Lazy;
 use preview::{preview_code_benchmark, preview_nocode_benchmark, run_preview};
 use util::run_fn;

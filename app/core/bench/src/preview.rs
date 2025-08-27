@@ -1,12 +1,10 @@
 use std::{
     fs::{read_to_string, write},
     path::PathBuf,
-    thread::sleep,
-    time::Duration,
 };
 
 use dme_core::{
-    markdown_to_highlighted_html,
+    markdown_file_to_highlighted_html,
     util::setup::{
         clone_mdn_content, generate_large_markdown_with_codes,
         install_all_grammars_in_local_target_folder,
@@ -17,8 +15,8 @@ use crate::run_hyperfine;
 
 // Benches and benchmarked functions
 pub fn run_preview(args: Vec<String>) {
-    let result = markdown_to_highlighted_html(&args[0]).unwrap();
-    println!("{}", result.as_string());
+    let result = markdown_file_to_highlighted_html(&args[0]).unwrap();
+    println!("{}", result.to_safe_html_string());
 }
 
 // Benches
@@ -29,7 +27,7 @@ pub fn preview_nocode_benchmark() {
 
     let mut content = read_to_string(&path).unwrap();
     let base = content.clone();
-    for i in 1..30 {
+    for _ in 1..30 {
         content += &base;
     }
     let destination = PathBuf::from("target/big_markdown.md");

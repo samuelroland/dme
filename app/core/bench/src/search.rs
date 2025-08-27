@@ -1,17 +1,6 @@
-use std::{
-    fs::{read_to_string, write},
-    path::PathBuf,
-    thread::sleep,
-    time::Duration,
-};
-
 use dme_core::{
-    markdown_to_highlighted_html,
     search::{disk::DiskResearcher, search::Researcher},
-    util::setup::{
-        clone_mdn_content, generate_large_markdown_with_codes,
-        install_all_grammars_in_local_target_folder,
-    },
+    util::setup::clone_mdn_content,
 };
 
 use crate::run_hyperfine;

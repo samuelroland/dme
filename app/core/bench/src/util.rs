@@ -1,6 +1,6 @@
 use std::process::exit;
 
-use crate::{BENCHES, Bench};
+use crate::BENCHES;
 
 // Function to a run a function that is measured
 pub fn run_fn(id: &str, args: Vec<String>) {
