@@ -169,6 +169,10 @@ impl<'a> TreeSitterHighlighter {
             "md" => "markdown",
             "hs" => "haskell",
             "ts" => "typescript",
+            // TODO: fix these 2 lines of over simplification ?
+            // Can we highlight in Cpp and if it fails try in C as well ?
+            "h" => "cpp",
+            "hpp" => "cpp",
             _ => given,
         }
         .to_string()
