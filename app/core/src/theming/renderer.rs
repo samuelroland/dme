@@ -2,8 +2,7 @@
 // and it has been is adapted to our situation
 // https://github.com/matze/tree-painter
 //
-use crate::theming::{error::Error, theme};
-use std::collections::HashMap;
+use crate::theming::theme;
 use std::fmt::Write;
 
 /// HTML syntax highlighting renderer.

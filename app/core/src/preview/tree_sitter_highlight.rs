@@ -4,13 +4,12 @@
 // and the associated implementation
 // https://dotat.at/cgi/git/wwwdotat.git/blob/HEAD:/src/hilite.rs
 
-use pretty_assertions::{assert_eq, assert_ne};
 use std::{
     fs::read_to_string,
     path::{Path, PathBuf},
 };
 use tree_sitter_highlight::{Highlight, HighlightConfiguration, Highlighter, HtmlRenderer};
-use tree_sitter_loader::{CompileConfig, LanguageConfiguration, Loader};
+use tree_sitter_loader::{CompileConfig, Loader};
 
 use super::{preview::Html, tree_sitter_grammars::TreeSitterGrammarsManager};
 
@@ -149,11 +148,11 @@ impl<'a> TreeSitterHighlighter {
                     &self.get_callback_to_apply_highlight_on_token(),
                 )
             }) {
-            Ok(_) => Html(
+            Ok(_) => Html::from(
                 String::from_utf8(renderer.html)
                     .unwrap_or("Rendered HTML is not a valid UTF8, could not render.".to_string()),
             ),
-            Err(_) => Html(code.to_string()),
+            Err(_) => Html::from(code.to_string()),
         }
     }
 
@@ -179,10 +178,6 @@ impl<'a> TreeSitterHighlighter {
 
 #[cfg(test)]
 mod tests {
-    use std::{env::current_dir, fs::create_dir_all, path::PathBuf};
-
-    use tree_sitter_loader::Loader;
-
     use crate::preview::{
         preview::Html,
         tree_sitter_grammars::{
@@ -204,9 +199,9 @@ mod tests {
 
         let snippet = "color: blue";
         let h = TreeSitterHighlighter::new(TEST_GRAMMAR, &m).unwrap();
-        assert_eq!(h.highlight(snippet), Html("<span class='tag'>color</span><span class='punctuation delimiter'>:</span> <span class='attribute'>blue</span>\n".to_string()));
+        assert_eq!(h.highlight(snippet), Html::from("<span class='tag'>color</span><span class='punctuation delimiter'>:</span> <span class='attribute'>blue</span>\n".to_string()));
 
         let snippet = "#form { border: 1px solid #55232; }";
-        assert_eq!(h.highlight(snippet), Html("<span class='punctuation delimiter'>#</span><span class='property'>form</span> <span class='punctuation bracket'>{</span> <span class='property'>border</span><span class='punctuation delimiter'>:</span> <span class='number'>1<span class='type'>px</span></span> solid <span class='string special'><span class='punctuation delimiter'>#</span>55232</span><span class='punctuation delimiter'>;</span> <span class='punctuation bracket'>}</span>\n".to_string()));
+        assert_eq!(h.highlight(snippet), Html::from("<span class='punctuation delimiter'>#</span><span class='property'>form</span> <span class='punctuation bracket'>{</span> <span class='property'>border</span><span class='punctuation delimiter'>:</span> <span class='number'>1<span class='type'>px</span></span> solid <span class='string special'><span class='punctuation delimiter'>#</span>55232</span><span class='punctuation delimiter'>;</span> <span class='punctuation bracket'>}</span>\n".to_string()));
     }
 }

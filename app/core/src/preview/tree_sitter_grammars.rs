@@ -1,5 +1,5 @@
 use std::{
-    collections::{BTreeSet, HashSet},
+    collections::BTreeSet,
     fs::create_dir,
     path::{Path, PathBuf},
     process::Command,
@@ -7,11 +7,10 @@ use std::{
 
 use etcetera::{AppStrategy, AppStrategyArgs};
 use once_cell::sync::Lazy;
-use pretty_assertions::{assert_eq, assert_ne};
 use tree_sitter::Language;
 use tree_sitter_loader::{CompileConfig, Config, Loader};
 
-use crate::util::git::{self, GitRepos};
+use crate::util::git::GitRepos;
 
 /// Manager of local Tree-Sitter grammars, cloned with Git from any Git HTTPS links
 /// We also have a list of official grammars on GitHub for ~22 languages in `proposed_grammars.rs`
@@ -23,31 +22,31 @@ pub struct TreeSitterGrammarsManager {
     final_grammars_folder: PathBuf,
 }
 
+static TREE_SITTER_GRAMMARS_FOLDER_VIA_ENV: Lazy<Option<PathBuf>> = Lazy::new(|| {
+    std::env::var("TREE_SITTER_GRAMMARS_FOLDER")
+        .ok()
+        .map(PathBuf::from)
+});
+
 impl TreeSitterGrammarsManager {
     /// Create a new manager with a loader that needs a Tree-Sitter LIBDIR
     pub fn new() -> Result<Self, String> {
-        let loader = Loader::new().map_err(|e| e.to_string())?;
-
-        /// Use the DATA HOME strategy to determine the base folder grammars and cloned and managed
+        /// Use the DATA HOME strategy to determine the base folder grammars
         /// on Linux it will be under ~/.local/share/tree-sitter-grammars
         static DEFAULT_TREE_SITTER_GRAMMARS_FOLDER: Lazy<PathBuf> = Lazy::new(|| {
-            let folder = etcetera::choose_app_strategy(AppStrategyArgs {
+            etcetera::choose_app_strategy(AppStrategyArgs {
                 app_name: "tree-sitter-grammars".to_string(),
                 ..Default::default()
             })
             .unwrap() // only in case it couldn't determine the home the directory,
             // in this case we don't know where to put these grammars and the only option is to panic
             .data_dir()
-            .to_path_buf();
-            if !folder.exists() {
-                let _ = create_dir(&folder);
-            }
-            folder
+            .to_path_buf()
         });
-        Ok(TreeSitterGrammarsManager {
-            loader,
-            final_grammars_folder: DEFAULT_TREE_SITTER_GRAMMARS_FOLDER.clone(),
-        })
+        let final_folder: &PathBuf = (*TREE_SITTER_GRAMMARS_FOLDER_VIA_ENV)
+            .as_ref()
+            .unwrap_or(&*DEFAULT_TREE_SITTER_GRAMMARS_FOLDER);
+        Self::new_with_grammars_folder(final_folder.clone())
     }
 
     /// Create a manager by specifying another folder instead of DEFAULT_TREE_SITTER_GRAMMARS_FOLDER
@@ -56,10 +55,22 @@ impl TreeSitterGrammarsManager {
         another_grammars_folder: PathBuf,
     ) -> Result<Self, String> {
         let loader = Loader::new().map_err(|e| e.to_string())?;
+        if !another_grammars_folder.exists() {
+            let _ = create_dir(&another_grammars_folder).map_err(|e| {
+                format!(
+                    "Coudln't create folder for grammars at {another_grammars_folder:?} because of {e}"
+                )
+            });
+        }
         Ok(TreeSitterGrammarsManager {
             loader,
             final_grammars_folder: another_grammars_folder,
         })
+    }
+
+    /// Get the final grammars folder
+    pub fn get_grammars_folder(&self) -> &PathBuf {
+        &self.final_grammars_folder
     }
 
     /// Install a new grammar from a given git HTTPS URL
@@ -210,6 +221,7 @@ mod tests {
     use crate::preview::tree_sitter_grammars::TEST_GRAMMAR;
 
     use crate::{preview::tree_sitter_grammars::TreeSitterGrammarsManager, util::git::GitRepos};
+    use pretty_assertions::{assert_eq, assert_ne};
 
     #[test]
     #[ignore = "Slow and network usage"]

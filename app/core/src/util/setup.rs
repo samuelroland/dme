@@ -3,9 +3,7 @@
 use std::ffi::OsStr;
 use std::fmt::Write;
 use std::fs::{create_dir_all, read_dir, read_to_string};
-use std::path::{Path, PathBuf};
-
-use tree_sitter_loader::Loader;
+use std::path::PathBuf;
 
 use crate::preview::proposed_grammars::PROPOSED_GRAMMAR_SOURCES;
 use crate::preview::tree_sitter_grammars::TreeSitterGrammarsManager;
@@ -36,11 +34,8 @@ pub fn install_all_grammars_in_local_target_folder() -> PathBuf {
     let manager =
         TreeSitterGrammarsManager::new_with_grammars_folder(grammars_folder.clone()).unwrap();
     for (lang, link) in PROPOSED_GRAMMAR_SOURCES.iter() {
-        if grammars_folder
-            .join(format!("tree-sitter-{}", lang))
-            .exists()
-        {
-            let so_path = grammars_folder.join(format!("tree-sitter-{}/{}.so", lang, lang));
+        if grammars_folder.join(format!("tree-sitter-{lang}")).exists() {
+            let so_path = grammars_folder.join(format!("tree-sitter-{lang}/{lang}.so"));
             if so_path.exists() {
                 let h = TreeSitterHighlighter::new(lang, &manager).unwrap();
                 h.highlight("test"); // highlight anything just to make sure
@@ -104,8 +99,7 @@ pub fn generate_large_markdown_with_codes(
         (*PROPOSED_GRAMMAR_SOURCES.iter().collect::<Vec<_>>()).to_vec();
     grammars.sort();
     let mut lang_included_count = 0;
-    let mut included_snippets_count = 0;
-    for (lang, link) in grammars {
+    for (lang, _) in grammars {
         if is_ignored_grammar(lang) {
             continue;
         } // it generate strange markdown outputs or doesn't support highlighting well
@@ -136,7 +130,7 @@ pub fn generate_large_markdown_with_codes(
         }
 
         // println!("Building sections for {}", lang);
-        writeln!(final_output, "## Sample programs in {}", lang).unwrap();
+        writeln!(final_output, "## Sample programs in {lang}").unwrap();
         for code in codes.iter().take(max_number_of_snippets_per_lang) {
             writeln!(
                 final_output,
@@ -146,13 +140,11 @@ pub fn generate_large_markdown_with_codes(
                 read_to_string(code).unwrap_or_default()
             )
             .unwrap();
-            included_snippets_count += 1;
         }
         lang_included_count += 1;
     }
 
-    let output_md_prefix_full =
-        format!("{}{}.md", OUTPUT_MD_PREFIX, max_number_of_snippets_per_lang);
+    let output_md_prefix_full = format!("{OUTPUT_MD_PREFIX}{max_number_of_snippets_per_lang}.md");
     std::fs::write(&output_md_prefix_full, &final_output).unwrap();
     // println!(
     //     "Saved file {} of size {} bytes and {} code snippets in total, with {} different languages.",

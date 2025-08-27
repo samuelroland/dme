@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 pub struct Progress(pub u8);
 
 impl Progress {
-    fn is_done(&self) -> bool {
+    pub fn is_done(&self) -> bool {
         self.0 <= 100
     }
 }
@@ -42,7 +42,7 @@ pub trait Researcher {
     /// The actual research of a raw string returning some matches
     /// Giving a SyncSender allows to receive result live (unsorted, unlimited)
     fn search(
-        &mut self,
+        &self,
         raw: &str,
         limit: u8,
         sender: Option<Sender<ResearchResult>>,
