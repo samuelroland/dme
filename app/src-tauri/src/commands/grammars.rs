@@ -56,7 +56,7 @@ pub async fn install_grammar(id: &str) -> Result<(), String> {
 #[tauri::command]
 pub async fn remove_grammar(id: &str) -> Result<(), String> {
     let mut manager = TreeSitterGrammarsManager::new()?;
-    let link = PROPOSED_GRAMMAR_SOURCES
+    PROPOSED_GRAMMAR_SOURCES
         .get(id)
         .ok_or(format!("No proposed grammar with id {id}"))?;
     manager.delete(id)?;

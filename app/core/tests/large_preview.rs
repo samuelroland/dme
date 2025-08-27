@@ -1,4 +1,5 @@
 use common::regression::check_possible_regression;
+
 use dme_core::util::setup::{
     generate_large_markdown_with_codes, install_all_grammars_in_local_target_folder,
 };

@@ -1,9 +1,8 @@
 use ammonia::Builder;
-use maplit::{hashmap, hashset};
 
 use crate::theming::{renderer::Renderer, theme::Theme};
 
-#[derive(Eq, PartialEq)]
+#[derive(Eq, Debug, PartialEq)]
 pub struct Html {
     content: String,
     css_from_theme: String,
@@ -24,11 +23,8 @@ impl Html {
     pub fn to_safe_html_string(&self) -> String {
         // NOTE: update SECURITY.md if the rules need to change
         let mut cleaner = Builder::default();
-        let authorized_tags_attribute = hashmap! {
-            "code" => hashset!{"class"}, // authorize the class attribute for <code> because we need to keep highlight names CSS classes
-            "span" => hashset!{"class"} // same as for <code>
-        };
-        cleaner.tag_attributes(authorized_tags_attribute);
+        cleaner.add_tag_attributes("code", &["class"]); // authorize the class attribute for <code> because we need to keep highlight names CSS classes
+        cleaner.add_tag_attributes("span", &["class"]); // same as for <code>
         format!(
             "{}{}",
             self.css_from_theme,
