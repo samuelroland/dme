@@ -1,4 +1,7 @@
-use ammonia::Builder;
+use std::{borrow::Cow, path::PathBuf};
+
+use ammonia::{Builder, UrlRelativeEvaluate};
+use maplit::hashset;
 
 use crate::theming::{renderer::Renderer, theme::Theme};
 
@@ -6,6 +9,7 @@ use crate::theming::{renderer::Renderer, theme::Theme};
 pub struct Html {
     content: String,
     css_from_theme: String,
+    image_rewrite: ImageUrlRewriteMode,
 }
 
 impl From<String> for Html {
@@ -13,8 +17,20 @@ impl From<String> for Html {
         Html {
             content: value,
             css_from_theme: String::default(),
+            image_rewrite: ImageUrlRewriteMode::None,
         }
     }
+}
+
+#[derive(Eq, Debug, PartialEq)]
+pub enum ImageUrlRewriteMode {
+    /// The default, the URL is not touched
+    None,
+    // A simple prefix to put before the URL without any other change
+    SimplePrefixed(String),
+    /// The absolute path built for Tauri, with the asset protocol as prefix.
+    /// This is intented to be used by Tauri applications
+    TauriFullPath(String),
 }
 
 impl Html {
@@ -25,6 +41,38 @@ impl Html {
         let mut cleaner = Builder::default();
         cleaner.add_tag_attributes("code", &["class"]); // authorize the class attribute for <code> because we need to keep highlight names CSS classes
         cleaner.add_tag_attributes("span", &["class"]); // same as for <code>
+        cleaner.add_tag_attributes("img", &["src"]);
+        cleaner.strip_comments(true);
+
+        // Rewrite the image URLs with a prefix if provided, to adapt to the platform (web needs
+        // sometimes a subfolder for images, desktop app needs an absolute path prefix, ...)
+        match &self.image_rewrite {
+            ImageUrlRewriteMode::None => {}
+            ImageUrlRewriteMode::SimplePrefixed(prefix) => {
+                struct PurePrefix {
+                    prefix: String,
+                }
+                impl<'a> UrlRelativeEvaluate<'a> for PurePrefix {
+                    fn evaluate<'url>(&self, url: &'url str) -> Option<Cow<'url, str>> {
+                        let mut copy = self.prefix.clone();
+                        copy.push_str(url);
+                        Some(Cow::Owned(copy))
+                    }
+                }
+                cleaner.url_relative(ammonia::UrlRelative::Custom(Box::new(PurePrefix {
+                    prefix: prefix.to_owned(),
+                })));
+            }
+            ImageUrlRewriteMode::TauriFullPath(path) => {
+                let new_url_schemes = hashset!["asset"];
+                cleaner.add_url_schemes(new_url_schemes);
+
+                cleaner.url_relative(ammonia::UrlRelative::Custom(Box::new(TauriPathRewriter {
+                    path: path.to_owned(),
+                })));
+            }
+        }
+
         format!(
             "{}{}",
             self.css_from_theme,
@@ -38,9 +86,126 @@ impl Html {
         let css = renderer.css();
         self.css_from_theme = format!("<style>{css}</style>\n\n")
     }
+
+    pub fn set_image_rewrite(mut self, mode: ImageUrlRewriteMode) -> Self {
+        self.image_rewrite = mode;
+        self
+    }
+}
+
+struct TauriPathRewriter {
+    path: String,
+}
+
+/// This is just a reimplementation of Tauri's JavaScript function convertFileSrc()
+/// to have a safe Rust only HTML generation without any JavaScript HTML manipulation
+/// https://v2.tauri.app/fr/reference/javascript/api/namespacecore/#convertfilesrc
+///
+/// See implementation to better understand why the tauri_prefix
+/// https://github.com/tauri-apps/tauri/blob/18464d9481f4d522c305f21b38be4b906ab41bd5/crates/tauri/scripts/core.js#L13
+impl<'a> UrlRelativeEvaluate<'a> for TauriPathRewriter {
+    fn evaluate<'url>(&self, url: &'url str) -> Option<std::borrow::Cow<'url, str>> {
+        #[cfg(target_os = "windows")]
+        let tauri_prefix = "http://asset.localhost/";
+        #[cfg(target_os = "android")]
+        let tauri_prefix = "http://asset.localhost/";
+        #[cfg(target_os = "linux")]
+        let tauri_prefix = "asset://localhost/";
+        #[cfg(target_os = "macos")]
+        let tauri_prefix = "asset://localhost/";
+
+        let absolute_path = PathBuf::from(&self.path)
+            .join(url)
+            .into_os_string()
+            .to_string_lossy()
+            .to_string();
+        let encoded_absolute_path = urlencoding::encode(&absolute_path);
+        let result = format!("{tauri_prefix}{encoded_absolute_path}");
+        Some(Cow::Owned(result))
+    }
 }
 
 /// A component that will be able to preview a given document into HTML
 pub trait Previewable {
     fn to_html(&self, source: &str) -> Html;
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::preview::{
+        comrak::ComrakParser,
+        preview::{ImageUrlRewriteMode, Previewable},
+    };
+    use pretty_assertions::assert_eq;
+
+    #[test]
+    fn test_images_path_can_be_left_untouched() {
+        let given = "# Sky\n![super sky](sky.png)";
+        let result = ComrakParser::new()
+            .unwrap()
+            .to_html(given)
+            .set_image_rewrite(ImageUrlRewriteMode::None)
+            .to_safe_html_string();
+        assert_eq!(
+            result,
+            format!("<h1>Sky</h1>\n<p><img src=\"sky.png\" alt=\"super sky\"></p>\n")
+        );
+    }
+
+    #[test]
+    fn test_images_path_can_be_prefixed_and_canonized() {
+        let given = "# Sky\n![super sky](sky.png)";
+
+        let result = ComrakParser::new()
+            .unwrap()
+            .to_html(given)
+            .set_image_rewrite(ImageUrlRewriteMode::SimplePrefixed(
+                "/static/images/".to_string(),
+            ))
+            .to_safe_html_string();
+        let newpath = "/static/images/sky.png";
+        assert_eq!(
+            result,
+            format!("<h1>Sky</h1>\n<p><img src=\"{newpath}\" alt=\"super sky\"></p>\n")
+        );
+    }
+
+    #[test]
+    fn test_images_path_can_be_prefixed_with_absolute_path_for_tauri() {
+        let given = "# Sky
+![super sky](sky.png)
+![super sky on external website](https://great-website.com/sky.png)
+![super sky](../../bench/sky.png)
+![nice path](../images-de-fous/super_Schema$BIEN3joli.png)";
+
+        // TODO: should we support path with spaces ??
+        let result = ComrakParser::new()
+            .unwrap()
+            .to_html(given)
+            .set_image_rewrite(ImageUrlRewriteMode::TauriFullPath(
+                "/home/sam/report/".to_string(),
+            ))
+            .to_safe_html_string();
+
+        #[cfg(target_os = "windows")]
+        let tauri_prefix = "http://asset.localhost/";
+        #[cfg(target_os = "android")]
+        let tauri_prefix = "http://asset.localhost/";
+        #[cfg(target_os = "linux")]
+        let tauri_prefix = "asset://localhost/";
+        #[cfg(target_os = "macos")]
+        let tauri_prefix = "asset://localhost/";
+
+        assert_eq!(
+            result,
+            format!(
+                "<h1>Sky</h1>
+<p><img src=\"{tauri_prefix}%2Fhome%2Fsam%2Freport%2Fsky.png\" alt=\"super sky\">
+<img src=\"https://great-website.com/sky.png\" alt=\"super sky on external website\">
+<img src=\"{tauri_prefix}%2Fhome%2Fsam%2Freport%2F..%2F..%2Fbench%2Fsky.png\" alt=\"super sky\">
+<img src=\"{tauri_prefix}%2Fhome%2Fsam%2Freport%2F..%2Fimages-de-fous%2Fsuper_Schema%24BIEN3joli.png\" alt=\"nice path\"></p>
+"
+            )
+        );
+    }
 }
