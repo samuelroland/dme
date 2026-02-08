@@ -30,6 +30,7 @@ toml = "0.8.23"
 nucleo-matcher = "0.3.1"
 ammonia = "4.1.0"
 maplit = "1.0.2"
+urlencoding = "2.1.3"
 
 [dev-dependencies]
 pretty_assertions = "1.4.1"

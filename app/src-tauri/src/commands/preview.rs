@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 
 use dme_core::markdown_file_to_highlighted_html;
+use dme_core::preview::preview::ImageUrlRewriteMode;
 
 #[tauri::command]
 /// Open given Markdown file or the default one provided as argument
@@ -20,8 +21,16 @@ pub async fn open_markdown_file(mut path: String) -> Result<Option<String>, Stri
     if path.is_empty() {
         Ok(None)
     } else if PathBuf::from(&path).exists() {
+        let pwd: PathBuf = PathBuf::from(".");
+        let parent_path = PathBuf::from(path.clone())
+            .parent()
+            .unwrap_or_else(|| &pwd)
+            .to_string_lossy()
+            .to_string();
         Ok(Some(
-            markdown_file_to_highlighted_html(&path)?.to_safe_html_string(),
+            markdown_file_to_highlighted_html(&path)?
+                .set_image_rewrite(ImageUrlRewriteMode::TauriFullPath(parent_path))
+                .to_safe_html_string(),
         ))
     } else {
         Err(format!("File {path} doesn't exist !").to_string())
