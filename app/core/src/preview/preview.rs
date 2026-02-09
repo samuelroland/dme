@@ -115,10 +115,14 @@ impl Html {
         }
 
         // Include CSS from the syntax highlighting theme
-        let style_markup = format!("<style>{}</style>", self.css_from_theme.as_str());
+        let style_markup = if self.css_from_theme.is_empty() {
+            ""
+        } else {
+            &format!("<style>{}</style>", self.css_from_theme.as_str())
+        };
 
         format!(
-            "{}\n{}",
+            "{}{}",
             style_markup,
             &cleaner.clean(&self.content).to_string()
         )
