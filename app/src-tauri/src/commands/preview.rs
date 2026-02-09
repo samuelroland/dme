@@ -18,9 +18,10 @@ pub async fn open_markdown_file(mut path: String) -> Result<Option<String>, Stri
         }
     }
 
+    let pathbuf = PathBuf::from(&path);
     if path.is_empty() {
         Ok(None)
-    } else if PathBuf::from(&path).exists() {
+    } else if pathbuf.exists() {
         let pwd: PathBuf = PathBuf::from(".");
         let parent_path = PathBuf::from(path.clone())
             .parent()
@@ -28,7 +29,7 @@ pub async fn open_markdown_file(mut path: String) -> Result<Option<String>, Stri
             .to_string_lossy()
             .to_string();
         Ok(Some(
-            markdown_file_to_highlighted_html(&path)?
+            markdown_file_to_highlighted_html(&pathbuf)?
                 .set_image_rewrite(ImageUrlRewriteMode::TauriFullPath(parent_path))
                 .to_safe_html_string(),
         ))

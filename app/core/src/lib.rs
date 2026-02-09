@@ -1,4 +1,4 @@
-use std::{fs::read_to_string, path::PathBuf};
+use std::{fs::read_to_string, path::Path};
 pub mod export;
 pub mod preview;
 pub mod search;
@@ -30,7 +30,7 @@ pub fn markdown_content_to_highlighted_html(content: &str) -> Result<Html, Strin
 }
 
 /// Same as `markdown_content_to_highlighted_html` with a given path to a Markdown file
-pub fn markdown_file_to_highlighted_html(path: &str) -> Result<Html, String> {
+pub fn markdown_file_to_highlighted_html(path: &Path) -> Result<Html, String> {
     let content = read_to_string(path)
         .map_err(|e| "Couldn't find given file: ".to_string() + &e.to_string())?;
     markdown_content_to_highlighted_html(&content)
@@ -38,8 +38,7 @@ pub fn markdown_file_to_highlighted_html(path: &str) -> Result<Html, String> {
 
 /// Try to detect the language via the file extension, this might returns some invalid languages
 /// but should be still be useful for most use case
-pub fn detect_lang_from_file_extension(path: &str) -> String {
-    let path = PathBuf::from(path);
+pub fn detect_lang_from_file_extension(path: &Path) -> String {
     let ext = path.extension().unwrap_or_default();
     let lang = ext.to_str().unwrap_or("");
     TreeSitterHighlighter::normalize_lang(lang).to_string()
