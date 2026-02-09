@@ -167,34 +167,6 @@ impl TypstWrapperWorld {
     }
 }
 
-/// A File that will be stored in the HashMap.
-#[derive(Clone, Debug)]
-struct FileEntry {
-    bytes: Bytes,
-    source: Option<Source>,
-}
-
-impl FileEntry {
-    fn new(bytes: Vec<u8>, source: Option<Source>) -> Self {
-        Self {
-            bytes: Bytes::new(bytes),
-            source,
-        }
-    }
-
-    fn source(&mut self, id: FileId) -> FileResult<Source> {
-        let source = if let Some(source) = &self.source {
-            source
-        } else {
-            let contents = std::str::from_utf8(&self.bytes).map_err(|_| FileError::InvalidUtf8)?;
-            let contents = contents.trim_start_matches('\u{feff}');
-            let source = Source::new(id, contents.into());
-            self.source.insert(source)
-        };
-        Ok(source.clone())
-    }
-}
-
 impl TypstWrapperWorld {
     /// Define the source text to be rendered
     pub fn set_source(&mut self, source: String) {
