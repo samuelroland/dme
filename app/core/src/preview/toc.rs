@@ -1,10 +1,11 @@
 use std::ops::Deref;
 
 use comrak::{nodes::NodeValue, parse_document, Arena, Options};
+use serde::{Deserialize, Serialize};
 
 use crate::preview::comrak::{FRONT_MATTER_DELIMITER, HEADER_IDS_SECURITY_PREFIX};
 
-#[derive(Eq, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, Eq, PartialEq, Debug)]
 pub struct TocHeading {
     text: String,
     level: u8,
