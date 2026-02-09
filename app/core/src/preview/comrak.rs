@@ -12,7 +12,7 @@ use once_cell::sync::Lazy;
 use std::collections::HashMap;
 use std::io::{self, BufWriter, Write};
 use std::path::PathBuf;
-use std::sync::RwLock;
+use std::sync::{Mutex, RwLock};
 
 // Global TreeSitterHighlighter cache indexed by language
 static TSH_CACHE: Lazy<RwLock<HashMap<String, TreeSitterHighlighter>>> =
@@ -20,6 +20,10 @@ static TSH_CACHE: Lazy<RwLock<HashMap<String, TreeSitterHighlighter>>> =
 
 static TREE_SITTER_GRAMMARS_FOLDER_VIA_ENV: Lazy<Option<String>> =
     Lazy::new(|| std::env::var("TREE_SITTER_GRAMMARS_FOLDER").ok());
+
+// Global MathRenderer to avoid recreating a typst world all the time
+// and using an internal prefix id counter globally unique
+static MATH_RENDERER: Lazy<Mutex<MathRenderer>> = Lazy::new(|| Mutex::new(MathRenderer::init()));
 
 pub struct ComrakParser {
     manager: TreeSitterGrammarsManager,
@@ -70,15 +74,30 @@ impl Previewable for ComrakParser {
         let arena = Arena::new();
         let root = parse_document(&arena, source, &options);
 
-        // Rendering math expressions into MathML, as there is no callback/plugin on Comrak
-
         for node in root.descendants() {
             let node_borrow = &mut node.data.borrow_mut();
             if let NodeValue::Math(node_math) = &node_borrow.value {
                 let math_exp = &node_math.literal;
-                let mut renderer = MathRenderer::init();
-                let svg = renderer.convert_math_expression_into_svg(math_exp);
-                node_borrow.value = NodeValue::HtmlInline(svg);
+                let maybe_svg = MATH_RENDERER
+                    .lock()
+                    .unwrap()
+                    .convert_math_expression_into_svg(math_exp);
+                let mut result = match maybe_svg {
+                    Ok(svg) => svg,
+                    Err(err) => format!("<span class='parse-error'>{err}</span>"),
+                };
+                // We want to wrap the block inside a paragraph as the SVG itself is not different for inline or block
+                // Adding these class allow to easily style them differently
+                // Note: The attribute display_math is true when this is a block math expressions. display_math: opendollars == 2,
+                let (tag, css_class) = if node_math.display_math {
+                    ("p", "math-block")
+                } else {
+                    ("span", "math-inline")
+                };
+
+                result = format!("<{tag} class='{css_class}'>{result}</{tag}>");
+                println!("Converted math expression {math_exp}");
+                node_borrow.value = NodeValue::HtmlInline(result);
             }
         }
 

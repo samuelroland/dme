@@ -9,6 +9,8 @@
 
 use std::time::Instant;
 
+use oxvg_ast::{parse::roxmltree::parse, serialize::Node as _, visitor::Info};
+use oxvg_optimiser::{Jobs, PrefixIds};
 use typst::diag::{FileError, FileResult};
 use typst::foundations::{Bytes, Datetime};
 use typst::introspection::Introspector;
