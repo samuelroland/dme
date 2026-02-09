@@ -30,7 +30,11 @@
 }
 
 :not(pre) > code {
-	@apply bg-[#646cff]/20 px-1 mx-1 py-0.5 rounded-md break-inside-avoid
+	@apply bg-[#646cff]/15 px-1 mx-1 py-0.5 rounded-md break-inside-avoid
+}
+
+pre code {
+    background-color: transparent !important;
 }
 
 /*Remove Tailwind typography's double quotes around quotes block */
@@ -78,4 +82,39 @@ a:hover {
 
 .btn {
     @apply border px-3 py-1 rounded-sm cursor-pointer font-bold
+}
+
+/*This target the parent of the <svg> (either a <span> or a <p>)*/
+.math-inline, .math-block {
+  border-radius: 5px;
+  @apply bg-slate-100 px-1 py-2 m-1;
+}
+
+.math-inline:has(svg) {
+  display: inline-block;
+  font-size: 50pt;
+  vertical-align: middle;
+  box-sizing: content-box;
+}
+
+.math-block {
+    @apply bg-slate-100 flex justify-center;
+}
+
+.math-block svg {
+    font-size: 60pt;
+}
+
+.parse-error {
+    @apply text-red-500;
+}
+
+.math-inline .parse-error {
+    font-size: 15pt;
+}
+
+img {
+    border: 1px solid gray;
+    border-radius: 5px;
+    margin-top: 20px;
 }
