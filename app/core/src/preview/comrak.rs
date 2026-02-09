@@ -1,13 +1,16 @@
+use crate::preview::math::MathRenderer;
+
 // Previewable implementation via a Comrak based Markdown parser
 use super::preview::{Html, Previewable};
 use super::tree_sitter_grammars::TreeSitterGrammarsManager;
 use super::tree_sitter_highlight::TreeSitterHighlighter;
 use comrak::html::escape;
+use comrak::nodes::NodeValue;
 use comrak::{adapters::SyntaxHighlighterAdapter, html};
-use comrak::{markdown_to_html_with_plugins, ComrakPlugins, Options};
+use comrak::{format_html_with_plugins, parse_document, Arena, ComrakPlugins, Options};
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
-use std::io::{self, Write};
+use std::io::{self, BufWriter, Write};
 use std::path::PathBuf;
 use std::sync::RwLock;
 
@@ -48,10 +51,12 @@ impl ComrakParser {
 
 impl Previewable for ComrakParser {
     fn to_html(&self, source: &str) -> Html {
+        // Configuring Comrak options and plugins before running them
         let mut options = Options::default();
         options.extension.table = true; // Enable tables
         options.extension.tasklist = true; // Enable list of tasks
         options.extension.autolink = true; // Enable creating links automatically for URLs in text
+        options.extension.math_dollars = true;
 
         options.render.unsafe_ = true; // Unable unsafe mode to allow HTML to go through. To avoid XSS, we take care of it with ammonia sanitizer in the Html wrapper type
         let plugins = ComrakPlugins {
@@ -60,7 +65,29 @@ impl Previewable for ComrakParser {
                 heading_adapter: None,
             },
         };
-        Html::from(markdown_to_html_with_plugins(source, &options, &plugins))
+
+        // Structure based on code inside markdown_to_html_with_plugins()
+        let arena = Arena::new();
+        let root = parse_document(&arena, source, &options);
+
+        // Rendering math expressions into MathML, as there is no callback/plugin on Comrak
+
+        for node in root.descendants() {
+            let node_borrow = &mut node.data.borrow_mut();
+            if let NodeValue::Math(node_math) = &node_borrow.value {
+                let math_exp = &node_math.literal;
+                let mut renderer = MathRenderer::init();
+                let svg = renderer.convert_math_expression_into_svg(math_exp);
+                node_borrow.value = NodeValue::HtmlInline(svg);
+            }
+        }
+
+        // Normal
+        let mut bw = BufWriter::new(Vec::new());
+        format_html_with_plugins(root, &options, &mut bw, &plugins).unwrap();
+        let rendered_html = String::from_utf8(bw.into_inner().unwrap()).unwrap();
+        std::fs::write("/tmp/dme.raw.html", &rendered_html);
+        Html::from(rendered_html)
     }
 }
 
