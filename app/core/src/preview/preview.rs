@@ -54,9 +54,15 @@ impl Html {
                 }
                 impl<'a> UrlRelativeEvaluate<'a> for PurePrefix {
                     fn evaluate<'url>(&self, url: &'url str) -> Option<Cow<'url, str>> {
-                        let mut copy = self.prefix.clone();
-                        copy.push_str(url);
-                        Some(Cow::Owned(copy))
+                        // If we have an anchor, we don't want to touch it, because it doesn't need any prefix.
+                        // In case of <use href="#abc" > we don't want touch this value.
+                        if url.trim().starts_with("#") {
+                            Some(Cow::Borrowed(url))
+                        } else {
+                            let mut copy = self.prefix.clone();
+                            copy.push_str(url);
+                            Some(Cow::Owned(copy))
+                        }
                     }
                 }
                 cleaner.url_relative(ammonia::UrlRelative::Custom(Box::new(PurePrefix {
@@ -105,23 +111,29 @@ struct TauriPathRewriter {
 /// https://github.com/tauri-apps/tauri/blob/18464d9481f4d522c305f21b38be4b906ab41bd5/crates/tauri/scripts/core.js#L13
 impl<'a> UrlRelativeEvaluate<'a> for TauriPathRewriter {
     fn evaluate<'url>(&self, url: &'url str) -> Option<std::borrow::Cow<'url, str>> {
-        #[cfg(target_os = "windows")]
-        let tauri_prefix = "http://asset.localhost/";
-        #[cfg(target_os = "android")]
-        let tauri_prefix = "http://asset.localhost/";
-        #[cfg(target_os = "linux")]
-        let tauri_prefix = "asset://localhost/";
-        #[cfg(target_os = "macos")]
-        let tauri_prefix = "asset://localhost/";
+        // If we have an anchor, we don't want to touch it, because it doesn't need any prefix.
+        // In case of <use href="#abc" > we don't want touch this value.
+        if url.trim().starts_with("#") {
+            Some(Cow::Borrowed(url))
+        } else {
+            #[cfg(target_os = "windows")]
+            let tauri_prefix = "http://asset.localhost/";
+            #[cfg(target_os = "android")]
+            let tauri_prefix = "http://asset.localhost/";
+            #[cfg(target_os = "linux")]
+            let tauri_prefix = "asset://localhost/";
+            #[cfg(target_os = "macos")]
+            let tauri_prefix = "asset://localhost/";
 
-        let absolute_path = PathBuf::from(&self.path)
-            .join(url)
-            .into_os_string()
-            .to_string_lossy()
-            .to_string();
-        let encoded_absolute_path = urlencoding::encode(&absolute_path);
-        let result = format!("{tauri_prefix}{encoded_absolute_path}");
-        Some(Cow::Owned(result))
+            let absolute_path = PathBuf::from(&self.path)
+                .join(url)
+                .into_os_string()
+                .to_string_lossy()
+                .to_string();
+            let encoded_absolute_path = urlencoding::encode(&absolute_path);
+            let result = format!("{tauri_prefix}{encoded_absolute_path}");
+            Some(Cow::Owned(result))
+        }
     }
 }
 
@@ -132,9 +144,11 @@ pub trait Previewable {
 
 #[cfg(test)]
 mod tests {
+    use std::fs::write;
+
     use crate::preview::{
         comrak::ComrakParser,
-        preview::{ImageUrlRewriteMode, Previewable},
+        preview::{Html, ImageUrlRewriteMode, Previewable},
     };
     use pretty_assertions::assert_eq;
 
@@ -154,7 +168,8 @@ mod tests {
 
     #[test]
     fn test_images_path_can_be_prefixed_and_canonized() {
-        let given = "# Sky\n![super sky](sky.png)";
+        let given =
+            "# Sky\n![super sky](sky.png)\n![this is not prefixed !](#introduction-to-the-subject)";
 
         let result = ComrakParser::new()
             .unwrap()
@@ -166,7 +181,7 @@ mod tests {
         let newpath = "/static/images/sky.png";
         assert_eq!(
             result,
-            format!("<h1>Sky</h1>\n<p><img src=\"{newpath}\" alt=\"super sky\"></p>\n")
+            format!("<h1>Sky</h1>\n<p><img src=\"{newpath}\" alt=\"super sky\">\n<img src=\"#introduction-to-the-subject\" alt=\"this is not prefixed !\"></p>\n")
         );
     }
 
@@ -176,6 +191,7 @@ mod tests {
 ![super sky](sky.png)
 ![super sky on external website](https://great-website.com/sky.png)
 ![super sky](../../bench/sky.png)
+![this is not prefixed !](#introduction-to-the-subject)
 ![nice path](../images-de-fous/super_Schema$BIEN3joli.png)";
 
         // TODO: should we support path with spaces ??
@@ -203,6 +219,7 @@ mod tests {
 <p><img src=\"{tauri_prefix}%2Fhome%2Fsam%2Freport%2Fsky.png\" alt=\"super sky\">
 <img src=\"https://great-website.com/sky.png\" alt=\"super sky on external website\">
 <img src=\"{tauri_prefix}%2Fhome%2Fsam%2Freport%2F..%2F..%2Fbench%2Fsky.png\" alt=\"super sky\">
+<img src=\"#introduction-to-the-subject\" alt=\"this is not prefixed !\">
 <img src=\"{tauri_prefix}%2Fhome%2Fsam%2Freport%2F..%2Fimages-de-fous%2Fsuper_Schema%24BIEN3joli.png\" alt=\"nice path\"></p>
 "
             )
