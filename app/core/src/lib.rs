@@ -85,8 +85,7 @@ mod tests {
     // TODO: include CSS theme installation like in tree_sitter_highlight test...
     #[test]
     fn test_can_render_a_full_document_with_everything() {
-        let file = r#"
----
+        let file = r#"---
 order = 5
 ---
 
@@ -111,9 +110,10 @@ $2+42$
             .unwrap()
             .to_safe_html_string();
 
-        let expected = r##"<h1>Very nice guide</h1>
-<h2>Nice h2 title</h2>
-<pre><code class="language-css"><span class="punctuation delimiter">#</span><span class="property">form</span> <span class="punctuation bracket">{</span> <span class="property">color</span><span class="punctuation delimiter">:</span> gray<span class="punctuation delimiter">;</span> <span class="punctuation bracket">}</span></code></pre>
+        let expected = r##"<h1><a href="#h-very-nice-guide" rel="noopener noreferrer"></a>Very nice guide</h1>
+<h2><a href="#h-nice-h2-title" rel="noopener noreferrer"></a>Nice h2 title</h2>
+<pre><code class="language-css"><span class="punctuation delimiter">#</span><span class="property">form</span> <span class="punctuation bracket">{</span> <span class="property">color</span><span class="punctuation delimiter">:</span> gray<span class="punctuation delimiter">;</span> <span class="punctuation bracket">}</span>
+</code></pre>
 <p><img src="test.svg" alt="a"></p>
 <p><span class="math-inline"><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" id="prefix0a" width="39.929" height="10.017" class="typst-frame" style="width:.99823em;height:.250433em;overflow:visible" viewBox="0 0 29.947 7.513"><g class="typst-group"><use xlink:href="#prefix0b" class="typst-text" transform="matrix(1 0 0 -1 0 7.513)"></use><use xlink:href="#prefix0c" class="typst-text" transform="matrix(1 0 0 -1 7.944 7.513)"></use><use xlink:href="#prefix0d" class="typst-text" transform="matrix(1 0 0 -1 18.947 7.513)"></use><use xlink:href="#prefix0b" class="typst-text" transform="matrix(1 0 0 -1 24.447 7.513)"></use></g><defs><symbol id="prefix0b" overflow="visible"><path d="M2.607 7.326a1.99 1.99 0 0 1-1.441-.594C.759 6.336.55 5.874.55 5.313c0-.374.275-.649.616-.649a.62.62 0 0 1 .605.616.595.595 0 0 1-.616.616c-.033 0-.055 0-.077-.011.209.539.693 1.012 1.386 1.012.902 0 1.408-.781 1.408-1.727 0-.737-.374-1.529-1.122-2.365L.682.473C.539.308.55.319.55 0h4.081l.319 1.98h-.363c-.088-.561-.165-.88-.231-.979-.055-.055-.385-.077-.99-.077H1.529l1.067 1.045c.748.704 1.694 1.463 2.013 2.046q.33.577.33 1.155c0 1.298-1.012 2.156-2.332 2.156"></path></symbol><symbol id="prefix0c" overflow="visible"><path d="M7.678 3.014H4.543v3.135q0 .264-.264.264t-.264-.264V3.014H.88q-.264 0-.264-.264t.264-.264h3.135V-.649q0-.264.264-.264t.264.264v3.135h3.135q.264 0 .264.264a.27.27 0 0 1-.264.264"></path></symbol><symbol id="prefix0d" overflow="visible"><path d="M3.883 7.447c-.099 0-.187-.055-.253-.154L.308 2.189v-.396h2.871V.891c0-.198-.044-.33-.121-.385S2.772.429 2.409.429h-.275V0c.319.022.825.033 1.507.033S4.829.022 5.148 0v.429h-.275c-.363 0-.572.022-.649.077s-.121.187-.121.385v.902h1.078v.429H4.103V7.26c0 .11-.077.187-.22.187m-.638-1.364V2.222H.737Z"></path></symbol></defs></svg></span></p>"##;
         let expected_with_theme = format!("<style>{theme_css}</style>{expected}\n");

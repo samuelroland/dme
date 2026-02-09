@@ -27,6 +27,12 @@ static TREE_SITTER_GRAMMARS_FOLDER_VIA_ENV: Lazy<Option<String>> =
 // and using an internal prefix id counter globally unique
 static MATH_RENDERER: Lazy<MathRenderer> = Lazy::new(MathRenderer::init);
 
+/// A prefix for security purpose, to avoid being able to create arbitrary ID in the DOM from the Markdown headings.
+/// This is a way to make it safe if some JavaScript code is relying on the id attribute of something outside of the article.
+pub const HEADER_IDS_SECURITY_PREFIX: &str = "h-";
+
+pub const FRONT_MATTER_DELIMITER: &str = "---";
+
 pub struct ComrakParser {
     manager: TreeSitterGrammarsManager,
 }
@@ -63,7 +69,8 @@ impl Previewable for ComrakParser {
         options.extension.tasklist = true; // Enable list of tasks
         options.extension.autolink = true; // Enable creating links automatically for URLs in text
         options.extension.math_dollars = true;
-        options.extension.front_matter_delimiter = Some("---".into());
+        options.extension.front_matter_delimiter = Some(FRONT_MATTER_DELIMITER.into());
+        options.extension.header_ids = Some(HEADER_IDS_SECURITY_PREFIX.into());
 
         options.render.r#unsafe = true; // Unable unsafe mode to allow HTML to go through. To avoid XSS, we take care of it with ammonia sanitizer in the Html wrapper type
         let plugins = Plugins {
