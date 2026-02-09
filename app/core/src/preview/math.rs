@@ -7,7 +7,7 @@
 // - remove some dependencies to reduce the build time
 // - remove external package support
 
-use std::time::Instant;
+use std::collections::HashMap;
 
 use oxvg_ast::{parse::roxmltree::parse, serialize::Node as _, visitor::Info};
 use oxvg_optimiser::{Jobs, PrefixIds};
@@ -27,16 +27,28 @@ use typst_kit::fonts::{FontSearcher, FontSlot};
 pub struct MathRenderer {
     typst: TypstWrapperWorld,
     id_prefix_counter: u64,
+    // Remember all generated equations for faster refresh
+    // TODO: manage memory release after some time
+    cache: HashMap<String, String>,
 }
 impl MathRenderer {
     pub fn init() -> Self {
         MathRenderer {
             typst: TypstWrapperWorld::new(),
             id_prefix_counter: 0,
+            cache: HashMap::new(),
         }
     }
 
     pub fn convert_math_expression_into_svg(&mut self, exp: &str) -> Result<String, String> {
+        let maybe_cached_svg = self.cache.get(exp);
+        if let Some(cached) = maybe_cached_svg {
+            println!("Cache HIT for {}", exp.replace("\n", ""));
+            return Ok(cached.clone());
+        } else {
+            println!("Cache miss for {}", exp.replace("\n", ""));
+        }
+
         let prefix = "#set page(height: auto, width: auto, margin: 0pt)";
         let page_with_settings = format!("{prefix}\n${exp}$");
         self.typst.set_source(page_with_settings);
@@ -76,6 +88,7 @@ impl MathRenderer {
                 unoptimized_svg
             }
         };
+        self.cache.insert(exp.to_string(), final_svg.clone());
         Ok(final_svg)
     }
 
@@ -92,11 +105,11 @@ mod tests {
 
     #[test]
     fn test_valid_math_expression_in_typst_can_be_rendered() {
-        let given = format!("P = 2 pi r");
+        let given = "P = 2 pi r";
         let expected = "";
 
         let mut renderer = MathRenderer::init();
-        let result = renderer.convert_math_expression_into_svg(&given).unwrap();
+        let result = renderer.convert_math_expression_into_svg(given).unwrap();
         // println!("Default size: {}", result.bytes().len());
         //
         // println!("Optimized size: {}", result.bytes().len());
@@ -107,7 +120,7 @@ mod tests {
 
     #[test]
     fn test_invalid_math_expression_in_typst_generate_useful_error() {
-        let given = format!("2blabla + pi");
+        let given = "2blabla + pi";
         let expected_error = "unknown variable: blabla: if you meant to display multiple letters as is, try adding spaces between each letter: `b l a b l a`\nor if you meant to display this as text, try placing it in quotes: `\"blabla\"`";
 
         let mut renderer = MathRenderer::init();
@@ -142,10 +155,8 @@ struct TypstWrapperWorld {
 
 impl TypstWrapperWorld {
     pub fn new() -> Self {
-        let start = Instant::now();
         // Note: .include_system_fonts(false) -> means around 3s of time gain on my machine. Embedded fonts seems to be enough on the rendering look.
         let fonts = FontSearcher::new().include_system_fonts(false).search();
-        // println!("inside new() fonts search {:?}", start.elapsed());
         Self {
             library: LazyHash::new(Library::default()),
             book: LazyHash::new(fonts.book),
