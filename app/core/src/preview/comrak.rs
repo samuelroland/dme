@@ -95,7 +95,6 @@ impl Previewable for ComrakParser {
                 };
 
                 result = format!("<{tag} class='{css_class}'>{result}</{tag}>");
-                println!("Converted math expression {math_exp}");
                 node_borrow.value = NodeValue::HtmlInline(result);
             }
         }
@@ -103,7 +102,6 @@ impl Previewable for ComrakParser {
         // Normal
         let mut rendered_html = String::default();
         format_html_with_plugins(root, &options, &mut rendered_html, &plugins).unwrap();
-        std::fs::write("/tmp/dme.raw.html", &rendered_html);
         Html::from(rendered_html)
     }
 }
