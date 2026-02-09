@@ -24,52 +24,97 @@ use typst_kit::fonts::{FontSearcher, FontSlot};
 /// compared to <1ms to render a given equation to SVG
 pub struct MathRenderer {
     typst: TypstWrapperWorld,
+    id_prefix_counter: u64,
 }
 impl MathRenderer {
     pub fn init() -> Self {
         MathRenderer {
             typst: TypstWrapperWorld::new(),
+            id_prefix_counter: 0,
         }
     }
 
-    pub fn convert_math_expression_into_svg(&mut self, exp: &str) -> String {
-        self.typst.set_source(exp.to_string());
+    pub fn convert_math_expression_into_svg(&mut self, exp: &str) -> Result<String, String> {
+        let prefix = "#set page(height: auto, width: auto, margin: 0pt)";
+        let page_with_settings = format!("{prefix}\n${exp}$");
+        self.typst.set_source(page_with_settings);
 
-        let document: PagedDocument = typst::compile(&self.typst)
-            .output
-            .expect("Error compiling typst");
+        let document: PagedDocument = typst::compile(&self.typst).output.map_err(|e| {
+            e.iter()
+                .map(|e| format!("{}: {}", e.message, e.hints.join("\n")))
+                .collect::<Vec<String>>()
+                .join("\n")
+        })?;
 
         // typst_svg::svg_merged(&document, Abs::pt(2.0))
-        typst_svg::svg_html_frame(
+        let unoptimized_svg = typst_svg::svg_html_frame(
             &document.pages.first().unwrap().frame,
             Abs::pt(30.),
             Some("math"),
             &[],
             &Introspector::default(),
-        )
+        );
+
+        // Optimize SVG to drastically reduce the size. This is very visible with the floating precision reduced to 3 decimals.
+        let maybe_optimized_svg = parse(&unoptimized_svg, |dom, allocator| {
+            let mut jobs = Jobs::default();
+            let mut prefixer = PrefixIds::default();
+            prefixer.prefix_ids = true;
+            prefixer.prefix_class_names = false;
+            prefixer.delim = self.get_next_prefix_id().to_string(); // TODO: refactor this temporary hack caused
+            jobs.prefix_ids = Some(prefixer);
+            jobs.run(dom, &Info::new(allocator)).unwrap();
+            dom.serialize()
+                .expect("DOM serialization has failed during SVG optimisation")
+        });
+        let final_svg = match maybe_optimized_svg {
+            Ok(optimized) => optimized,
+            Err(e) => {
+                eprintln!("{e}");
+                unoptimized_svg
+            }
+        };
+        Ok(final_svg)
+    }
+
+    fn get_next_prefix_id(&mut self) -> u64 {
+        self.id_prefix_counter += 1;
+        self.id_prefix_counter
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use std::time::Instant;
 
     use crate::preview::math::MathRenderer;
 
     #[test]
     fn test_valid_math_expression_in_typst_can_be_rendered() {
-        let prefix = "#set page(height: auto, width: auto, margin: 0pt)\n";
-        let given = format!("{prefix}$P = 2 pi r$");
+        let given = format!("P = 2 pi r");
         let expected = "";
 
         let mut renderer = MathRenderer::init();
-        let result = renderer.convert_math_expression_into_svg(&given);
+        let result = renderer.convert_math_expression_into_svg(&given).unwrap();
         // println!("Default size: {}", result.bytes().len());
         //
         // println!("Optimized size: {}", result.bytes().len());
         //
         std::fs::write("/tmp/test.svg", &result).unwrap();
         assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_invalid_math_expression_in_typst_generate_useful_error() {
+        let given = format!("2blabla + pi");
+        let expected_error = "unknown variable: blabla: if you meant to display multiple letters as is, try adding spaces between each letter: `b l a b l a`\nor if you meant to display this as text, try placing it in quotes: `\"blabla\"`";
+
+        let mut renderer = MathRenderer::init();
+        let result = renderer.convert_math_expression_into_svg(&given);
+        if let Err(a) = result {
+            assert_eq!(a, expected_error);
+        } else {
+            panic!("oups")
+        }
     }
 }
 

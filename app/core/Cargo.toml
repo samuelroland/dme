@@ -37,6 +37,9 @@ typst = "0.14"
 typst-svg = "0.14"
 typst-kit = { version = "0.14.2", features = ["embed-fonts"] }
 time = "0.3"
+# Typst generated SVG optimisations
+oxvg_ast = { version = "0.0.5", features = ["parse", "roxmltree"] }
+oxvg_optimiser = "0.0.5"
 
 [dev-dependencies]
 pretty_assertions = "1.4.1"
