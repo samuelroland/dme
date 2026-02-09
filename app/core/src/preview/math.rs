@@ -1,9 +1,10 @@
 // This math module provides a way to convert Math expressions into SVG text
 // To allow for backend only HTML rendering, it currently only supports the Typst syntax
 // See more about the Typst syntax on https://typst.app/docs/reference/math/
-// This is based upon https://github.com/tfachmann/typst-as-library/ released under Apache-2.0
-// But simplified
-// - to focus on math rendering and remove any external file loading (images, fonts, ...)
+// The part TYPST IMPLEMENTATION is based upon https://github.com/tfachmann/typst-as-library/ released under Apache-2.0
+// But simplified - to focus on math rendering
+// - use embedded fonts
+// - remove any external file loading (other .typ file, images, ...)
 // - remove some dependencies to reduce the build time
 // - remove external package support
 
@@ -137,9 +138,6 @@ struct TypstWrapperWorld {
 
     /// Metadata about all known fonts.
     book: LazyHash<FontBook>,
-
-    /// Datetime.
-    time: time::OffsetDateTime,
 }
 
 impl TypstWrapperWorld {
@@ -151,7 +149,6 @@ impl TypstWrapperWorld {
             book: LazyHash::new(fonts.book),
             fonts: fonts.fonts,
             source: Source::detached("".to_string()),
-            time: time::OffsetDateTime::now_utc(),
         }
     }
 }
@@ -204,11 +201,8 @@ impl typst::World for TypstWrapperWorld {
     /// Get the current date.
     ///
     /// Optionally, an offset in hours is given.
-    fn today(&self, offset: Option<i64>) -> Option<Datetime> {
-        let offset = offset.unwrap_or(0);
-        let offset = time::UtcOffset::from_hms(offset.try_into().ok()?, 0, 0).ok()?;
-        let time = self.time.checked_to_offset(offset)?;
-        Some(Datetime::Date(time.date()))
+    fn today(&self, _offset: Option<i64>) -> Option<Datetime> {
+        None
     }
 }
 
