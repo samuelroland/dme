@@ -1,4 +1,5 @@
 pub mod comrak;
+pub mod math;
 pub mod preview;
 pub mod proposed_grammars;
 pub mod tree_sitter_grammars;

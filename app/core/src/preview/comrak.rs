@@ -1,13 +1,18 @@
+use crate::preview::math::MathRenderer;
+
 // Previewable implementation via a Comrak based Markdown parser
 use super::preview::{Html, Previewable};
 use super::tree_sitter_grammars::TreeSitterGrammarsManager;
 use super::tree_sitter_highlight::TreeSitterHighlighter;
 use comrak::html::escape;
+use comrak::nodes::NodeValue;
+use comrak::options::Plugins;
 use comrak::{adapters::SyntaxHighlighterAdapter, html};
-use comrak::{markdown_to_html_with_plugins, ComrakPlugins, Options};
+use comrak::{format_html_with_plugins, parse_document, Arena, Options};
+use core::fmt;
 use once_cell::sync::Lazy;
+use std::borrow::Cow;
 use std::collections::HashMap;
-use std::io::{self, Write};
 use std::path::PathBuf;
 use std::sync::RwLock;
 
@@ -17,6 +22,10 @@ static TSH_CACHE: Lazy<RwLock<HashMap<String, TreeSitterHighlighter>>> =
 
 static TREE_SITTER_GRAMMARS_FOLDER_VIA_ENV: Lazy<Option<String>> =
     Lazy::new(|| std::env::var("TREE_SITTER_GRAMMARS_FOLDER").ok());
+
+// Global MathRenderer to avoid recreating a typst world all the time
+// and using an internal prefix id counter globally unique
+static MATH_RENDERER: Lazy<MathRenderer> = Lazy::new(MathRenderer::init);
 
 pub struct ComrakParser {
     manager: TreeSitterGrammarsManager,
@@ -48,19 +57,52 @@ impl ComrakParser {
 
 impl Previewable for ComrakParser {
     fn to_html(&self, source: &str) -> Html {
+        // Configuring Comrak options and plugins before running them
         let mut options = Options::default();
         options.extension.table = true; // Enable tables
         options.extension.tasklist = true; // Enable list of tasks
         options.extension.autolink = true; // Enable creating links automatically for URLs in text
+        options.extension.math_dollars = true;
 
-        options.render.unsafe_ = true; // Unable unsafe mode to allow HTML to go through. To avoid XSS, we take care of it with ammonia sanitizer in the Html wrapper type
-        let plugins = ComrakPlugins {
-            render: comrak::RenderPlugins {
+        options.render.r#unsafe = true; // Unable unsafe mode to allow HTML to go through. To avoid XSS, we take care of it with ammonia sanitizer in the Html wrapper type
+        let plugins = Plugins {
+            render: comrak::options::RenderPlugins {
                 codefence_syntax_highlighter: Some(self as &dyn SyntaxHighlighterAdapter),
                 heading_adapter: None,
             },
         };
-        Html::from(markdown_to_html_with_plugins(source, &options, &plugins))
+
+        // Structure based on code inside markdown_to_html_with_plugins()
+        let arena = Arena::new();
+        let root = parse_document(&arena, source, &options);
+
+        for node in root.descendants() {
+            let node_borrow = &mut node.data.borrow_mut();
+            if let NodeValue::Math(node_math) = &node_borrow.value {
+                let math_exp = &node_math.literal;
+                let maybe_svg = MATH_RENDERER.convert_math_expression_into_svg(math_exp);
+                let mut result = match maybe_svg {
+                    Ok(svg) => svg,
+                    Err(err) => format!("<span class='parse-error'>{err}</span>"),
+                };
+                // We want to wrap the block inside a paragraph as the SVG itself is not different for inline or block
+                // Adding these class allow to easily style them differently
+                // Note: The attribute display_math is true when this is a block math expressions. display_math: opendollars == 2,
+                let (tag, css_class) = if node_math.display_math {
+                    ("p", "math-block")
+                } else {
+                    ("span", "math-inline")
+                };
+
+                result = format!("<{tag} class='{css_class}'>{result}</{tag}>");
+                node_borrow.value = NodeValue::HtmlInline(result);
+            }
+        }
+
+        // Normal
+        let mut rendered_html = String::default();
+        format_html_with_plugins(root, &options, &mut rendered_html, &plugins).unwrap();
+        Html::from(rendered_html)
     }
 }
 
@@ -103,11 +145,11 @@ pub fn highlight_code_from_cached_highlighter(
     // BUT we need to escape it to support things like "#include <iostream>" and not have it
     // removed by the sanitization
 
-    let mut escaped = Vec::new();
-    if escape(&mut escaped, code.as_bytes()).is_err() {
-        let _ = escaped.write_all("failed to escape code sorry...".as_bytes());
+    let mut escaped = String::default();
+    if escape(&mut escaped, code).is_err() {
+        escaped.push_str("failed to escape code sorry...");
     }
-    Html::from(String::from_utf8(escaped).unwrap_or("Invalid non UTF8 escaped code...".to_string()))
+    Html::from(escaped)
 }
 
 /// Implement a TreeSitterHighlighter integration on Comrak
@@ -116,31 +158,32 @@ pub fn highlight_code_from_cached_highlighter(
 impl SyntaxHighlighterAdapter for ComrakParser {
     fn write_highlighted(
         &self,
-        output: &mut dyn Write,
+        output: &mut dyn std::fmt::Write,
         maybe_lang: Option<&str>,
         code: &str,
-    ) -> io::Result<()> {
+    ) -> fmt::Result {
         let html = highlight_code_from_cached_highlighter(&self.manager, maybe_lang, code);
         // TODO: refactor this to avoid calling to_safe_html_string on each code snippet + on the whole final document
         // How can we call it only at the end ?
-        let _ = output.write_all(html.to_safe_html_string().as_bytes());
+        let _ = output.write_str(&html.to_safe_html_string());
         Ok(())
     }
 
     // Just use <pre> and <code> tags as usual, without anything special
     fn write_pre_tag(
         &self,
-        output: &mut dyn Write,
-        attributes: HashMap<String, String>,
-    ) -> io::Result<()> {
+        output: &mut dyn std::fmt::Write,
+        attributes: HashMap<&'static str, Cow<'_, str>>,
+    ) -> fmt::Result {
         let _ = html::write_opening_tag(output, "pre", attributes);
         Ok(())
     }
+
     fn write_code_tag(
         &self,
-        output: &mut dyn Write,
-        attributes: HashMap<String, String>,
-    ) -> io::Result<()> {
+        output: &mut dyn std::fmt::Write,
+        attributes: HashMap<&'static str, Cow<'_, str>>,
+    ) -> fmt::Result {
         html::write_opening_tag(output, "code", attributes)
     }
 }
