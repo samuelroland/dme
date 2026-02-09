@@ -106,14 +106,14 @@ a:hover {
 }
 
 .parse-error {
-    @apply text-red-500;
+    @apply text-red-500 whitespace-pre-line;
 }
 
 .math-inline .parse-error {
     font-size: 15pt;
 }
 
-img {
+article img {
     border: 1px solid gray;
     border-radius: 5px;
     margin-top: 20px;
