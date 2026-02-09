@@ -86,6 +86,10 @@ mod tests {
     #[test]
     fn test_can_render_a_full_document_with_everything() {
         let file = r#"
+---
+order = 5
+---
+
 # Very nice guide
 ## Nice h2 title
 

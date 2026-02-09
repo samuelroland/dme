@@ -63,6 +63,7 @@ impl Previewable for ComrakParser {
         options.extension.tasklist = true; // Enable list of tasks
         options.extension.autolink = true; // Enable creating links automatically for URLs in text
         options.extension.math_dollars = true;
+        options.extension.front_matter_delimiter = Some("---".into());
 
         options.render.r#unsafe = true; // Unable unsafe mode to allow HTML to go through. To avoid XSS, we take care of it with ammonia sanitizer in the Html wrapper type
         let plugins = Plugins {
