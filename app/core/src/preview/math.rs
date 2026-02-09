@@ -7,10 +7,13 @@
 // - remove some dependencies to reduce the build time
 // - remove external package support
 
-use std::collections::HashMap;
+use std::sync::atomic::AtomicU64;
+use std::sync::Mutex;
 
+use mini_moka::sync::Cache;
 use oxvg_ast::{parse::roxmltree::parse, serialize::Node as _, visitor::Info};
 use oxvg_optimiser::{Jobs, PrefixIds};
+use std::convert::TryInto;
 use typst::diag::{FileError, FileResult};
 use typst::foundations::{Bytes, Datetime};
 use typst::introspection::Introspector;
@@ -25,23 +28,32 @@ use typst_kit::fonts::{FontSearcher, FontSlot};
 /// Keeping in memory is useful to avoid repeating the cost of starting the Typst world which can be 60ms
 /// compared to <1ms to render a given equation to SVG
 pub struct MathRenderer {
-    typst: TypstWrapperWorld,
-    id_prefix_counter: u64,
+    typst: Mutex<TypstWrapperWorld>,
+    id_prefix_counter: AtomicU64,
     // Remember all generated equations for faster refresh
     // TODO: manage memory release after some time
-    cache: HashMap<String, String>,
+    cache: Cache<String, String>,
 }
 impl MathRenderer {
     pub fn init() -> Self {
+        // See Example: Size Aware Eviction in https://crates.io/crates/mini-moka
+        let cache = Cache::builder()
+            // A weigher closure takes &K and &V and returns a u32 representing the
+            // relative size of the entry. Here, we use the byte length of the value
+            // String as the size.
+            .weigher(|_key, value: &String| -> u32 { value.len().try_into().unwrap_or(u32::MAX) })
+            // This cache will hold up to 500MiB of values.
+            .max_capacity(500 * 1024 * 1024)
+            .build();
         MathRenderer {
-            typst: TypstWrapperWorld::new(),
-            id_prefix_counter: 0,
-            cache: HashMap::new(),
+            typst: Mutex::new(TypstWrapperWorld::new()),
+            id_prefix_counter: AtomicU64::new(0),
+            cache,
         }
     }
 
-    pub fn convert_math_expression_into_svg(&mut self, exp: &str) -> Result<String, String> {
-        let maybe_cached_svg = self.cache.get(exp);
+    pub fn convert_math_expression_into_svg(&self, exp: &str) -> Result<String, String> {
+        let maybe_cached_svg = self.cache.get(&exp.to_string());
         if let Some(cached) = maybe_cached_svg {
             println!("Cache HIT for {}", exp.replace("\n", ""));
             return Ok(cached.clone());
@@ -51,14 +63,16 @@ impl MathRenderer {
 
         let prefix = "#set page(height: auto, width: auto, margin: 0pt)";
         let page_with_settings = format!("{prefix}\n${exp}$");
-        self.typst.set_source(page_with_settings);
+        let mut typst = self.typst.lock().unwrap();
+        typst.set_source(page_with_settings);
 
-        let document: PagedDocument = typst::compile(&self.typst).output.map_err(|e| {
+        let document: PagedDocument = typst::compile(&*typst).output.map_err(|e| {
             e.iter()
                 .map(|e| format!("{}: {}", e.message, e.hints.join("\n")))
                 .collect::<Vec<String>>()
                 .join("\n")
         })?;
+        drop(typst);
 
         // typst_svg::svg_merged(&document, Abs::pt(2.0))
         let unoptimized_svg = typst_svg::svg_html_frame(
@@ -72,10 +86,14 @@ impl MathRenderer {
         // Optimize SVG to drastically reduce the size. This is very visible with the floating precision reduced to 3 decimals.
         let maybe_optimized_svg = parse(&unoptimized_svg, |dom, allocator| {
             let mut jobs = Jobs::default();
-            let mut prefixer = PrefixIds::default();
-            prefixer.prefix_ids = true;
-            prefixer.prefix_class_names = false;
-            prefixer.delim = self.get_next_prefix_id().to_string(); // TODO: refactor this temporary hack caused
+            let prefixer = PrefixIds {
+                // TODO: refactor this temporary hack using delimitor instead of prefix, because oxvg_optimiser::jobs::PrefixGenerator::Prefix("salut".to_string()), is not public...
+                // Fixing this would help to be able to change #prefix6b into p6b which is shorter...
+                delim: self.get_next_prefix_id().to_string(),
+                prefix_ids: true,
+                prefix_class_names: false,
+                ..PrefixIds::default()
+            };
             jobs.prefix_ids = Some(prefixer);
             jobs.run(dom, &Info::new(allocator)).unwrap();
             dom.serialize()
@@ -92,44 +110,9 @@ impl MathRenderer {
         Ok(final_svg)
     }
 
-    fn get_next_prefix_id(&mut self) -> u64 {
-        self.id_prefix_counter += 1;
+    fn get_next_prefix_id(&self) -> u64 {
         self.id_prefix_counter
-    }
-}
-
-#[cfg(test)]
-mod tests {
-
-    use crate::preview::math::MathRenderer;
-
-    #[test]
-    fn test_valid_math_expression_in_typst_can_be_rendered() {
-        let given = "P = 2 pi r";
-        let expected = "";
-
-        let mut renderer = MathRenderer::init();
-        let result = renderer.convert_math_expression_into_svg(given).unwrap();
-        // println!("Default size: {}", result.bytes().len());
-        //
-        // println!("Optimized size: {}", result.bytes().len());
-        //
-        std::fs::write("/tmp/test.svg", &result).unwrap();
-        assert_eq!(result, expected);
-    }
-
-    #[test]
-    fn test_invalid_math_expression_in_typst_generate_useful_error() {
-        let given = "2blabla + pi";
-        let expected_error = "unknown variable: blabla: if you meant to display multiple letters as is, try adding spaces between each letter: `b l a b l a`\nor if you meant to display this as text, try placing it in quotes: `\"blabla\"`";
-
-        let mut renderer = MathRenderer::init();
-        let result = renderer.convert_math_expression_into_svg(&given);
-        if let Err(a) = result {
-            assert_eq!(a, expected_error);
-        } else {
-            panic!("oups")
-        }
+            .fetch_add(1, std::sync::atomic::Ordering::Relaxed)
     }
 }
 
@@ -220,5 +203,40 @@ impl typst::World for TypstWrapperWorld {
         let offset = time::UtcOffset::from_hms(offset.try_into().ok()?, 0, 0).ok()?;
         let time = self.time.checked_to_offset(offset)?;
         Some(Datetime::Date(time.date()))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+
+    use crate::preview::math::MathRenderer;
+
+    #[test]
+    fn test_valid_math_expression_in_typst_can_be_rendered() {
+        let given = "P = 2 pi r";
+        let expected = "";
+
+        let renderer = MathRenderer::init();
+        let result = renderer.convert_math_expression_into_svg(given).unwrap();
+        // println!("Default size: {}", result.bytes().len());
+        //
+        // println!("Optimized size: {}", result.bytes().len());
+        //
+        std::fs::write("/tmp/test.svg", &result).unwrap();
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_invalid_math_expression_in_typst_generate_useful_error() {
+        let given = "2blabla + pi";
+        let expected_error = "unknown variable: blabla: if you meant to display multiple letters as is, try adding spaces between each letter: `b l a b l a`\nor if you meant to display this as text, try placing it in quotes: `\"blabla\"`";
+
+        let renderer = MathRenderer::init();
+        let result = renderer.convert_math_expression_into_svg(given);
+        if let Err(a) = result {
+            assert_eq!(a, expected_error);
+        } else {
+            panic!("oups")
+        }
     }
 }

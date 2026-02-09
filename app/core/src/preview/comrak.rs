@@ -14,7 +14,7 @@ use once_cell::sync::Lazy;
 use std::borrow::Cow;
 use std::collections::HashMap;
 use std::path::PathBuf;
-use std::sync::{Mutex, RwLock};
+use std::sync::RwLock;
 
 // Global TreeSitterHighlighter cache indexed by language
 static TSH_CACHE: Lazy<RwLock<HashMap<String, TreeSitterHighlighter>>> =
@@ -25,7 +25,7 @@ static TREE_SITTER_GRAMMARS_FOLDER_VIA_ENV: Lazy<Option<String>> =
 
 // Global MathRenderer to avoid recreating a typst world all the time
 // and using an internal prefix id counter globally unique
-static MATH_RENDERER: Lazy<Mutex<MathRenderer>> = Lazy::new(|| Mutex::new(MathRenderer::init()));
+static MATH_RENDERER: Lazy<MathRenderer> = Lazy::new(MathRenderer::init);
 
 pub struct ComrakParser {
     manager: TreeSitterGrammarsManager,
@@ -80,10 +80,7 @@ impl Previewable for ComrakParser {
             let node_borrow = &mut node.data.borrow_mut();
             if let NodeValue::Math(node_math) = &node_borrow.value {
                 let math_exp = &node_math.literal;
-                let maybe_svg = MATH_RENDERER
-                    .lock()
-                    .unwrap()
-                    .convert_math_expression_into_svg(math_exp);
+                let maybe_svg = MATH_RENDERER.convert_math_expression_into_svg(math_exp);
                 let mut result = match maybe_svg {
                     Ok(svg) => svg,
                     Err(err) => format!("<span class='parse-error'>{err}</span>"),
