@@ -92,7 +92,6 @@ impl Html {
             if attribute != "id" {
                 Some(value.into())
             } else {
-                dbg!(attribute, value);
                 // Note: "prefix" is the default prefix used by oxvg_optimiser
                 if value.starts_with(HEADER_IDS_SECURITY_PREFIX) || value.starts_with("prefix") {
                     Some(value.into())
