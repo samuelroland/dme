@@ -109,8 +109,8 @@ $2+42$
             .unwrap()
             .to_safe_html_string();
 
-        let expected = r##"<h1><a href="#h-very-nice-guide" rel="noopener noreferrer"></a>Very nice guide</h1>
-<h2><a href="#h-nice-h2-title" rel="noopener noreferrer"></a>Nice h2 title</h2>
+        let expected = r##"<h1><a href="#very-nice-guide" id="h-very-nice-guide" rel="noopener noreferrer"></a>Very nice guide</h1>
+<h2><a href="#nice-h2-title" id="h-nice-h2-title" rel="noopener noreferrer"></a>Nice h2 title</h2>
 <pre><code class="language-css"><span class="punctuation delimiter">#</span><span class="property">form</span> <span class="punctuation bracket">{</span> <span class="property">color</span><span class="punctuation delimiter">:</span> gray<span class="punctuation delimiter">;</span> <span class="punctuation bracket">}</span>
 </code></pre>
 <p><img src="test.svg" alt="a"></p>
