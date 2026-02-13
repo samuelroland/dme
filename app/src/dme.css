@@ -1,0 +1,120 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+:root {
+    font-family: Cantarell, Inter, Avenir, Helvetica, Arial, sans-serif;
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 400;
+
+    color: black;
+    background-color: white;
+
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-text-size-adjust: 100%;
+}
+
+/*Remove Tailwind typography's backticks around inline code snippets */
+:not(pre) code::before, :not(pre) code::after {
+	content: none !important;
+}
+
+:not(pre) > code {
+	@apply bg-[#646cff]/15 px-1 mx-1 py-0.5 rounded-md break-inside-avoid
+}
+
+pre code {
+    background-color: transparent !important;
+}
+
+/*Remove Tailwind typography's double quotes around quotes block */
+blockquote p::before, blockquote p::after {
+	content: none !important;
+}
+
+.nice-gradient {
+		background: linear-gradient(to right, var(--color-black) 0%, var(--color-sea) 100%);
+		-webkit-background-clip: text;
+		-webkit-text-fill-color: transparent;
+		width: fit-content;
+    max-width: 100%;
+}
+
+/*Style used in documentations. */
+.table td, .table th {
+	@apply border text-center px-3 py-2
+}
+
+a {
+    color: #394e98ff
+}
+
+a:hover {
+    color: #535bf2;
+}
+
+.prose {
+    li {
+       @apply ml-10
+    }
+  
+    ul:has(> li:has(> input[type="checkbox"])) {
+        @apply !mb-0;
+    }
+
+    input[type=checkbox] {
+        @apply mr-2
+    }
+    input[type=checkbox] + p {
+        display: inline;
+    }
+}
+
+.btn {
+    @apply border px-3 py-1 rounded-sm cursor-pointer font-bold
+}
+
+/*This target the parent of the <svg> (either a <span> or a <p>)*/
+.math-inline, .math-block {
+  border-radius: 5px;
+  @apply bg-slate-100 px-1 py-2 m-1 !max-w-full overflow-scroll;
+}
+
+.math-inline:has(svg) {
+  display: inline-block;
+  vertical-align: middle;
+  box-sizing: content-box;
+  @apply text-[35pt] sm:text-[40pt] md:text-[50pt];
+}
+
+.math-block {
+    @apply bg-slate-100 flex sm:justify-center
+}
+
+.math-block svg {
+    @apply text-[35pt] sm:text-[40pt] md:text-[50pt];
+}
+
+.parse-error {
+    @apply text-red-500 whitespace-pre-line;
+}
+
+.math-inline .parse-error {
+    font-size: 15pt;
+}
+
+article img {
+    border-radius: 5px;
+    margin-top: 20px;
+}
+
+figcaption {
+    @apply text-center mt-2 font-bold
+}
+
+.nav-selected {
+    @apply bg-logo-l/30 border border-blue-300
+}
