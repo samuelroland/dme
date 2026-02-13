@@ -222,8 +222,8 @@ mod tests {
             .set_image_rewrite(ImageUrlRewriteMode::None)
             .to_safe_html_string();
         assert_eq!(
-            result,
-            format!("<h1><a href=\"#sky\" id=\"h-sky\" rel=\"noopener noreferrer\"></a>Sky</h1>\n<p><img src=\"sky.png\" alt=\"super sky\"></p>\n")
+            result.trim(),
+            format!("<h1><a href=\"#sky\" id=\"h-sky\" rel=\"noopener noreferrer\"></a>Sky</h1>\n<p></p><figure><img src=\"sky.png\" alt=\"super sky\"></figure><p></p>")
         );
     }
 
@@ -239,17 +239,18 @@ mod tests {
                 "/static/images/".to_string(),
             ))
             .to_safe_html_string();
-        let newpath = "/static/images/sky.png";
         assert_eq!(
-            result,
-            format!("<h1><a href=\"#sky\" id=\"h-sky\" rel=\"noopener noreferrer\"></a>Sky</h1>\n<p><img src=\"{newpath}\" alt=\"super sky\">\n<img src=\"#introduction-to-the-subject\" alt=\"this is not prefixed !\"></p>\n")
+            result.trim(),
+            r##"<h1><a href="#sky" id="h-sky" rel="noopener noreferrer"></a>Sky</h1>
+<p></p><figure><img src="/static/images/sky.png" alt="super sky"></figure>
+<figure><img src="#introduction-to-the-subject" alt="this is not prefixed !"></figure><p></p>"##
         );
     }
 
     #[test]
     fn test_images_path_can_be_prefixed_with_absolute_path_for_tauri() {
         let given = "# Sky
-![super sky](sky.png)
+![super sky](sky.png \"with caption !\")
 ![super sky on external website](https://great-website.com/sky.png)
 ![super sky](../../bench/sky.png)
 ![this is not prefixed !](#introduction-to-the-subject)
@@ -273,16 +274,17 @@ mod tests {
         #[cfg(target_os = "macos")]
         let tauri_prefix = "asset://localhost/";
 
+        // TODO: there is bug in Comrak I guess, with these useless <p>
+        // <p></p><figure><img src="terminal-view.png" alt="terminal-view.png"></figure><p></p>
         assert_eq!(
-            result,
+            result.trim(),
             format!(
                 "<h1><a href=\"#sky\" id=\"h-sky\" rel=\"noopener noreferrer\"></a>Sky</h1>
-<p><img src=\"{tauri_prefix}%2Fhome%2Fsam%2Freport%2Fsky.png\" alt=\"super sky\">
-<img src=\"https://great-website.com/sky.png\" alt=\"super sky on external website\">
-<img src=\"{tauri_prefix}%2Fhome%2Fsam%2Freport%2F..%2F..%2Fbench%2Fsky.png\" alt=\"super sky\">
-<img src=\"#introduction-to-the-subject\" alt=\"this is not prefixed !\">
-<img src=\"{tauri_prefix}%2Fhome%2Fsam%2Freport%2F..%2Fimages-de-fous%2Fsuper_Schema%24BIEN3joli.png\" alt=\"nice path\"></p>
-"
+<p></p><figure><img src=\"{tauri_prefix}%2Fhome%2Fsam%2Freport%2Fsky.png\" alt=\"super sky\" title=\"with caption !\"><figcaption>with caption !</figcaption></figure>
+<figure><img src=\"https://great-website.com/sky.png\" alt=\"super sky on external website\"></figure>
+<figure><img src=\"{tauri_prefix}%2Fhome%2Fsam%2Freport%2F..%2F..%2Fbench%2Fsky.png\" alt=\"super sky\"></figure>
+<figure><img src=\"#introduction-to-the-subject\" alt=\"this is not prefixed !\"></figure>
+<figure><img src=\"{tauri_prefix}%2Fhome%2Fsam%2Freport%2F..%2Fimages-de-fous%2Fsuper_Schema%24BIEN3joli.png\" alt=\"nice path\"></figure><p></p>"
             )
         );
     }

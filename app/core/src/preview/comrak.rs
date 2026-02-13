@@ -71,6 +71,7 @@ impl Previewable for ComrakParser {
         options.extension.math_dollars = true;
         options.extension.front_matter_delimiter = Some(FRONT_MATTER_DELIMITER.into());
         options.extension.header_ids = Some(HEADER_IDS_SECURITY_PREFIX.into());
+        options.render.figure_with_caption = true;
 
         options.render.r#unsafe = true; // Unable unsafe mode to allow HTML to go through. To avoid XSS, we take care of it with ammonia sanitizer in the Html wrapper type
         let plugins = Plugins {
