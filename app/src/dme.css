@@ -1,6 +1,5 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
-
 :root {
     font-family: Cantarell, Inter, Avenir, Helvetica, Arial, sans-serif;
     font-size: 16px;
@@ -113,8 +112,4 @@ article img {
 
 figcaption {
     @apply text-center mt-2 font-bold
-}
-
-.nav-selected {
-    @apply bg-logo-l/30 border border-blue-300
 }

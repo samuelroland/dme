@@ -1,5 +1,4 @@
 /* Style specific to the desktop app */
-@import "tailwindcss";
 
 @theme {
     --color-black: #0f191eff; /* Lighter black used in the logo */
