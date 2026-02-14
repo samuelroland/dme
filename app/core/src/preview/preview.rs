@@ -79,8 +79,9 @@ impl Html {
             ],
         ); // TODO: make sure xlink:href can be safe ?
            // <path fill="none" stroke="#000" stroke-width=".528" d="M0 1.067h6.292" class="typst-shape"></path>
-           //"fill", "stroke" are removed for same reasons as <use>
-        cleaner.add_tag_attributes("path", ["d", "class", "stroke-width"]);
+           //"fill" are removed for same reasons as <use>.
+           // But stroke is kept because fraction bar needs to be filled in black, otherwise it is invisible
+        cleaner.add_tag_attributes("path", ["d", "class", "stroke-width", "stroke"]);
         cleaner.add_tag_attributes("defs", ["id"]);
         cleaner.add_tag_attributes("symbol", ["id", "overflow"]);
 
