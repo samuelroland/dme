@@ -85,6 +85,16 @@ impl Html {
         cleaner.add_tag_attributes("defs", ["id"]);
         cleaner.add_tag_attributes("symbol", ["id", "overflow"]);
 
+        // Allow iframe to allow integration of Youtube videos
+        // <iframe width="560" height="315" src="https://www.youtube.com/embed/X8jsijhllIA?si=yKfZDBbWHfLTky2D" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+        cleaner.add_tags(["iframe", "video"]);
+        // Note: for let's block width and height because it doesn't adapt to mobile screen...
+        cleaner.add_tag_attributes("iframe", ["src", "title", "allowfullscreen"]);
+
+        // Allow video tag
+        // <video src="https://player.vimeo.com/progressive_redirect/playback/1049055406/rendition/1080p/file.mp4?loc=external&oauth2_token_id=1788610641&signature=1695f267dbd74c77f96ae5f1da6d0c389634b78de8973b81f69a503b596a3c4e" height="900" controls="true"></video>
+        cleaner.add_tag_attributes("video", ["controls", "width", "src"]); // do not allow height to avoid fixing a too high video
+
         cleaner.strip_comments(true);
 
         // Note: this is only applied to authorized tags (defaults and those above). If we remove
