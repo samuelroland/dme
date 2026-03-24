@@ -1,8 +1,9 @@
 [package]
 name = "dme-core"
+license = "MIT"
 version = "0.1.0"
 description = "The core library of DME, backing up the CLI and Tauri app."
-authors = ["you"]
+authors = ["The DME Contributors"]
 edition = "2021"
 
 # Recommended configuration

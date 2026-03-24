@@ -66,6 +66,11 @@ Note: this is far ready to be fully usable for now, but if you want to install D
    sudo apt install /src-tauri/target/release/bundle/rpm/dme-0.1.0-1.x86_64.rpm
    ```
 
+### License
+The DME project is released under the [MIT license](LICENSE).
+
+---
+
 ## Project structure
 This is a cleaned overview of the project structure with a few comments.
 ```
