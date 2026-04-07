@@ -64,11 +64,41 @@ async function openMarkdown(path: string | null, selectedHeading: string | null)
 async function openSearchEntry(entry: ResearchResult) {
     return openMarkdown(entry.path, entry.title)
 }
+// Enable scrolling to the next or previous header
+function scrollToHeadingOffset(next: boolean) {
+    const allHeadings = document.querySelectorAll('.prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6') as unknown as HTMLElement[]
+    const allHeadingsSortedTopToBottom = Array.from(allHeadings).sort((a, b) => a.getBoundingClientRect().y - b.getBoundingClientRect().y)
+
+    if (next) {
+        for (const heading of allHeadingsSortedTopToBottom) {
+            if (heading.getBoundingClientRect().top + window.scrollY > window.scrollY + 30) {
+                heading.scrollIntoView({ behavior: 'instant', block: 'start' });
+                return
+            }
+        }
+    } else {
+        for (const heading of allHeadingsSortedTopToBottom.reverse()) {
+            if (heading.getBoundingClientRect().top + window.scrollY <= window.scrollY - 1) {
+                heading.scrollIntoView({ behavior: 'instant', block: 'start' });
+                return
+            }
+        }
+    }
+}
 
 
 onMounted(() => {
     openMarkdown(lastPathUsed.value, null)
+    setInterval(() => { openMarkdown(lastPathUsed.value, null) }, 1000)
     onKeyStroke(['r'], () => { openMarkdown(lastPathUsed.value, null) })
+    // Basic vim movements :)
+    onKeyStroke(['G'], () => { window.scrollTo({ top: document.body.scrollHeight, behavior: 'instant' }); })
+    onKeyStroke(['g'], () => { window.scrollTo({ top: 0, behavior: 'instant' }); }) // TODO: make it gg not g
+    onKeyStroke(['J'], () => { scrollToHeadingOffset(true) })
+    onKeyStroke(['K'], () => { scrollToHeadingOffset(false) })
+
+    onKeyStroke(['j'], () => { window.scrollBy(0, window.innerHeight / 7); })
+    onKeyStroke(['k'], () => { window.scrollBy(0, -window.innerHeight / 7); })
     onKeyStroke(['Escape'], () => {
         if (page.value == "Grammars") {
             backToLastPage()
