@@ -1,88 +1,75 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
-:root {
-    font-family: Cantarell, Inter, Avenir, Helvetica, Arial, sans-serif;
-    font-size: 16px;
-    line-height: 24px;
-    font-weight: 400;
-
-    color: black;
-    background-color: white;
-
-    font-synthesis: none;
-    text-rendering: optimizeLegibility;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    -webkit-text-size-adjust: 100%;
-}
 
 /*Remove Tailwind typography's backticks around inline code snippets */
-:not(pre) code::before, :not(pre) code::after {
-	content: none !important;
+:not(pre) code::before,
+:not(pre) code::after {
+  content: none !important;
 }
 
 :not(pre) > code {
-	@apply text-base bg-slate-100 px-1 mx-1 py-0.5 rounded-md break-inside-avoid
+  @apply text-base bg-slate-100 px-1 mx-1 py-0.5 rounded-md break-inside-avoid;
 }
 
 pre code {
-    background-color: transparent !important;
+  background-color: transparent !important;
 }
 
 /*Remove Tailwind typography's double quotes around quotes block */
-blockquote p::before, blockquote p::after {
-	content: none !important;
+blockquote p::before,
+blockquote p::after {
+  content: none !important;
 }
 
 /* Margins are too big by default !*/
 blockquote {
-    @apply my-3
+  @apply my-3;
 }
 
-.nice-gradient {
-		background: linear-gradient(to right, var(--color-black) 0%, var(--color-sea) 100%);
-		-webkit-background-clip: text;
-		-webkit-text-fill-color: transparent;
-		width: fit-content;
-    max-width: 100%;
+/* Make sure code inside a <pre> doesn't go outside it's box */
+pre {
+  overflow: hidden;
+  text-wrap: wrap;
 }
 
 /*Style used in documentations. */
-.table td, .table th {
-	@apply border text-center px-3 py-2
+.table td,
+.table th {
+  @apply border text-center px-3 py-2;
 }
 
 a {
-    color: #394e98ff
+  color: #394e98ff;
 }
 
 a:hover {
-    color: #535bf2;
+  color: #535bf2;
 }
 
 .prose {
-    li {
-       @apply ml-10
-    }
-  
-    ul:has(> li:has(> input[type="checkbox"])) {
-        @apply !mb-0;
-    }
+  li {
+    @apply ml-10;
+  }
 
-    input[type=checkbox] {
-        @apply mr-2
-    }
-    input[type=checkbox] + p {
-        display: inline;
-    }
+  ul:has(> li:has(> input[type="checkbox"])) {
+    @apply !mb-0;
+  }
+
+  input[type="checkbox"] {
+    @apply mr-2;
+  }
+  input[type="checkbox"] + p {
+    display: inline;
+  }
 }
 
 .btn {
-    @apply border px-3 py-1 rounded-sm cursor-pointer font-bold
+  @apply border px-3 py-1 rounded-sm cursor-pointer font-bold;
 }
 
 /*This target the parent of the <svg> (either a <span> or a <p>)*/
-.math-inline, .math-block {
+.math-inline,
+.math-block {
   border-radius: 5px;
   @apply bg-slate-100 !max-w-full overflow-scroll;
   /*Note: this fixes the empty scrollbars in chromium */
@@ -94,33 +81,37 @@ a:hover {
   display: inline-block;
   vertical-align: middle;
   box-sizing: content-box;
-  @apply mx-1 my-0.5 py-2 text-[35pt] sm:text-[40pt] md:text-[50pt]
+  @apply mx-1 my-0.5 py-2 text-[35pt] sm:text-[40pt] md:text-[50pt];
 }
 .math-inline svg {
-  @apply m-1
+  @apply m-1;
 }
 
 .math-block {
-    @apply bg-slate-100 flex px-2 sm:px-3 md:px-4 sm:py-3
+  @apply bg-slate-100 flex px-2 sm:px-3 md:px-4 sm:py-3;
 }
 .math-block svg {
-    @apply text-[35pt] sm:text-[40pt] md:text-[50pt];
+  @apply text-[35pt] sm:text-[40pt] md:text-[50pt];
 }
 
 .parse-error {
-    @apply text-red-500 whitespace-pre-line;
+  @apply text-red-500 whitespace-pre-line;
 }
 
 .math-inline .parse-error {
-    font-size: 15pt;
+  font-size: 15pt;
 }
 
 article img {
-    border-radius: 5px;
-    margin-top: 20px;
-    display: inline; /* This is useful to show images one after the other, by removing the line break. */
+  border-radius: 5px;
+  margin-top: 20px;
+  display: inline; /* This is useful to show images one after the other, by removing the line break. */
 }
 
 figcaption {
-    @apply text-center mt-2 font-bold
+  @apply text-center mt-2 font-bold;
+}
+
+figure {
+  @apply w-fit; /*The goal is to make the figcation centering work if the image is less larger that window width */
 }

@@ -1,9 +1,36 @@
 /* Style specific to the desktop app */
 
 @theme {
-    --color-black: #0f191eff; /* Lighter black used in the logo */
-    --color-white: #f5fcfb; /* Blued white as backgroung of the logo and also at the top left of the square logo */
-    --color-sea: #394e98; /* Blue at bottom right the square logo */
-    --color-sea-light: #6e7fb4; /* Lighter version of the color "sea" */
+  --color-black: #0f191eff; /* Lighter black used in the logo */
+  --color-white: #f5fcfb; /* Blued white as backgroung of the logo and also at the top left of the square logo */
+  --color-sea: #394e98; /* Blue at bottom right the square logo */
+  --color-sea-light: #6e7fb4; /* Lighter version of the color "sea" */
 }
 
+:root {
+  font-family: Cantarell, Inter, Avenir, Helvetica, Arial, sans-serif;
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 400;
+
+  color: black;
+  background-color: white;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-text-size-adjust: 100%;
+}
+
+.nice-gradient {
+  background: linear-gradient(
+    to right,
+    var(--color-black) 0%,
+    var(--color-sea) 100%
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  width: fit-content;
+  max-width: 100%;
+}
