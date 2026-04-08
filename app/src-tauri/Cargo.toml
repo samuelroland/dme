@@ -1,8 +1,9 @@
 [package]
 name = "dme"
+license = "MIT"
 version = "0.1.0"
 description = "A Tauri App"
-authors = ["you"]
+authors = ["The DME Contributors"]
 edition = "2021"
 
 # Recommended configuration
