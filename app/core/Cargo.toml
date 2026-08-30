@@ -43,11 +43,11 @@ typst-kit = { version = "0.14.2", default-features = false, features = [
     "embed-fonts",
 ], optional = true }
 # In addition, we need to optimize Typst generated SVG to make them less heavy
-oxvg_ast = { version = "0.0.5", default-features = false, features = [
+oxvg_ast = { version = "0.0.7", default-features = false, features = [
     "parse",
     "roxmltree",
 ], optional = true }
-oxvg_optimiser = { version = "0.0.5", default-features = false, optional = true }
+oxvg_optimiser = { version = "0.0.7", default-features = false, optional = true }
 
 [dev-dependencies]
 pretty_assertions = "1.4.1"
