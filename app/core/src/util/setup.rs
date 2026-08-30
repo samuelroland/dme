@@ -2,13 +2,18 @@
 
 use std::ffi::OsStr;
 use std::fmt::Write;
-use std::fs::{create_dir_all, read_dir, read_to_string};
+use std::fs::{read_dir, read_to_string};
 use std::path::PathBuf;
 
 use crate::preview::proposed_grammars::PROPOSED_GRAMMAR_SOURCES;
-use crate::preview::tree_sitter_grammars::TreeSitterGrammarsManager;
-use crate::preview::tree_sitter_highlight::TreeSitterHighlighter;
 use crate::util::git::GitRepos;
+
+#[cfg(feature = "colored-code")]
+use crate::preview::tree_sitter_grammars::TreeSitterGrammarsManager;
+#[cfg(feature = "colored-code")]
+use crate::preview::tree_sitter_highlight::TreeSitterHighlighter;
+#[cfg(feature = "colored-code")]
+const SUBFOLDER: &str = "target/all-grammars";
 
 const MDN_GIT_REPOSITORY: &str = "https://github.com/mdn/content";
 
@@ -23,8 +28,9 @@ pub fn clone_mdn_content() -> PathBuf {
     repos_path
 }
 
-const SUBFOLDER: &str = "target/all-grammars";
+#[cfg(feature = "colored-code")]
 pub fn install_all_grammars_in_local_target_folder() -> PathBuf {
+    use std::fs::create_dir_all;
     let grammars_folder = PathBuf::from(SUBFOLDER);
     if !grammars_folder.exists() {
         create_dir_all(&grammars_folder).unwrap();

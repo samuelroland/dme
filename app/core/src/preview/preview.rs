@@ -1,6 +1,6 @@
 use std::{borrow::Cow, path::PathBuf};
 
-use ammonia::{AttributeFilter, Builder, UrlRelativeEvaluate};
+use ammonia::{Builder, UrlRelativeEvaluate};
 use maplit::hashset;
 
 use crate::{

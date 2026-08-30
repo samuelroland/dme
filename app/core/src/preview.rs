@@ -1,7 +1,10 @@
 pub mod comrak;
+#[cfg(feature = "math")]
 pub mod math;
 pub mod preview;
 pub mod proposed_grammars;
 pub mod toc;
+#[cfg(feature = "colored-code")]
 pub mod tree_sitter_grammars;
+#[cfg(feature = "colored-code")]
 pub mod tree_sitter_highlight;

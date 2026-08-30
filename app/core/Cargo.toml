@@ -18,34 +18,49 @@ comrak = { version = "0.50.0", default-features = false }
 once_cell = "1.21.3"
 pretty_assertions = "1.4.1"
 regex = "1.11.1"
-tree-sitter = "0.26.5"
-tree-sitter-highlight = "0.26.5"
-tree-sitter-loader = "0.26.5"
 walkdir = "2"
 num_cpus = "1.16"
 serde = { version = "1.0.219", default-features = false, features = ["derive"] }
-serde_json = "1.0.140"
 thiserror = "2.0.12"
 toml = "0.8.23"
 nucleo-matcher = "0.3.1"
 ammonia = "4.1.0"
 maplit = "1.0.2"
 urlencoding = "2.1.3"
+mini-moka = "0.10.3"
 
-# Math rendering with Typst
-typst = { version = "0.14", default-features = false }
-typst-svg = { version = "0.14", default-features = false }
+# Feature flag "colored-code": Code highlighting with Tree-Sitter and dynamic grammars installation + loading
+tree-sitter = { version = "0.26.5", default-features = false, optional = true }
+tree-sitter-highlight = { version = "0.26.5", default-features = false, optional = true }
+tree-sitter-loader = { version = "0.26.5", optional = true }
+
+# Feature flag "math": Render Markdown math equations with Typst (this fully embed Typst into the final program, with restricted access)
+typst = { version = "0.14", default-features = false, optional = true }
+typst-svg = { version = "0.14", default-features = false, optional = true }
 typst-kit = { version = "0.14.2", default-features = false, features = [
     "embed-fonts",
-] }
-# Typst generated SVG optimisations
+], optional = true }
+# In addition, we need to optimize Typst generated SVG to make them less heavy
 oxvg_ast = { version = "0.0.5", default-features = false, features = [
     "parse",
     "roxmltree",
-] }
-oxvg_optimiser = { version = "0.0.5", default-features = false }
-mini-moka = "0.10.3"
+], optional = true }
+oxvg_optimiser = { version = "0.0.5", default-features = false, optional = true }
 
 [dev-dependencies]
 pretty_assertions = "1.4.1"
 rand = "0.10.0"
+
+[features]
+math = [
+    "dep:typst",
+    "dep:typst-svg",
+    "dep:typst-kit",
+    "dep:oxvg_ast",
+    "dep:oxvg_optimiser",
+]
+colored-code = [
+    "dep:tree-sitter",
+    "dep:tree-sitter-loader",
+    "dep:tree-sitter-highlight",
+]

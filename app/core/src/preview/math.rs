@@ -7,7 +7,6 @@
 // - remove any external file loading (other .typ file, images, ...)
 // - remove some dependencies to reduce the build time
 // - remove external package support
-
 use std::sync::atomic::AtomicU64;
 use std::sync::Mutex;
 

@@ -1,28 +1,46 @@
+#[cfg(feature = "math")]
 use crate::preview::math::MathRenderer;
 
 // Previewable implementation via a Comrak based Markdown parser
 use super::preview::{Html, Previewable};
-use super::tree_sitter_grammars::TreeSitterGrammarsManager;
-use super::tree_sitter_highlight::TreeSitterHighlighter;
-use comrak::html::escape;
-use comrak::nodes::NodeValue;
 use comrak::options::Plugins;
-use comrak::{adapters::SyntaxHighlighterAdapter, html};
 use comrak::{format_html_with_plugins, parse_document, Arena, Options};
+
+#[cfg(feature = "colored-code")]
+use super::tree_sitter_grammars::TreeSitterGrammarsManager;
+#[cfg(feature = "colored-code")]
+use super::tree_sitter_highlight::TreeSitterHighlighter;
+#[cfg(feature = "colored-code")]
+use comrak::html::escape;
+#[cfg(feature = "math")]
+use comrak::nodes::NodeValue;
+#[cfg(feature = "colored-code")]
+use comrak::{adapters::SyntaxHighlighterAdapter, html};
+#[cfg(any(feature = "colored-code", feature = "math"))]
 use core::fmt;
+#[cfg(any(feature = "colored-code", feature = "math"))]
 use once_cell::sync::Lazy;
+#[cfg(feature = "colored-code")]
 use std::borrow::Cow;
+#[cfg(feature = "colored-code")]
 use std::collections::HashMap;
+#[cfg(feature = "colored-code")]
+#[cfg(any(feature = "colored-code", feature = "math"))]
+#[cfg(feature = "colored-code")]
 use std::path::PathBuf;
+#[cfg(feature = "colored-code")]
 use std::sync::RwLock;
 
+#[cfg(feature = "colored-code")]
 // Global TreeSitterHighlighter cache indexed by language
 static TSH_CACHE: Lazy<RwLock<HashMap<String, TreeSitterHighlighter>>> =
     Lazy::new(|| RwLock::new(HashMap::new()));
 
+#[cfg(feature = "colored-code")]
 static TREE_SITTER_GRAMMARS_FOLDER_VIA_ENV: Lazy<Option<String>> =
     Lazy::new(|| std::env::var("TREE_SITTER_GRAMMARS_FOLDER").ok());
 
+#[cfg(feature = "math")]
 // Global MathRenderer to avoid recreating a typst world all the time
 // and using an internal prefix id counter globally unique
 static MATH_RENDERER: Lazy<MathRenderer> = Lazy::new(MathRenderer::init);
@@ -34,6 +52,7 @@ pub const HEADER_IDS_SECURITY_PREFIX: &str = "h-";
 pub const FRONT_MATTER_DELIMITER: &str = "---";
 
 pub struct ComrakParser {
+    #[cfg(feature = "colored-code")]
     manager: TreeSitterGrammarsManager,
 }
 
@@ -41,23 +60,28 @@ impl ComrakParser {
     /// Create a new ComrakParser with a default grammars folder or use the
     /// TREE_SITTER_GRAMMARS_FOLDER environment variable if defined
     pub fn new() -> Result<Self, String> {
-        let manager = match &*TREE_SITTER_GRAMMARS_FOLDER_VIA_ENV {
-            Some(folder) => {
-                TreeSitterGrammarsManager::new_with_grammars_folder(PathBuf::from(folder.clone()))
-            }
-            None => TreeSitterGrammarsManager::new(),
-        }?;
-
-        Ok(ComrakParser { manager })
+        Ok(ComrakParser {
+            #[cfg(feature = "colored-code")]
+            manager: match &*TREE_SITTER_GRAMMARS_FOLDER_VIA_ENV {
+                Some(folder) => TreeSitterGrammarsManager::new_with_grammars_folder(PathBuf::from(
+                    folder.clone(),
+                )),
+                None => TreeSitterGrammarsManager::new(),
+            }?,
+        })
     }
 
     /// A ComrakParser parser but with a different grammars folder than default
     /// or the version defined in env, as this is not a good solution for testing
     /// Public only for this crate as only useful for testing
     pub(crate) fn new_with_configurable_grammars_folder(folder: String) -> Result<Self, String> {
+        #[cfg(feature = "colored-code")]
         let manager =
             TreeSitterGrammarsManager::new_with_grammars_folder(PathBuf::from(folder.clone()))?;
-        Ok(ComrakParser { manager })
+        Ok(ComrakParser {
+            #[cfg(feature = "colored-code")]
+            manager,
+        })
     }
 }
 
@@ -68,23 +92,31 @@ impl Previewable for ComrakParser {
         options.extension.table = true; // Enable tables
         options.extension.tasklist = true; // Enable list of tasks
         options.extension.autolink = true; // Enable creating links automatically for URLs in text
-        options.extension.math_dollars = true;
+        #[cfg(feature = "math")]
+        {
+            options.extension.math_dollars = true;
+        }
         options.extension.front_matter_delimiter = Some(FRONT_MATTER_DELIMITER.into());
         options.extension.header_ids = Some(HEADER_IDS_SECURITY_PREFIX.into());
         options.render.figure_with_caption = true;
 
         options.render.r#unsafe = true; // Unable unsafe mode to allow HTML to go through. To avoid XSS, we take care of it with ammonia sanitizer in the Html wrapper type
+
+        #[cfg(feature = "colored-code")]
         let plugins = Plugins {
             render: comrak::options::RenderPlugins {
                 codefence_syntax_highlighter: Some(self as &dyn SyntaxHighlighterAdapter),
                 heading_adapter: None,
             },
         };
+        #[cfg(not(feature = "colored-code"))]
+        let plugins = Plugins::default();
 
         // Structure based on code inside markdown_to_html_with_plugins()
         let arena = Arena::new();
         let root = parse_document(&arena, source, &options);
 
+        #[cfg(feature = "math")]
         for node in root.descendants() {
             let node_borrow = &mut node.data.borrow_mut();
             if let NodeValue::Math(node_math) = &node_borrow.value {
@@ -118,6 +150,7 @@ impl Previewable for ComrakParser {
 /// The high level entrypoint to access a cached TreeSitterHighlighter and highlight a given piece of code
 /// If the grammar is not installed or cannot be used, the original code is used in its HTML
 /// escaped form to avoid being changed in sanitization
+#[cfg(feature = "colored-code")]
 pub fn highlight_code_from_cached_highlighter(
     manager: &TreeSitterGrammarsManager,
     maybe_lang: Option<&str>,
@@ -164,6 +197,7 @@ pub fn highlight_code_from_cached_highlighter(
 /// Implement a TreeSitterHighlighter integration on Comrak
 // This is based on Syntect integration
 // https://docs.rs/comrak/latest/src/comrak/plugins/syntect.rs.html#71-133
+#[cfg(feature = "colored-code")]
 impl SyntaxHighlighterAdapter for ComrakParser {
     fn write_highlighted(
         &self,
