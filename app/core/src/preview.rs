@@ -3,6 +3,8 @@ pub mod comrak;
 pub mod math;
 pub mod preview;
 pub mod proposed_grammars;
+#[cfg(feature = "security")]
+pub mod security;
 pub mod toc;
 #[cfg(feature = "colored-code")]
 pub mod tree_sitter_grammars;

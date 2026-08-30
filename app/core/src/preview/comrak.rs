@@ -100,7 +100,12 @@ impl Previewable for ComrakParser {
         options.extension.header_ids = Some(HEADER_IDS_SECURITY_PREFIX.into());
         options.render.figure_with_caption = true;
 
-        options.render.r#unsafe = true; // Unable unsafe mode to allow HTML to go through. To avoid XSS, we take care of it with ammonia sanitizer in the Html wrapper type
+        // On security feature flag enabled, we can safely enable unsafe mode to allow HTML to go through.
+        // To avoid XSS, we take care of sanitizing the final result in the Html wrapper type with the ammonia crate
+        #[cfg(feature = "security")]
+        {
+            options.render.r#unsafe = true;
+        }
 
         #[cfg(feature = "colored-code")]
         let plugins = Plugins {

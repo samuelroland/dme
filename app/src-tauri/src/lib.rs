@@ -31,7 +31,7 @@ pub fn run() {
             grammars_folder
         ])
         .setup(|app| {
-            let home_dir = etcetera::home_dir()
+            let home_dir = std::env::home_dir()
                 .expect("Couldn't get HOME directory")
                 .to_str()
                 .unwrap_or_default()
