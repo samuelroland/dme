@@ -1,12 +1,11 @@
+use crate::util::cmd::command_new;
+use etcetera::{AppStrategy, AppStrategyArgs};
+use once_cell::sync::Lazy;
 use std::{
     collections::BTreeSet,
     fs::create_dir,
     path::{Path, PathBuf},
-    process::Command,
 };
-
-use etcetera::{AppStrategy, AppStrategyArgs};
-use once_cell::sync::Lazy;
 use tree_sitter::Language;
 use tree_sitter_loader::{CompileConfig, Config, Loader};
 
@@ -175,7 +174,7 @@ impl TreeSitterGrammarsManager {
     /// Make sure local dependencies are installed, such as a GCC and git
     /// Returns Ok if all good or an Err with a reason
     pub fn check_local_deps() -> Result<(), String> {
-        Command::new("gcc")
+        command_new("gcc")
             .arg("--version")
             .output()
             .map_err(|_| "Gcc not installed or not available in PATH".to_string())?;

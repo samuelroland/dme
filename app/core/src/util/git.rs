@@ -7,6 +7,8 @@ use std::{
 
 use regex::Regex;
 
+use crate::util::cmd::command_new;
+
 /// This file implement a nice and easy interface to do simple Git operations
 /// on a given Git repository
 pub struct GitRepos {
@@ -131,11 +133,11 @@ impl GitRepos {
         args: &Vec<&str>,
         exec_directory: &PathBuf,
     ) -> Result<Output, String> {
-        let cmd = Command::new("git")
-            .args(args)
+        let mut cmd = command_new("git");
+        cmd.args(args)
             .current_dir(exec_directory)
-            .output();
-        cmd.map_err(|e| format!("Failed to run git {}: {e}", args.join(" ")))
+            .output()
+            .map_err(|e| format!("Failed to run git {}: {e}", args.join(" ")))
     }
 
     // Return true if Git is installed
