@@ -73,10 +73,6 @@ impl OrderedResults {
         }
         results
     }
-
-    pub fn len(&self) -> usize {
-        self.results.len()
-    }
 }
 
 #[derive(Debug)]

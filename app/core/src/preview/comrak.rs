@@ -17,8 +17,6 @@ use comrak::nodes::NodeValue;
 #[cfg(feature = "colored-code")]
 use comrak::{adapters::SyntaxHighlighterAdapter, html};
 #[cfg(any(feature = "colored-code", feature = "math"))]
-use core::fmt;
-#[cfg(any(feature = "colored-code", feature = "math"))]
 use once_cell::sync::Lazy;
 #[cfg(feature = "colored-code")]
 use std::borrow::Cow;
@@ -74,6 +72,7 @@ impl ComrakParser {
     /// A ComrakParser parser but with a different grammars folder than default
     /// or the version defined in env, as this is not a good solution for testing
     /// Public only for this crate as only useful for testing
+    #[allow(dead_code, unused_variables)]
     pub(crate) fn new_with_configurable_grammars_folder(folder: String) -> Result<Self, String> {
         #[cfg(feature = "colored-code")]
         let manager =
@@ -209,7 +208,7 @@ impl SyntaxHighlighterAdapter for ComrakParser {
         output: &mut dyn std::fmt::Write,
         maybe_lang: Option<&str>,
         code: &str,
-    ) -> fmt::Result {
+    ) -> core::fmt::Result {
         let html = highlight_code_from_cached_highlighter(&self.manager, maybe_lang, code);
         // TODO: refactor this to avoid calling to_safe_html_string on each code snippet + on the whole final document
         // How can we call it only at the end ?
@@ -222,7 +221,7 @@ impl SyntaxHighlighterAdapter for ComrakParser {
         &self,
         output: &mut dyn std::fmt::Write,
         attributes: HashMap<&'static str, Cow<'_, str>>,
-    ) -> fmt::Result {
+    ) -> core::fmt::Result {
         let _ = html::write_opening_tag(output, "pre", attributes);
         Ok(())
     }
@@ -231,7 +230,7 @@ impl SyntaxHighlighterAdapter for ComrakParser {
         &self,
         output: &mut dyn std::fmt::Write,
         attributes: HashMap<&'static str, Cow<'_, str>>,
-    ) -> fmt::Result {
+    ) -> core::fmt::Result {
         html::write_opening_tag(output, "code", attributes)
     }
 }

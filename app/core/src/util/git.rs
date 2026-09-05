@@ -1,9 +1,4 @@
-use std::{
-    env::current_dir,
-    path::PathBuf,
-    process::{Command, Output},
-    sync::LazyLock,
-};
+use std::{env::current_dir, path::PathBuf, process::Output, sync::LazyLock};
 
 use regex::Regex;
 
@@ -59,7 +54,6 @@ impl GitRepos {
         single_branch: bool,
     ) -> Result<Self, String> {
         let mut args: Vec<String> = vec!["clone".to_owned(), git_clone_url.to_owned()];
-        let count_str = "";
         if let Some(count) = only_latest_commits {
             args.push("--depth".to_string());
             args.push(count.to_string())
@@ -155,7 +149,7 @@ impl GitRepos {
 
 #[cfg(test)]
 mod tests {
-    use pretty_assertions::{assert_eq, assert_ne};
+    use pretty_assertions::assert_eq;
     use std::{env::current_dir, fs::create_dir_all, path::PathBuf, time::Instant};
     // Note: I'm using a public Git repos almost empty to tests git clone and git pull operatiosn
     const REAL_GIT_REPO: &str = "https://github.com/samuelroland/cloneme.git";
@@ -204,7 +198,7 @@ mod tests {
     #[ignore = "This test only work in serial mode and is slow"]
     fn test_from_existing_folder_with_git_repos_works() {
         let tests_folder = &get_unique_tests_subfolder();
-        let repos = GitRepos::from_clone(REAL_GIT_REPO, tests_folder, None, false).unwrap();
+        GitRepos::from_clone(REAL_GIT_REPO, tests_folder, None, false).unwrap();
 
         let new_repos = GitRepos::from_existing_folder(&tests_folder.join("cloneme")).unwrap();
         assert!(new_repos.is_remote().unwrap());
@@ -216,7 +210,7 @@ mod tests {
         let tests_folder = &get_unique_tests_subfolder();
 
         let start = Instant::now();
-        let repos = GitRepos::from_clone(
+        GitRepos::from_clone(
             "https://github.com/tree-sitter/tree-sitter-css",
             tests_folder,
             None,
@@ -228,7 +222,7 @@ mod tests {
         let tests_folder = &get_unique_tests_subfolder();
 
         let start = Instant::now();
-        let repos = GitRepos::from_clone(
+        GitRepos::from_clone(
             "https://github.com/tree-sitter/tree-sitter-css",
             tests_folder,
             Some(1),

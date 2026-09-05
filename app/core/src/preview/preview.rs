@@ -1,12 +1,5 @@
-use std::{borrow::Cow, path::PathBuf};
-
 #[cfg(feature = "security")]
-use ammonia::{Builder, UrlRelativeEvaluate};
-
-use crate::{
-    preview::comrak::HEADER_IDS_SECURITY_PREFIX,
-    theming::{renderer::Renderer, theme::Theme},
-};
+use crate::theming::{renderer::Renderer, theme::Theme};
 
 #[derive(Eq, Debug, PartialEq)]
 pub struct Html {
