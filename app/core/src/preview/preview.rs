@@ -1,4 +1,3 @@
-#[cfg(feature = "security")]
 use crate::theming::{renderer::Renderer, theme::Theme};
 
 #[derive(Eq, Debug, PartialEq)]
